@@ -133,9 +133,13 @@ const CFG = {
   },
 
   checkpoint: {
-    healAmount: 1,       // hearts restored on banking
     radius: 0.9,
   },
+
+  healItems: [
+    { id: 'bandage', cost: 40,  amount: 1 },   // cheap: +1 HP
+    { id: 'medpack', cost: 120, amount: 999 },  // expensive: restore to full HP
+  ],
 
   lava: {
     startOffset: 10,     // rows below the Heartstone where the lava begins
