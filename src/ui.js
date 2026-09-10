@@ -197,6 +197,23 @@ class UI {
   shop(game, opts) {
     const o = opts || {};
     const res = (v, key) => (typeof v === 'function' ? v() : v !== undefined ? v : loc(key));
+
+    const p = game.player;
+    const inRun = game.state === 'paused' && p && !p.dead;
+    const healSection = inRun ? CFG.healItems.map(h => {
+      const atMax = p.health >= p.maxHealth;
+      const afford = game.save.gold >= h.cost;
+      return `
+        <div class="shop-item">
+          <div class="info">
+            <div class="nm">${loc('heal.' + h.id + '.name')}</div>
+            <div class="ds">${loc('heal.' + h.id + '.desc', { cur: p.health, max: p.maxHealth })}</div>
+          </div>
+          <button class="buy" data-heal="${h.id}"
+            ${atMax || !afford ? 'disabled' : ''}>${fmt(h.cost)}</button>
+        </div>`;
+    }).join('') : '';
+
     const items = CFG.upgrades.map(u => {
       const lvl = game.save.upgrades[u.id] || 0;
       const maxed = lvl >= u.max;
@@ -224,11 +241,12 @@ class UI {
         <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
         <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('common.metres', { n: game.depth() })}</div></div>
       </div>
-      <div class="shop-list">${items}</div>
+      <div class="shop-list">${healSection}${items}</div>
       <button class="btn" id="closeShop">${res(o.closeLabel, 'shop.back')}</button>
       ${o.extra ? res(o.extra) : ''}
       ${this.langButton()}
     `);
+    this.onAll('[data-heal]', (el) => game.buyHeal(el.dataset.heal));
     this.onAll('[data-up]', (el) => game.buyUpgrade(el.dataset.up));
     this.on('#closeShop', () => game.closePanel());
     if (o.wire) o.wire(this);

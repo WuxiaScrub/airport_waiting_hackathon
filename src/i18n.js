@@ -72,9 +72,14 @@ const STRINGS = {
     'shop.depth': 'DEPTH',
     'shop.nothingToBank': 'NOTHING TO BANK',
     'shop.secured': '{v} SECURED',
-    'shop.healed': '+{n} HP',
     'shop.dynamiteRestocked': 'DYNAMITE RESTOCKED',
     'shop.hatRepaired': 'HARD HAT REPAIRED',
+
+    /* Heal items */
+    'heal.bandage.name': 'Bandage',
+    'heal.bandage.desc': 'Restore 1 HP  ({cur}/{max})',
+    'heal.medpack.name': 'Med Pack',
+    'heal.medpack.desc': 'Restore to full HP  ({cur}/{max})',
 
     /* Upgrades */
     'up.health.name': 'Reinforced Vest',
@@ -116,6 +121,7 @@ const STRINGS = {
     'toast.noDynamite': 'NO DYNAMITE',
     'toast.cantPlace': 'CAN’T PLACE THERE',
     'toast.notEnoughGold': 'NOT ENOUGH GOLD',
+    'toast.alreadyFull': 'ALREADY AT FULL HEALTH',
     'toast.sound': 'SOUND {s}',
     'toast.heartstoneAtSurface': 'THE HEARTSTONE ONLY PAYS AT THE SURFACE',
     'toast.getToSurface': 'GET TO THE SURFACE',
@@ -187,9 +193,14 @@ const STRINGS = {
     'shop.depth': '深度',
     'shop.nothingToBank': '没有可存入的财富',
     'shop.secured': '{v} 已入库',
-    'shop.healed': '+{n} 生命',
     'shop.dynamiteRestocked': '炸药已补满',
     'shop.hatRepaired': '安全帽已修复',
+
+    /* Heal items */
+    'heal.bandage.name': '绷带',
+    'heal.bandage.desc': '恢复 1 点生命（{cur}/{max}）',
+    'heal.medpack.name': '急救包',
+    'heal.medpack.desc': '生命恢复至上限（{cur}/{max}）',
 
     /* Upgrades */
     'up.health.name': '加固背心',
@@ -231,6 +242,7 @@ const STRINGS = {
     'toast.noDynamite': '没有炸药了',
     'toast.cantPlace': '这里放不了',
     'toast.notEnoughGold': '金币不足',
+    'toast.alreadyFull': '生命值已满',
     'toast.sound': '音效{s}',
     'toast.heartstoneAtSurface': '心髓石只有回到地面才能兑现',
     'toast.getToSurface': '快回地面',

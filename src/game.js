@@ -213,7 +213,6 @@ class Game {
       return;
     }
 
-    const healed = this.player.heal(CFG.checkpoint.healAmount, this);
     const restocked = this.player.dynMax - this.player.dynamite;
     this.player.dynamite = this.player.dynMax;
     const rehatted = this.player.refillHat(this);
@@ -226,7 +225,6 @@ class Game {
     const sub = () => {
       const bits = [];
       if (gemTotal > 0) bits.push(loc('shop.secured', { v: fmt(gemTotal) }));
-      if (healed > 0) bits.push(loc('shop.healed', { n: healed }));
       if (restocked > 0) bits.push(loc('shop.dynamiteRestocked'));
       if (rehatted > 0) bits.push(loc('shop.hatRepaired'));
       return bits.join(' · ') || loc('shop.nothingToBank');
@@ -277,6 +275,21 @@ class Game {
 
     // Every panel knows how to rebuild itself, so prices and pips refresh
     // without this having to work out which shop is on screen.
+    this.ui.repaint();
+  }
+
+  buyHeal(id) {
+    const h = CFG.healItems.find(x => x.id === id);
+    if (!h) return;
+    const p = this.player;
+    if (!p || p.dead || p.health >= p.maxHealth) { this.ui.toast(loc('toast.alreadyFull')); return; }
+    if (this.save.gold < h.cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+
+    this.save.gold -= h.cost;
+    this.persist();
+    Sfx.play('buy');
+    p.heal(h.amount, this);
+    this.ui.syncWallet(this);
     this.ui.repaint();
   }
 
