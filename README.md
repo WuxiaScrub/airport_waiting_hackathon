@@ -6,6 +6,9 @@ sound effect is generated in code at runtime.
 
 **Dig down. Bank what you find. Don't wake the volcano.** (Wake the volcano.)
 
+Playable in English and Simplified Chinese (简体中文) — the language follows the
+browser on first load and can be switched from any menu.
+
 ---
 
 ## Play it
@@ -27,25 +30,35 @@ GitHub Actions*.
 
 ## Controls
 
-|            | Touch                                   | Keyboard              |
-| ---------- | --------------------------------------- | --------------------- |
-| Move       | Drag anywhere on the left half           | `WASD` / arrows       |
-| Mine / hit | Hold the big button                      | Hold `Space`          |
-| Swap tool  | Tap the pickaxe / dynamite button        | `1`, `2`, `Q`         |
-| Pause      | —                                        | `Esc`                 |
-| Mute       | Pause menu                               | `M`                   |
+|            | Touch                                   | Keyboard                |
+| ---------- | --------------------------------------- | ----------------------- |
+| Move       | Drag left/right on the left half         | `A` / `D` or ← / →      |
+| Aim        | Push the stick up or down                | `W` / `S` or ↑ / ↓      |
+| Jump       | The green **JUMP** button                | `Space` (hold for height) |
+| Mine / hit | Hold the big button                      | Hold `J` / `Enter`      |
+| Swap tool  | Tap the pickaxe / dynamite button        | `1`, `2`, `Q`           |
+| Pause      | —                                        | `Esc`                   |
+| Mute       | Pause menu                               | `M`                     |
 
 The joystick is *floating*: it appears wherever your thumb lands, so you never
-have to look down for it.
+have to look down for it. The vertical axis **aims** rather than moves — gravity
+owns up and down — so push down to dig the floor out from under yourself and up
+to chew at the ceiling.
 
 ## The loop
 
 Descend → mine → collect → risk going deeper → checkpoint → shop → repeat.
 
+- **You fall.** Gravity applies to the miner as well as the dirt. Getting back
+  up is a jump, a staircase you cut on the way down, or a pile of dirt you
+  knocked loose on purpose. A sheer one-tile shaft is a one-way trip, which is
+  what keeps "climb out the way you came" an actual decision.
 - **Soft dirt** takes two pickaxe hits. The first hit only *weakens* it, and
-  weakened dirt with nothing beneath it falls after a short delay and settles on
-  the next solid tile below. Intact dirt is structural and never falls, so
-  collapses are something you cause on purpose — including onto a spider.
+  weakened dirt with nothing beneath it hangs for ~0.9 s before falling and
+  settling on the next solid tile below. Intact dirt is structural and never
+  falls, so collapses are something you cause on purpose — including onto a
+  spider, or onto your own head. A **hard hat** from the shop absorbs a falling
+  block outright and re-forms after a few seconds.
 - **Rock** is immune to the pickaxe. Dynamite goes through it.
 - **Dynamite** has a short fuse and flattens a 3×3, diagonals included. Mining
   tool, escape tool, and weapon.
@@ -82,13 +95,14 @@ surface camp.
 index.html          markup + HUD + touch controls
 styles.css          UI shell (the canvas draws only the mine)
 src/config.js       ← every balance number in the game
+src/i18n.js         ← every user-facing string, in English and 简体中文
 src/util.js         math, seeded RNG, value noise
 src/audio.js        Web Audio synthesis (swap for samples here)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights
 src/entities.js     gem pickups, lit dynamite, falling blocks
 src/enemies.js      Spider, Bat
-src/player.js       movement, mining, tools, damage
+src/player.js       gravity, jumping, mining, tools, damage, hard hat
 src/input.js        floating joystick, buttons, keyboard
 src/render.js       procedural sprite atlas + the two-layer lighting composite
 src/ui.js           HUD syncing and modal panels
@@ -112,9 +126,14 @@ Two notes for anyone extending this:
   `destination-in` intersects them instead, which blacks out the screen.
 - **Audio is one function.** `Sfx.play(name)` maps names to synth recipes; point
   those names at decoded buffers to drop in real sound effects later.
+- **No string is written inline.** Every player-visible word lives in
+  `src/i18n.js` under a key present in *both* `en` and `zh`, and is read with
+  `loc('some.key')` (or a `data-i18n` attribute in `index.html`). Adding a
+  feature means adding both translations — a key missing from `zh` falls back to
+  English and warns in the console rather than failing quietly.
 
 ### Deliberately not built
 
-Two enemies only, and no third until these two are properly tuned. No player
-gravity — gravity applies to dirt, which keeps the joystick honest and makes
-"climb back up your own shaft" the natural escape.
+Two enemies only, and no third until these two are properly tuned. No fall
+damage on the player — falling *dirt* already punishes careless digging, and
+stacking both makes vertical movement feel punitive rather than tense.

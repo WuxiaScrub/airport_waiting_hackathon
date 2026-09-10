@@ -1,7 +1,10 @@
 /* ============================================================================
- * Player — a miner who walks freely through the tunnels. Gravity in this mine
- * applies to dirt, not to people: that keeps the joystick honest and makes
- * "climb back up the shaft you dug" the natural escape route.
+ * Player — a miner subject to the same gravity as the dirt around them.
+ *
+ * The stick steers horizontally and *aims* vertically: push down to dig the
+ * floor out from under yourself, push up to chew at the ceiling. Getting back
+ * up is a jump, a staircase, or a pile of dirt you knocked loose on purpose —
+ * which is exactly the "no instant return to the surface" the design asks for.
  * ========================================================================== */
 
 class Player {
@@ -16,6 +19,10 @@ class Player {
     this.light = CFG.player.light + (upgrades.light || 0) * CFG.upgradeEffect.light;
     this.dynMax = CFG.dynamite.capacity + (upgrades.dynamite || 0) * CFG.upgradeEffect.dynamite;
     this.dynamite = this.dynMax;
+    this.jumpVel = CFG.player.jumpVel + (upgrades.jump || 0) * CFG.upgradeEffect.jump;
+    this.hatMax = (upgrades.helmet || 0) * CFG.upgradeEffect.helmet;
+    this.hat = this.hatMax;
+    this.hatTimer = 0;
 
     this.facing = { x: 0, y: 1 };
     this.tool = 0;               // 0 = pickaxe, 1 = dynamite
@@ -27,6 +34,12 @@ class Player {
     this.dead = false;
     this.hasHeartstone = false;
     this.lampFlicker = 0;
+
+    this.grounded = true;
+    this.coyote = 0;             // grace window after leaving the ground
+    this.buffer = 0;             // jump pressed slightly before landing
+    this.jumping = false;        // true while the launch can still be cut short
+    this.airTime = 0;
   }
 
   get tile() { return { x: Math.floor(this.x), y: Math.floor(this.y) }; }
@@ -42,30 +55,57 @@ class Player {
     this.swing = Math.max(0, this.swing - dt);
     this.swingAnim = Math.max(0, this.swingAnim - dt * 4.2);
     this.lampFlicker = lerp(this.lampFlicker, Math.random(), dt * 9);
+    this.rechargeHat(dt, game);
 
+    const P = CFG.player;
+    const w = game.world;
     const ix = input.dir.x, iy = input.dir.y;
-    const mag = Math.hypot(ix, iy);
-    this.moving = mag > 0.12;
 
-    if (this.moving) {
-      const s = this.speed * clamp(mag, 0, 1);
-      this.vx = lerp(this.vx, (ix / mag) * s, clamp(dt * 18, 0, 1));
-      this.vy = lerp(this.vy, (iy / mag) * s, clamp(dt * 18, 0, 1));
-      this.facing = cardinal(ix, iy);
-      this.walk += dt * (6 + s);
+    // The stick still sets facing on both axes — that is how you aim a swing.
+    if (Math.hypot(ix, iy) > 0.12) this.facing = cardinal(ix, iy);
+
+    /* ---- horizontal steering ---- */
+    const drive = Math.abs(ix) > 0.14 ? clamp(ix, -1, 1) : 0;
+    this.moving = drive !== 0;
+    const control = this.grounded ? 1 : P.airControl;
+    if (drive) {
+      this.vx = lerp(this.vx, drive * this.speed, clamp(dt * 18 * control, 0, 1));
+      this.walk += dt * (6 + Math.abs(this.vx));
     } else {
-      this.vx = lerp(this.vx, 0, clamp(dt * 20, 0, 1));
-      this.vy = lerp(this.vy, 0, clamp(dt * 20, 0, 1));
+      this.vx = lerp(this.vx, 0, clamp(dt * (this.grounded ? 20 : 5), 0, 1));
     }
 
-    const w = game.world;
+    /* ---- jumping ---- */
+    this.coyote = this.grounded ? P.coyote : Math.max(0, this.coyote - dt);
+    this.buffer = input.consumeJump() ? P.jumpBuffer : Math.max(0, this.buffer - dt);
+    if (this.buffer > 0 && this.coyote > 0) this.jump(game);
+    // Releasing early clips the arc, so a tap is a hop and a hold is a leap.
+    if (this.jumping && !input.jumpHeld && this.vy < 0) {
+      this.vy *= P.jumpCut;
+      this.jumping = false;
+    }
+    if (this.vy >= 0) this.jumping = false;
+
+    /* ---- gravity ---- */
+    this.vy = Math.min(this.vy + P.gravity * dt, P.maxFall);
+
+    /* ---- collision, axis at a time ---- */
     const nx = this.x + this.vx * dt;
     if (w.isFree(nx, this.y, this.r)) this.x = nx; else this.vx = 0;
     const ny = this.y + this.vy * dt;
-    if (w.isFree(this.x, ny, this.r)) this.y = ny; else this.vy = 0;
+    if (w.isFree(this.x, ny, this.r)) this.y = ny;
+    else {
+      if (this.vy > 3.5) this.land(game);
+      this.vy = 0;
+    }
 
     this.x = clamp(this.x, 1 + this.r, w.w - 1 - this.r);
     this.y = clamp(this.y, this.r, w.h - 1 - this.r);
+
+    const wasGrounded = this.grounded;
+    this.grounded = this.vy >= 0 && this.standingOn(w);
+    this.airTime = this.grounded ? 0 : this.airTime + dt;
+    if (this.grounded && !wasGrounded) this.jumping = false;
 
     // Action: pickaxe auto-repeats while held; dynamite is one per press.
     if (this.tool === 0) {
@@ -79,13 +119,82 @@ class Player {
     }
   }
 
+  /**
+   * Feet probe. Deliberately narrower than the collision radius: a full-width
+   * probe brushes the wall you are pressed against and hands you a wall-jump.
+   */
+  standingOn(w) {
+    return !w.isFree(this.x, this.y + CFG.player.groundProbe, this.r * 0.82);
+  }
+
+  jump(game) {
+    this.vy = -this.jumpVel;
+    this.jumping = true;
+    this.grounded = false;
+    this.coyote = 0;
+    this.buffer = 0;
+    Sfx.play('jump');
+    game.fx.burst(this.x, this.y + 0.35, 5, ['#8a6440', '#a97c4f', '#5d4429'],
+      { speed: 2.6, life: 0.28, size: 0.1, grav: 16 });
+  }
+
+  /** Landing puff — no fall damage, the falling dirt already punishes you. */
+  land(game) {
+    const hard = this.vy > 13;
+    game.fx.burst(this.x, this.y + 0.34, hard ? 7 : 4, ['#8a6440', '#6f4f31', '#a97c4f'],
+      { speed: hard ? 3.4 : 2.2, life: 0.3, size: 0.11, grav: 18 });
+    if (hard) { game.shake(2.4); Sfx.play('land', { v: 0.7 }); }
+  }
+
+  /* ------------------------------------------------------------- hard hat */
+
+  rechargeHat(dt, game) {
+    if (this.hatMax <= 0 || this.hat >= this.hatMax) return;
+    this.hatTimer -= dt;
+    if (this.hatTimer > 0) return;
+    this.hat++;
+    this.hatTimer = CFG.player.hatRecharge;
+    Sfx.play('ui', { v: 0.5 });
+    game.ui.syncHat(this);
+  }
+
+  refillHat(game) {
+    const before = this.hat;
+    this.hat = this.hatMax;
+    this.hatTimer = 0;
+    if (this.hat !== before) game.ui.syncHat(this);
+    return this.hat - before;
+  }
+
+  /**
+   * A block of dirt landing on your head. The hard hat eats the hit outright —
+   * that is the whole point of buying one — and then re-forms over time.
+   */
+  takeFallingDirt(game) {
+    if (this.dead) return;
+    if (this.hat > 0) {
+      this.hat--;
+      this.hatTimer = CFG.player.hatRecharge;
+      Sfx.play('clink');
+      game.shake(6);
+      game.fx.burst(this.x, this.y - 0.45, 9, ['#ffd66b', '#ffffff', '#e8a63c'],
+        { speed: 5, life: 0.35, size: 0.11, glow: true });
+      game.fx.text(this.x, this.y - 0.8, loc('fx.clunk'), '#ffd66b', { size: 12, life: 0.8 });
+      game.ui.syncHat(this);
+      return;
+    }
+    this.hurt(CFG.mining.fallDamage, game, 0, 1);
+  }
+
+  /* --------------------------------------------------------------- actions */
+
   /** One swing both mines the tile in front and hits anything standing there. */
   doSwing(game) {
     this.swing = CFG.player.swingTime;
     this.swingAnim = 1;
 
-    const t = this.targetTile();
-    const cx = t.x + 0.5, cy = t.y + 0.5;
+    const tt = this.targetTile();
+    const cx = tt.x + 0.5, cy = tt.y + 0.5;
     let didSomething = false;
 
     for (const e of game.enemies) {
@@ -98,7 +207,7 @@ class Player {
       didSomething = true;
     }
 
-    const res = game.world.damage(t.x, t.y);
+    const res = game.world.damage(tt.x, tt.y);
     if (res === 'broke') {
       Sfx.play('break');
       game.shake(3);
@@ -120,13 +229,13 @@ class Player {
   }
 
   placeDynamite(game) {
-    if (this.dynamite <= 0) { Sfx.play('clink', { v: 0.5 }); game.ui.toast('NO DYNAMITE'); return; }
-    const t = this.targetTile();
-    if (game.world.get(t.x, t.y) === T.BEDROCK) { game.ui.toast('CAN’T PLACE THERE'); return; }
-    if (game.dynamites.some(d => d.tx === t.x && d.ty === t.y && !d.dead)) return;
+    if (this.dynamite <= 0) { Sfx.play('clink', { v: 0.5 }); game.ui.toast(loc('toast.noDynamite')); return; }
+    const tt = this.targetTile();
+    if (game.world.get(tt.x, tt.y) === T.BEDROCK) { game.ui.toast(loc('toast.cantPlace')); return; }
+    if (game.dynamites.some(d => d.tx === tt.x && d.ty === tt.y && !d.dead)) return;
 
     this.dynamite--;
-    game.dynamites.push(new Dynamite(t.x + 0.5, t.y + 0.5));
+    game.dynamites.push(new Dynamite(tt.x + 0.5, tt.y + 0.5));
     game.ui.syncTools(this);
     Sfx.play('place');
   }
@@ -145,7 +254,7 @@ class Player {
     this.invuln = CFG.player.invuln;
     const d = Math.hypot(kx || 0, ky || 0) || 1;
     this.vx += ((kx || 0) / d) * CFG.player.knockback;
-    this.vy += ((ky || 0) / d) * CFG.player.knockback;
+    this.vy += ((ky || 0) / d) * CFG.player.knockback * 0.45;   // gravity does the rest
 
     Sfx.play('hurt');
     game.shake(9);

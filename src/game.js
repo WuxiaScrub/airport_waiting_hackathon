@@ -103,11 +103,12 @@ class Game {
 
     this.ui.hide();
     this.ui.syncHealth(this.player);
+    this.ui.syncHat(this.player);
     this.ui.syncTools(this.player);
     this.ui.syncWallet(this);
     this.input.reset();
     this.state = 'play';
-    if (!quiet) this.ui.toast('DIG DOWN', 1600);
+    if (!quiet) this.ui.toast(loc('toast.digDown'), 1600);
   }
 
   endRun(kind) {
@@ -134,7 +135,8 @@ class Game {
     Sfx.play('death');
     this.shake(18);
     this.fx.burst(this.player.x, this.player.y, 26, ['#ff5d5d', '#ffd08a', '#3d6fb4'], { speed: 8, life: 0.9, size: 0.2 });
-    this.ui.banner('YOU DIED', this.carryValue() > 0 ? fmt(this.carryValue()) + ' LOST IN THE DARK' : '');
+    this.ui.banner(loc('sum.died'),
+      this.carryValue() > 0 ? loc('banner.lostInDark', { v: fmt(this.carryValue()) }) : '');
     setTimeout(() => { if (this.state === 'play') this.endRun('death'); }, 1500);
   }
 
@@ -192,7 +194,7 @@ class Game {
       this.runStats.banked += gemTotal;
       this.carry.length = 0;
       Sfx.play('bank');
-      this.fx.text(this.player.x, this.player.y - 0.8, '+' + fmt(gemTotal) + ' BANKED', '#ffc95e', { size: 14, life: 1.5 });
+      this.fx.text(this.player.x, this.player.y - 0.8, loc('fx.banked', { v: fmt(gemTotal) }), '#ffc95e', { size: 14, life: 1.5 });
       this.fx.burst(this.player.x, this.player.y, 16, ['#ffc95e', '#fff0c0'], { speed: 5, life: 0.8, size: 0.15, glow: true, grav: -2 });
     }
 
@@ -204,7 +206,7 @@ class Game {
       this.volcano = false;
       Sfx.stopRumble();
       Sfx.play('win');
-      this.ui.banner('ESCAPED', '+' + fmt(total) + ' HEARTSTONE BOUNTY');
+      this.ui.banner(loc('sum.escaped'), loc('banner.bounty', { v: fmt(total) }));
       this.persist();
       this.ui.syncWallet(this);
       setTimeout(() => { if (this.state === 'play') this.endRun('win'); }, 2200);
@@ -214,30 +216,34 @@ class Game {
     const healed = this.player.heal(CFG.checkpoint.healAmount, this);
     const restocked = this.player.dynMax - this.player.dynamite;
     this.player.dynamite = this.player.dynMax;
+    const rehatted = this.player.refillHat(this);
     this.ui.syncTools(this.player);
     this.ui.syncWallet(this);
     this.persist();
 
-    const bits = [];
-    if (gemTotal > 0) bits.push(fmt(gemTotal) + ' SECURED');
-    if (healed > 0) bits.push('+' + healed + ' HP');
-    if (restocked > 0) bits.push('DYNAMITE RESTOCKED');
+    // Thunks, not strings: the panel re-runs them if the language is switched
+    // while it is open.
+    const sub = () => {
+      const bits = [];
+      if (gemTotal > 0) bits.push(loc('shop.secured', { v: fmt(gemTotal) }));
+      if (healed > 0) bits.push(loc('shop.healed', { n: healed }));
+      if (restocked > 0) bits.push(loc('shop.dynamiteRestocked'));
+      if (rehatted > 0) bits.push(loc('shop.hatRepaired'));
+      return bits.join(' · ') || loc('shop.nothingToBank');
+    };
 
     if (home) {
       this.openPanel(() => this.ui.shop(this, {
-        title: 'SURFACE CAMP',
-        sub: bits.join(' · ') || 'NOTHING TO BANK',
-        closeLabel: 'BACK DOWN',
-        extra: '<button class="btn ghost" id="newMine">ABANDON THIS MINE</button>',
+        title: () => loc('shop.surfaceCamp'),
+        sub,
+        closeLabel: () => loc('shop.backDown'),
+        extra: () => `<button class="btn ghost" id="newMine">${loc('shop.abandonMine')}</button>`,
         wire: (ui) => ui.on('#newMine', () => this.endRun('abandon')),
       }));
     } else {
-      this.openPanel(() => this.ui.shop(this, {
-        title: 'SUPPLY LANTERN',
-        sub: bits.join(' · ') || 'NOTHING TO BANK',
-      }));
+      this.openPanel(() => this.ui.shop(this, { title: () => loc('shop.supplyLantern'), sub }));
       if (this.player.hasHeartstone) {
-        setTimeout(() => this.ui.toast('THE HEARTSTONE ONLY PAYS AT THE SURFACE', 2600), 400);
+        setTimeout(() => this.ui.toast(loc('toast.heartstoneAtSurface'), 2600), 400);
       }
     }
   }
@@ -250,7 +256,7 @@ class Game {
     const lvl = this.save.upgrades[id] || 0;
     if (lvl >= u.max) return;
     const cost = this.upgradeCost(u, lvl);
-    if (this.save.gold < cost) { this.ui.toast('NOT ENOUGH GOLD'); return; }
+    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
 
     this.save.gold -= cost;
     this.save.upgrades[id] = lvl + 1;
@@ -264,27 +270,14 @@ class Game {
       if (id === 'speed') p.speed = CFG.player.speed * (1 + this.save.upgrades.speed * CFG.upgradeEffect.speed);
       if (id === 'light') p.light = CFG.player.light + this.save.upgrades.light * CFG.upgradeEffect.light;
       if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite = p.dynMax; this.ui.syncTools(p); }
+      if (id === 'jump') p.jumpVel = CFG.player.jumpVel + this.save.upgrades.jump * CFG.upgradeEffect.jump;
+      if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
     }
     this.ui.syncWallet(this);
 
-    // Re-render whichever shop is open so prices and pips update.
-    const openTitle = this.ui.el.panelInner.querySelector('h2');
-    const sub = this.ui.el.panelInner.querySelector('.sub');
-    const isCamp = openTitle && openTitle.textContent.indexOf('CAMP') >= 0;
-    if (this.state === 'over') {
-      this.ui.shop(this, {
-        title: 'CAMP OUTFITTER', sub: 'GEAR UP FOR THE NEXT DESCENT', closeLabel: 'NEW MINE',
-        wire: (ui) => ui.on('#closeShop', () => this.startRun()),
-      });
-    } else if (isCamp) {
-      this.ui.shop(this, {
-        title: 'SURFACE CAMP', sub: sub ? sub.textContent : '', closeLabel: 'BACK DOWN',
-        extra: '<button class="btn ghost" id="newMine">ABANDON THIS MINE</button>',
-        wire: (ui) => ui.on('#newMine', () => this.endRun('abandon')),
-      });
-    } else {
-      this.ui.shop(this, { title: 'SUPPLY LANTERN', sub: sub ? sub.textContent : '' });
-    }
+    // Every panel knows how to rebuild itself, so prices and pips refresh
+    // without this having to work out which shop is on screen.
+    this.ui.repaint();
   }
 
   /* ---------------------------------------------------------------- panels */
@@ -311,7 +304,7 @@ class Game {
     this.save.audio = !Sfx.enabled;
     Sfx.setEnabled(this.save.audio);
     this.persist();
-    this.ui.toast('SOUND ' + (this.save.audio ? 'ON' : 'OFF'));
+    this.ui.toast(loc('toast.sound', { s: loc(this.save.audio ? 'common.on' : 'common.off') }));
   }
 
   selectTool(i) {
@@ -379,8 +372,8 @@ class Game {
     setTimeout(() => Sfx.play('awaken'), 300);
     Sfx.startRumble();
     this.shake(26);
-    this.ui.banner('THE VOLCANO AWAKENS', 'CLIMB. NOW.');
-    this.ui.toast('GET TO THE SURFACE', 3000);
+    this.ui.banner(loc('banner.volcano'), loc('banner.climbNow'));
+    this.ui.toast(loc('toast.getToSurface'), 3000);
   }
 
   updateLava(dt) {
@@ -492,9 +485,11 @@ class Game {
     const halfW = (aspect >= 1 ? view * aspect : view) / 2;
     const halfH = (aspect >= 1 ? view : view / aspect) / 2;
 
-    // Lead the camera slightly toward where the player is heading.
+    // Lead the camera slightly toward where the player is heading. The vertical
+    // lead is gentler than the horizontal one — gravity makes vy spike, and a
+    // camera that snaps down on every fall is nauseating on a phone.
     const tx = p.x + clamp(p.vx * 0.16, -1.2, 1.2);
-    const ty = p.y + clamp(p.vy * 0.16, -1.2, 1.2);
+    const ty = p.y + clamp(p.vy * 0.09, -1.0, 1.4);
     const k = clamp(dt * CFG.render.camLerp, 0, 1);
     this.cam.x = lerp(this.cam.x, tx, k);
     this.cam.y = lerp(this.cam.y, ty, k);

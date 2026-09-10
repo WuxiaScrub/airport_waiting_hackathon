@@ -33,12 +33,27 @@ const CFG = {
     knockback: 9,
     light: 4.3,          // headlamp radius
     magnet: 2.1,         // gem pickup attraction radius
+
+    // --- gravity & jumping -------------------------------------------------
+    gravity: 34,         // tiles/sec^2 pulling the miner down
+    maxFall: 19,         // terminal velocity (must stay under 1 tile/step)
+    // 12.2 clears ~2.2 tiles, which is what it takes to climb out of the
+    // two-deep starting shaft. Drop it and the very first hole becomes a trap.
+    jumpVel: 12.2,
+    jumpCut: 0.50,       // vy kept when the button is released early
+    coyote: 0.11,        // grace period to still jump after walking off a ledge
+    jumpBuffer: 0.12,    // a jump pressed just before landing still fires
+    airControl: 0.62,    // fraction of ground steering available mid-air
+    groundProbe: 0.12,   // how far below the feet counts as "standing on it"
+
+    // --- hard hat ----------------------------------------------------------
+    hatRecharge: 11,     // seconds for one dented hard-hat charge to re-form
   },
 
   mining: {
     dirtHits: 2,         // pickaxe hits to destroy soft dirt
     gemHits: 2,
-    fallDelay: 0.45,     // how long weakened, unsupported dirt hangs in the air
+    fallDelay: 0.90,     // how long weakened, unsupported dirt hangs in the air
     fallSpeed: 15,       // tiles/sec terminal velocity for falling blocks
     fallDamage: 1,
   },
@@ -55,6 +70,8 @@ const CFG = {
 
   gems: {
     // Order matters: index is the gem id used everywhere else.
+    // `name` is a designer-facing label only — it is never shown to the player,
+    // so it does not go through i18n. Add a key to i18n.js if that changes.
     types: [
       { name: 'Sapphire', value: 10,  color: '#4a8fe8', glow: '#9fd0ff' },
       { name: 'Emerald',  value: 26,  color: '#3fc47a', glow: '#a8ffcf' },
@@ -119,17 +136,22 @@ const CFG = {
 
   lava: {
     startOffset: 10,     // rows below the Heartstone where the lava begins
-    riseSpeed: 0.80,     // rows per second
-    accel: 0.0022,       // rise speed gained per second (slow squeeze)
+    // Climbing under gravity is slower than the old free-flight ascent, so the
+    // escape was re-tuned to stay winnable rather than merely survivable.
+    riseSpeed: 0.52,     // rows per second
+    accel: 0.0015,       // rise speed gained per second (slow squeeze)
     damage: 99,
     shakeInterval: 2.6,
   },
 
+  // Names and descriptions live in i18n.js under `up.<id>.name` / `.desc`.
   upgrades: [
-    { id: 'health',   name: 'Reinforced Vest', desc: '+1 max heart',        max: 5, base: 70,  step: 1.85 },
-    { id: 'speed',    name: 'Trail Boots',     desc: '+11% move speed',     max: 5, base: 60,  step: 1.80 },
-    { id: 'light',    name: 'Headlamp',        desc: '+1.3 tiles of light', max: 5, base: 80,  step: 1.75 },
-    { id: 'dynamite', name: 'Satchel',         desc: '+2 dynamite',         max: 5, base: 90,  step: 1.90 },
+    { id: 'health',   max: 5, base: 70,  step: 1.85 },
+    { id: 'speed',    max: 5, base: 60,  step: 1.80 },
+    { id: 'jump',     max: 4, base: 65,  step: 1.85 },
+    { id: 'light',    max: 5, base: 80,  step: 1.75 },
+    { id: 'dynamite', max: 5, base: 90,  step: 1.90 },
+    { id: 'helmet',   max: 3, base: 55,  step: 2.00 },
   ],
 
   upgradeEffect: {
@@ -137,6 +159,8 @@ const CFG = {
     speed: 0.11,         // fractional speed per level
     light: 1.3,          // tiles per level
     dynamite: 2,         // sticks per level
+    helmet: 1,           // hard-hat charges per level
+    jump: 1.15,          // extra launch speed per level (~+0.6 tiles of height)
   },
 
   audio: { master: 0.32 },

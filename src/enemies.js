@@ -290,7 +290,7 @@ class Bat extends Enemy {
   escape(game) {
     this.dead = true;
     if (this.stolen) {
-      game.fx.text(this.x, this.y, 'GONE', '#ff6b6b', { size: 12, life: 1.2 });
+      game.fx.text(this.x, this.y, loc('fx.gone'), '#ff6b6b', { size: 12, life: 1.2 });
       this.stolen = null;
     }
     game.fx.burst(this.x, this.y, 5, ['#3b2c46'], { speed: 3, life: 0.4, size: 0.12 });
@@ -300,7 +300,7 @@ class Bat extends Enemy {
     // Killed in the act: the loot drops back into the mine.
     if (this.stolen) {
       game.spawnGem(this.x, this.y, this.stolen.type, { speed: 3.2 });
-      game.fx.text(this.x, this.y - 0.5, 'RECOVERED', '#7ef0d0', { size: 11, life: 1.1 });
+      game.fx.text(this.x, this.y - 0.5, loc('fx.recovered'), '#7ef0d0', { size: 11, life: 1.1 });
       this.stolen = null;
     }
     super.die(game);

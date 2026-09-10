@@ -118,7 +118,8 @@ class FallingBlock {
       const p = game.player;
       if (!p.dead && Math.abs(p.x - this.x) < 0.7 && Math.abs(p.y - this.y) < 0.7) {
         this.hitPlayer = true;
-        p.hurt(CFG.mining.fallDamage, game, 0, 1);
+        // A hard hat, if the player bought one, eats this outright.
+        p.takeFallingDirt(game);
       }
     }
     for (const e of game.enemies) {
@@ -136,7 +137,14 @@ class FallingBlock {
   settle(game, tx, ty) {
     this.dead = true;
     const w = game.world;
-    if (w.get(tx, ty) === T.EMPTY) {
+    const p = game.player;
+    // Never entomb the miner: now that the player is subject to gravity, being
+    // sealed into a tile is a run-ender rather than an inconvenience. The clod
+    // simply crumbles instead.
+    const onPlayer = !p.dead &&
+      Math.abs(p.x - (tx + 0.5)) < 0.5 + p.r && Math.abs(p.y - (ty + 0.5)) < 0.5 + p.r;
+
+    if (!onPlayer && w.get(tx, ty) === T.EMPTY) {
       // Lands weakened, so a stack of settled dirt stays collapsible.
       w.set(tx, ty, T.DIRT, CFG.mining.dirtHits - 1);
       w.checkNeighbours(tx, ty);
