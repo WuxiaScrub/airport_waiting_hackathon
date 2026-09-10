@@ -151,6 +151,8 @@ const CFG = {
 
   checkpoint: {
     radius: 0.9,
+    reopenDelay: 3,      // seconds of play before a used lantern can open again
+    reopenDist: 3,       // ...and tiles the player must step away from it first
   },
 
   healItems: [

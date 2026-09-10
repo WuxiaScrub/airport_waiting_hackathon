@@ -26,6 +26,7 @@ class Game {
     this.dynamites = [];
     this.blocks = [];
     this.carry = [];
+    this.checkpointLock = null;
 
     this.save = this.load();
     this.resetRunStats();
@@ -96,7 +97,7 @@ class Game {
     this.resetRunStats();
 
     // Standing on the home lantern at spawn shouldn't instantly open the shop.
-    this.activeCheckpoint = this.key(Math.floor(this.player.x), Math.floor(this.player.y));
+    this.lockCheckpoint(Math.floor(this.player.x), Math.floor(this.player.y));
 
     this.cam.x = this.player.x;
     this.cam.y = this.player.y;
@@ -489,20 +490,29 @@ class Game {
     this.buildLights();
   }
 
-  key(x, y) { return x + ',' + y; }
+  /** Shut a lantern until the player has both waited and walked away. */
+  lockCheckpoint(x, y) { this.checkpointLock = { x, y, t: this.time }; }
 
   checkCheckpoint() {
     const p = this.player;
     if (p.dead) return;
-    const tx = Math.floor(p.x), ty = Math.floor(p.y);
-    if (this.world.get(tx, ty) !== T.CHECKPOINT) {
-      // Left the lantern tile — arm it again.
-      if (this.activeCheckpoint && this.activeCheckpoint !== this.key(tx, ty)) this.activeCheckpoint = null;
-      return;
+
+    // A lantern you just used stays shut until the cooldown has run out AND
+    // you have stepped away from it. Stepping off the tile alone used to be
+    // enough to re-arm it, so digging down from on top of a station reopened
+    // the shop on every swing.
+    const lock = this.checkpointLock;
+    if (lock) {
+      const dx = p.x - (lock.x + 0.5), dy = p.y - (lock.y + 0.5);
+      const clear = this.time - lock.t >= CFG.checkpoint.reopenDelay &&
+        Math.hypot(dx, dy) >= CFG.checkpoint.reopenDist;
+      if (!clear) return;
+      this.checkpointLock = null;
     }
-    const k = this.key(tx, ty);
-    if (this.activeCheckpoint === k) return;
-    this.activeCheckpoint = k;
+
+    const tx = Math.floor(p.x), ty = Math.floor(p.y);
+    if (this.world.get(tx, ty) !== T.CHECKPOINT) return;
+    this.lockCheckpoint(tx, ty);
     const cp = this.world.checkpoints.find(c => c.x === tx && c.y === ty) || { x: tx, y: ty, home: ty < this.world.surface };
     this.bankAt(cp);
   }
