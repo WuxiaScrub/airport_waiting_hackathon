@@ -2,6 +2,9 @@
  * Enemies. Two of them, per the design: the Spider threatens your health, the
  * Bat threatens your loot. Both are deliberately readable — the Spider always
  * telegraphs before it pounces, the Bat always shows you what it stole.
+ *
+ * Only the Spider digs. The Bat flies, and flies *around* solid tiles, so the
+ * open air it can reach you through is the tunnel network you cut yourself.
  * ========================================================================== */
 
 class Enemy {
@@ -212,6 +215,8 @@ class Bat extends Enemy {
     this.fleeTimer = 0;
     this.bob = Math.random() * TAU;
     this.stuck = 0;
+    this.travel = 0;           // path length flown in the current pen window
+    this.penWindow = 0;
     this.gore = ['#3b2c46', '#6a5482', '#241a2e'];
   }
 
@@ -226,10 +231,9 @@ class Bat extends Enemy {
       const d = dist(this.x, this.y, p.x, p.y);
       // Only interested if there is loot worth taking.
       if (game.carry.length === 0 || p.dead || d > CFG.bat.aggro * 1.6) {
-        this.wander(dt);
+        this.wander(dt, w);
       } else {
-        const ux = (p.x - this.x) / (d || 1), uy = (p.y - this.y) / (d || 1);
-        this.steer(ux, uy + Math.sin(this.bob) * 0.25, CFG.bat.speed, dt);
+        this.fly(p.x, p.y + Math.sin(this.bob) * 0.5, CFG.bat.speed, dt, w);
         if (d < CFG.bat.stealRange) this.steal(game);
       }
     } else if (this.state === 'flee') {
@@ -237,34 +241,91 @@ class Bat extends Enemy {
       const dx = this.x - p.x, dy = this.y - p.y;
       const len = Math.hypot(dx, dy) || 1;
       // Break away from the player and climb — you can still chase it down.
-      this.steer(dx / len * 0.6, dy / len * 0.4 - 1, CFG.bat.fleeSpeed, dt);
+      this.fly(this.x + (dx / len) * 4, this.y + (dy / len) * 2 - 6, CFG.bat.fleeSpeed, dt, w);
       if (this.fleeTimer <= 0) { this.escape(game); return; }
     }
 
+    const px = this.x, py = this.y;
     const b = this.move(dt, w, false);
     if (b.x || b.y) {
+      // Bats do not dig. Bounce off, and if a corner really has it pinned,
+      // shake loose with a random heading rather than eating the wall.
       this.stuck += dt;
       if (b.x) this.vx *= -0.4;
       if (b.y) this.vy *= -0.4;
-      // A bat wedged in a fresh tunnel is not fun. Let it squeeze through dirt.
-      if (this.stuck > 0.7) {
-        const tx = Math.floor(this.x + sign(this.vx) * 0.5);
-        const ty = Math.floor(this.y + sign(this.vy) * 0.5);
-        if (w.isMineable(tx, ty)) w.destroy(tx, ty);
+      if (this.stuck > 0.8) {
+        const a = Math.random() * TAU;
+        this.vx = Math.cos(a) * CFG.bat.speed;
+        this.vy = Math.sin(a) * CFG.bat.speed;
+        this.wx = Math.cos(a); this.wy = Math.sin(a);
         this.stuck = 0;
       }
     } else this.stuck = 0;
+
+    if (this.penned(dt, px, py)) { this.dead = true; return; }
 
     if (Math.abs(this.vx) > 0.2) this.face = this.vx > 0 ? 1 : -1;
     if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game);
   }
 
-  wander(dt) {
+  /**
+   * Give up if walled into a pocket. Without digging, a sealed bat would rattle
+   * around holding a spawn slot for the rest of the run. Path length, not net
+   * displacement, is the test: a bat circling a room covers plenty of ground,
+   * a bat wedged in one tile covers almost none. One carrying loot never gives
+   * up, so you always get your shot at taking the gem back.
+   */
+  penned(dt, px, py) {
+    this.travel += dist(this.x, this.y, px, py);
+    this.penWindow += dt;
+    if (this.penWindow < CFG.bat.penWindow) return false;
+    const flown = this.travel;
+    this.travel = 0;
+    this.penWindow = 0;
+    return flown < CFG.bat.penDistance && !this.stolen;
+  }
+
+  wander(dt, world) {
     if (Math.random() < dt * 1.4) {
       this.wx = Math.random() * 2 - 1;
       this.wy = Math.random() * 2 - 1;
     }
-    this.steer(this.wx || 0.4, (this.wy || 0) + Math.sin(this.bob) * 0.4, CFG.bat.speed * 0.55, dt);
+    const wx = this.wx === undefined ? 0.4 : this.wx;
+    const wy = (this.wy || 0) + Math.sin(this.bob) * 0.4;
+    this.fly(this.x + wx * 4, this.y + wy * 4, CFG.bat.speed * 0.55, dt, world);
+  }
+
+  /**
+   * Fly toward a point, going *around* solid tiles rather than through them.
+   * The bat is a thief, not a digger: it can only reach you along open air —
+   * the tunnels you cut on the way down are its road in.
+   */
+  fly(tx, ty, speed, dt, world) {
+    let ux = tx - this.x, uy = ty - this.y;
+    const len = Math.hypot(ux, uy) || 1;
+    ux /= len; uy /= len;
+
+    if (!this.clearAhead(world, ux, uy)) {
+      // Fan out from the blocked heading and take the first open one. Sweeping
+      // both ways keeps it from committing to a single wall-hugging direction.
+      const base = Math.atan2(uy, ux);
+      let found = false;
+      for (let i = 1; i <= 5 && !found; i++) {
+        for (const s of [-1, 1]) {
+          const a = base + s * i * 0.42;
+          const nx = Math.cos(a), ny = Math.sin(a);
+          if (this.clearAhead(world, nx, ny)) { ux = nx; uy = ny; found = true; break; }
+        }
+      }
+    }
+    this.steer(ux, uy, speed, dt);
+  }
+
+  /** Is there open air a bat's length along this heading? */
+  clearAhead(world, ux, uy) {
+    const d = CFG.bat.lookAhead;
+    return world.isFree(this.x + ux * d, this.y + uy * d, this.r) &&
+           world.isFree(this.x + ux * d * 0.5, this.y + uy * d * 0.5, this.r);
   }
 
   steer(ux, uy, speed, dt) {

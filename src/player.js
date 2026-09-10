@@ -25,9 +25,9 @@ class Player {
     this.hatTimer = 0;
 
     this.facing = { x: 0, y: 1 };
-    this.tool = 0;               // 0 = pickaxe, 1 = dynamite
     this.swing = 0;              // counts down during a swing
     this.swingAnim = 0;          // 0..1 for drawing the arc
+    this.throwAnim = 0;          // 0..1 for the off-hand dynamite toss
     this.invuln = 0;
     this.walk = 0;               // leg animation phase
     this.moving = false;
@@ -54,6 +54,7 @@ class Player {
     this.invuln = Math.max(0, this.invuln - dt);
     this.swing = Math.max(0, this.swing - dt);
     this.swingAnim = Math.max(0, this.swingAnim - dt * 4.2);
+    this.throwAnim = Math.max(0, this.throwAnim - dt * 3.4);
     this.lampFlicker = lerp(this.lampFlicker, Math.random(), dt * 9);
     this.rechargeHat(dt, game);
 
@@ -107,12 +108,10 @@ class Player {
     this.airTime = this.grounded ? 0 : this.airTime + dt;
     if (this.grounded && !wasGrounded) this.jumping = false;
 
-    // Action: pickaxe auto-repeats while held; dynamite is one per press.
-    if (this.tool === 0) {
-      if (input.actionHeld && this.swing <= 0) this.doSwing(game);
-    } else if (input.consumeAction()) {
-      this.placeDynamite(game);
-    }
+    // Two independent verbs, no mode to be in: the pickaxe auto-repeats while
+    // its button is held, dynamite drops one stick per press.
+    if (input.mineHeld && this.swing <= 0) this.doSwing(game);
+    if (input.consumeDynamite()) this.placeDynamite(game);
 
     if (w.get(Math.floor(this.x), Math.floor(this.y)) === T.LAVA) {
       this.hurt(CFG.lava.damage, game, 0, -1, true);
@@ -236,13 +235,9 @@ class Player {
 
     this.dynamite--;
     game.dynamites.push(new Dynamite(tt.x + 0.5, tt.y + 0.5));
-    game.ui.syncTools(this);
+    this.throwAnim = 1;
+    game.ui.syncDynamite(this);
     Sfx.play('place');
-  }
-
-  setTool(i) {
-    this.tool = i;
-    Sfx.play('ui');
   }
 
   /** Returns true if the hit actually landed (i-frames can eat it). */

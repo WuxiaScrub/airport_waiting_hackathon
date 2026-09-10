@@ -1,17 +1,20 @@
 /* ============================================================================
- * Input — a floating virtual joystick + jump/action/tool buttons for touch,
- * with keyboard as the desktop fallback. Exposes one normalised
- * { dir, actionHeld, jumpHeld } that the player reads each step.
+ * Input — a floating virtual joystick plus three verb buttons (mine, jump,
+ * dynamite) for touch, with keyboard as the desktop fallback. There is no tool
+ * to select: the button you press is the thing that happens.
+ *
+ * Exposes one normalised { dir, mineHeld, jumpHeld, + edges } read each step.
  * ========================================================================== */
 
 class Input {
   constructor(game) {
     this.game = game;
     this.dir = { x: 0, y: 0 };
-    this.actionHeld = false;
+    this.mineHeld = false;
     this.jumpHeld = false;
-    this._actionEdge = false;
+    this._mineEdge = false;
     this._jumpEdge = false;
+    this._dynEdge = false;
 
     this.keys = Object.create(null);
     this.stickId = null;
@@ -20,20 +23,13 @@ class Input {
     this.zone = document.getElementById('stickzone');
     this.base = document.getElementById('stickbase');
     this.knob = document.getElementById('stickknob');
-    this.actionBtn = document.getElementById('action');
+    this.mineBtn = document.getElementById('action');
     this.jumpBtn = document.getElementById('jump');
-    this.toolBtns = Array.from(document.querySelectorAll('.tool'));
+    this.dynBtn = document.getElementById('dynamite');
 
     this.bindStick();
     this.bindButtons();
     this.bindKeys();
-  }
-
-  /** Consume a single action press (used by one-shot tools like dynamite). */
-  consumeAction() {
-    if (!this._actionEdge) return false;
-    this._actionEdge = false;
-    return true;
   }
 
   /** Consume a single jump press. The player buffers it for a few frames. */
@@ -43,16 +39,23 @@ class Input {
     return true;
   }
 
+  /** Consume a single dynamite press — one stick per tap, never on repeat. */
+  consumeDynamite() {
+    if (!this._dynEdge) return false;
+    this._dynEdge = false;
+    return true;
+  }
+
   reset() {
     this.dir.x = 0; this.dir.y = 0;
-    this.actionHeld = false;
+    this.mineHeld = false;
     this.jumpHeld = false;
-    this._actionEdge = false;
+    this._mineEdge = false;
     this._jumpEdge = false;
+    this._dynEdge = false;
     this.stickId = null;
     this.base.classList.remove('on');
-    this.actionBtn.classList.remove('held');
-    this.jumpBtn.classList.remove('held');
+    for (const b of [this.mineBtn, this.jumpBtn, this.dynBtn]) b.classList.remove('held');
   }
 
   /* ------------------------------------------------------------- joystick */
@@ -119,18 +122,10 @@ class Input {
   /* -------------------------------------------------------------- buttons */
 
   bindButtons() {
-    this.bindHold(this.actionBtn, 'actionHeld', '_actionEdge');
+    // Mine auto-repeats while held; jump and dynamite fire on the press only.
+    this.bindHold(this.mineBtn, 'mineHeld', '_mineEdge');
     this.bindHold(this.jumpBtn, 'jumpHeld', '_jumpEdge');
-
-    for (const b of this.toolBtns) {
-      const pick = (e) => {
-        e.preventDefault();
-        Sfx.init();
-        this.game.selectTool(parseInt(b.dataset.tool, 10));
-      };
-      b.addEventListener('touchstart', pick, { passive: false });
-      b.addEventListener('mousedown', pick);
-    }
+    this.bindHold(this.dynBtn, '_dynHeld', '_dynEdge');
   }
 
   /** Wire one hold-style button to a `held` flag plus a rising-edge flag. */
@@ -163,25 +158,24 @@ class Input {
       ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r',
       ArrowUp: 'u', KeyW: 'u', ArrowDown: 'd', KeyS: 'd',
     };
-    const isAction = (c) => c === 'KeyJ' || c === 'Enter' || c === 'KeyE';
+    const isMine = (c) => c === 'KeyJ' || c === 'Enter' || c === 'KeyE';
     const isJump = (c) => c === 'Space' || c === 'KeyK';
+    const isDyn = (c) => c === 'KeyF' || c === 'KeyL' || c === 'Digit2';
 
     window.addEventListener('keydown', (e) => {
       if (e.repeat) { if (map[e.code] || isJump(e.code)) e.preventDefault(); return; }
       Sfx.init();
       if (map[e.code]) { this.keys[map[e.code]] = true; e.preventDefault(); }
       else if (isJump(e.code)) { this.jumpHeld = true; this._jumpEdge = true; e.preventDefault(); }
-      else if (isAction(e.code)) { this.actionHeld = true; this._actionEdge = true; e.preventDefault(); }
-      else if (e.code === 'Digit1') this.game.selectTool(0);
-      else if (e.code === 'Digit2') this.game.selectTool(1);
-      else if (e.code === 'KeyQ' || e.code === 'Tab') { this.game.selectTool(this.game.player.tool ^ 1); e.preventDefault(); }
+      else if (isMine(e.code)) { this.mineHeld = true; this._mineEdge = true; e.preventDefault(); }
+      else if (isDyn(e.code)) { this._dynEdge = true; e.preventDefault(); }
       else if (e.code === 'KeyM') this.game.toggleAudio();
       else if (e.code === 'Escape') this.game.togglePause();
     });
     window.addEventListener('keyup', (e) => {
       if (map[e.code]) this.keys[map[e.code]] = false;
       else if (isJump(e.code)) this.jumpHeld = false;
-      else if (isAction(e.code)) this.actionHeld = false;
+      else if (isMine(e.code)) this.mineHeld = false;
     });
     window.addEventListener('blur', () => this.reset());
   }

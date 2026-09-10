@@ -115,6 +115,9 @@ const CFG = {
     radius: 0.32,
     stealRange: 0.6,
     escapeTime: 6.5,     // survive this long while fleeing and the gem is gone
+    lookAhead: 1.5,      // steering probe distance — a bat flies around, never through
+    penWindow: 3.0,      // seconds of flying measured when checking for a pen
+    penDistance: 2.0,    // less ground than this in a window = walled in, give up
   },
 
   spawn: {

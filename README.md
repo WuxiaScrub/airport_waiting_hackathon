@@ -34,11 +34,14 @@ GitHub Actions*.
 | ---------- | --------------------------------------- | ----------------------- |
 | Move       | Drag left/right on the left half         | `A` / `D` or ← / →      |
 | Aim        | Push the stick up or down                | `W` / `S` or ↑ / ↓      |
-| Jump       | The green **JUMP** button                | `Space` (hold for height) |
-| Mine / hit | Hold the big button                      | Hold `J` / `Enter`      |
-| Swap tool  | Tap the pickaxe / dynamite button        | `1`, `2`, `Q`           |
+| Mine / hit | Hold **MINE**                            | Hold `J` / `Enter`      |
+| Jump       | Tap **JUMP**                             | `Space` (hold for height) |
+| Dynamite   | Tap **BOMB**                             | `F`                     |
 | Pause      | —                                        | `Esc`                   |
 | Mute       | Pause menu                               | `M`                     |
+
+Three buttons, three verbs, no mode to be in: there is no tool to select first,
+so the button you press is the thing that happens.
 
 The joystick is *floating*: it appears wherever your thumb lands, so you never
 have to look down for it. The vertical axis **aims** rather than moves — gravity
@@ -79,7 +82,9 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
 - **Bats** ignore your health and go for your wallet. One touch and they take
   your single most valuable unbanked gem, which then dangles visibly beneath
   them as they flee. Kill the thief before it escapes and the gem drops back
-  into the mine.
+  into the mine. Unlike spiders they *cannot dig* — they fly, and they steer
+  around solid tiles, so the only way one reaches you is through open air. Seal
+  yourself in and your loot is safe from them.
 
 ### The Heartstone
 
@@ -134,6 +139,7 @@ Two notes for anyone extending this:
 
 ### Deliberately not built
 
-Two enemies only, and no third until these two are properly tuned. No fall
-damage on the player — falling *dirt* already punishes careless digging, and
+Two enemies only, and no third until these two are properly tuned. No tool
+selector — three buttons that each do one thing beat two buttons and a mode.
+No fall damage on the player — falling *dirt* already punishes careless digging, and
 stacking both makes vertical movement feel punitive rather than tense.

@@ -201,67 +201,56 @@ html, body {
   pointer-events: auto;
 }
 
-#tools { display: flex; flex-direction: column; gap: 9px; }
-.tool {
-  position: relative;
-  width: 50px; height: 50px;
-  border-radius: 15px;
-  border: 2px solid rgba(255,255,255,.16);
-  background: rgba(18,14,28,.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: grid; place-items: center;
-  cursor: pointer;
-  transition: transform .1s ease, border-color .12s ease, background .12s ease;
-}
-.tool svg { width: 28px; height: 28px; opacity: .62; }
-.tool.active { border-color: var(--gold); background: rgba(70,50,14,.6); }
-.tool.active svg { opacity: 1; }
-.tool:active { transform: scale(.92); }
-.tool .count {
-  position: absolute; right: -4px; bottom: -4px;
-  min-width: 20px; height: 20px; padding: 0 4px;
-  border-radius: 10px;
-  background: #241a34; border: 1.5px solid rgba(255,255,255,.2);
-  font-size: 11px; font-weight: 900; line-height: 17px; text-align: center;
+/* Three verbs, one press each. MINE is the thumb-resting primary; JUMP and
+   DYNAMITE sit beside it, smaller, in their own colours so they read apart. */
+.act {
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.22);
   color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+  font-weight: 900; letter-spacing: .1em;
+  box-shadow: 0 6px 20px rgba(0,0,0,.55);
+  cursor: pointer;
+  transition: transform .07s ease, background .12s ease, opacity .12s ease;
 }
-.tool.depleted { opacity: .42; }
+.act svg { width: 22px; height: 22px; opacity: .92; }
+.act:active, .act.held { transform: scale(.93); }
+.act.small { width: 74px; height: 74px; font-size: 9.5px; margin-bottom: 8px; }
 
 #action {
   width: 100px; height: 100px;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,.22);
+  font-size: 13px;
   background: radial-gradient(circle at 38% 32%, #4a3a72, #241a3c);
-  color: var(--ink);
-  font-size: 13px; font-weight: 900; letter-spacing: .1em;
-  box-shadow: 0 6px 20px rgba(0,0,0,.55);
-  cursor: pointer;
-  transition: transform .07s ease, background .12s ease;
 }
 #action:active, #action.held {
-  transform: scale(.93);
   background: radial-gradient(circle at 38% 32%, #6d55a8, #33265a);
 }
 
 #jump {
-  width: 74px; height: 74px;
-  margin-bottom: 8px;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,.2);
-  background: radial-gradient(circle at 38% 32%, #2f6a58, #17392f);
   color: var(--carry);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 1px;
-  font-size: 9.5px; font-weight: 900; letter-spacing: .1em;
-  box-shadow: 0 6px 20px rgba(0,0,0,.55);
-  cursor: pointer;
-  transition: transform .07s ease, background .12s ease;
+  background: radial-gradient(circle at 38% 32%, #2f6a58, #17392f);
 }
-#jump svg { width: 22px; height: 22px; opacity: .9; }
 #jump:active, #jump.held {
-  transform: scale(.92);
   background: radial-gradient(circle at 38% 32%, #46997e, #1f5445);
+}
+
+#dynamite {
+  position: relative;
+  color: #ffb59f;
+  background: radial-gradient(circle at 38% 32%, #6d3227, #3a1a14);
+}
+#dynamite:active, #dynamite.held {
+  background: radial-gradient(circle at 38% 32%, #a04a37, #5a271d);
+}
+#dynamite.depleted { opacity: .42; }
+#dynamite .count {
+  position: absolute; right: -3px; top: -3px;
+  min-width: 20px; height: 20px; padding: 0 4px;
+  border-radius: 10px;
+  background: #241a34; border: 1.5px solid rgba(255,255,255,.2);
+  font-size: 11px; font-weight: 900; line-height: 17px; text-align: center;
+  color: var(--ink); letter-spacing: 0;
 }
 
 /* --------------------------------------------------------- Panel */
@@ -383,8 +372,7 @@ body.lang-cjk .panel .sub,
 body.lang-cjk .panel .tagline,
 body.lang-cjk .stat .k,
 body.lang-cjk .btn,
-body.lang-cjk #action,
-body.lang-cjk #jump { letter-spacing: .02em; }
+body.lang-cjk .act { letter-spacing: .02em; }
 body.lang-cjk .help { line-height: 1.75; }
 body.lang-cjk .help .row span:first-child { min-width: 58px; }
 body.lang-cjk .banner h1 { letter-spacing: .06em; }
@@ -394,16 +382,15 @@ body.lang-cjk .btn.ghost { font-size: 12.5px; }
 @media (min-width: 720px) and (min-height: 520px) {
   #stickzone { width: 40%; }
   #action { width: 88px; height: 88px; }
-  #jump { width: 68px; height: 68px; }
+  .act.small { width: 68px; height: 68px; }
 }
 
 /* Narrow phones: three control clusters have to share one thumb's width. */
-@media (max-width: 390px) {
+@media (max-width: 400px) {
   #buttons { gap: 8px; right: calc(var(--safe-r) + 10px); }
-  #action { width: 88px; height: 88px; }
-  #jump { width: 64px; height: 64px; }
-  .tool { width: 44px; height: 44px; border-radius: 13px; }
-  .tool svg { width: 24px; height: 24px; }
+  #action { width: 84px; height: 84px; }
+  .act.small { width: 62px; height: 62px; font-size: 9px; }
+  .act svg { width: 19px; height: 19px; }
 }
 @media (hover: hover) and (pointer: fine) {
   #controls { opacity: .55; transition: opacity .2s ease; }

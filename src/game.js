@@ -104,7 +104,7 @@ class Game {
     this.ui.hide();
     this.ui.syncHealth(this.player);
     this.ui.syncHat(this.player);
-    this.ui.syncTools(this.player);
+    this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
     this.input.reset();
     this.state = 'play';
@@ -217,7 +217,7 @@ class Game {
     const restocked = this.player.dynMax - this.player.dynamite;
     this.player.dynamite = this.player.dynMax;
     const rehatted = this.player.refillHat(this);
-    this.ui.syncTools(this.player);
+    this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
     this.persist();
 
@@ -269,7 +269,7 @@ class Game {
       if (id === 'health') { p.maxHealth += CFG.upgradeEffect.health; p.health += CFG.upgradeEffect.health; this.ui.syncHealth(p); }
       if (id === 'speed') p.speed = CFG.player.speed * (1 + this.save.upgrades.speed * CFG.upgradeEffect.speed);
       if (id === 'light') p.light = CFG.player.light + this.save.upgrades.light * CFG.upgradeEffect.light;
-      if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite = p.dynMax; this.ui.syncTools(p); }
+      if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite = p.dynMax; this.ui.syncDynamite(p); }
       if (id === 'jump') p.jumpVel = CFG.player.jumpVel + this.save.upgrades.jump * CFG.upgradeEffect.jump;
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
     }
@@ -305,12 +305,6 @@ class Game {
     Sfx.setEnabled(this.save.audio);
     this.persist();
     this.ui.toast(loc('toast.sound', { s: loc(this.save.audio ? 'common.on' : 'common.off') }));
-  }
-
-  selectTool(i) {
-    if (!this.player || this.state !== 'play') return;
-    this.player.setTool(i);
-    this.ui.syncTools(this.player);
   }
 
   /* -------------------------------------------------------------- spawning */

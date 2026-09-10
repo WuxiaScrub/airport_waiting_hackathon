@@ -15,8 +15,7 @@ class UI {
       banked: document.getElementById('banked'),
       unbanked: document.getElementById('unbanked'),
       dynCount: document.getElementById('dynCount'),
-      tools: Array.from(document.querySelectorAll('.tool')),
-      actionLabel: document.getElementById('actionLabel'),
+      dynBtn: document.getElementById('dynamite'),
       toast: document.getElementById('toast'),
       banner: document.getElementById('banner'),
       hurt: document.getElementById('hurt'),
@@ -80,11 +79,9 @@ class UI {
     setTimeout(() => el.classList.remove('bump'), 110);
   }
 
-  syncTools(p) {
+  syncDynamite(p) {
     this.el.dynCount.textContent = p.dynamite;
-    this.el.tools[1].classList.toggle('depleted', p.dynamite <= 0);
-    this.el.tools.forEach((b, i) => b.classList.toggle('active', i === p.tool));
-    this.el.actionLabel.textContent = loc(p.tool === 0 ? 'hud.mine' : 'hud.place');
+    this.el.dynBtn.classList.toggle('depleted', p.dynamite <= 0);
   }
 
   syncDepth(depth, world, player) {
@@ -105,10 +102,7 @@ class UI {
   /** Re-render everything language-dependent that is on screen right now. */
   onLanguageChange() {
     const g = this.game;
-    if (g.player) {
-      this.syncTools(g.player);
-      if (g.world) this.syncDepth(g.depth(), g.world, g.player);
-    }
+    if (g.player && g.world) this.syncDepth(g.depth(), g.world, g.player);
     this.repaint();
   }
 
@@ -174,7 +168,7 @@ class UI {
 
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'jump', 'mine', 'tools', 'bank', 'dark'].map(k =>
+    const rows = ['move', 'mine', 'jump', 'boom', 'bank', 'dark'].map(k =>
       `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v')}</span></div>`).join('');
 
     this._repaint = () => this.title(save);

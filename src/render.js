@@ -644,27 +644,35 @@ class Renderer {
     c.fillStyle = `rgba(255,240,190,${0.75 + p.lampFlicker * 0.25})`;
     c.beginPath(); c.arc(lampX, lampY, r * 0.16, 0, TAU); c.fill();
 
-    // Pickaxe / dynamite in hand, arcing through the swing.
+    // The pickaxe is always in hand now that there is no tool to select; it
+    // arcs through the swing.
     const sw = p.swingAnim;
-    const ang = Math.atan2(p.facing.y, p.facing.x) - 0.9 + sw * 1.9;
+    const aim = Math.atan2(p.facing.y, p.facing.x);
     c.save();
-    c.rotate(ang);
-    if (p.tool === 0) {
-      c.strokeStyle = '#c8a06a';
-      c.lineWidth = Math.max(1.6, ppt * 0.075);
-      c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
-      c.strokeStyle = '#cfd6df';
-      c.lineWidth = Math.max(1.6, ppt * 0.085);
-      c.beginPath();
-      c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
-      c.stroke();
-    } else {
-      c.fillStyle = '#c94b3c';
-      c.fillRect(r * 0.7, -r * 0.16, r * 0.6, r * 0.32);
-      c.fillStyle = '#f0e2c2';
-      c.fillRect(r * 0.7, -r * 0.05, r * 0.6, r * 0.1);
-    }
+    c.rotate(aim - 0.9 + sw * 1.9);
+    c.strokeStyle = '#c8a06a';
+    c.lineWidth = Math.max(1.6, ppt * 0.075);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
+    c.strokeStyle = '#cfd6df';
+    c.lineWidth = Math.max(1.6, ppt * 0.085);
+    c.beginPath();
+    c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
+    c.stroke();
     c.restore();
+
+    // Off-hand lob when a stick was just placed — the only tell that the
+    // dynamite button did anything at the miner's end.
+    if (p.throwAnim > 0) {
+      const k = 1 - p.throwAnim;                     // 0 at the press, 1 at rest
+      c.save();
+      c.rotate(aim + 0.5 - k * 1.1);
+      c.globalAlpha = p.throwAnim;
+      c.fillStyle = '#c94b3c';
+      c.fillRect(r * (0.55 + k * 0.5), -r * 0.15, r * 0.5, r * 0.3);
+      c.fillStyle = '#f0e2c2';
+      c.fillRect(r * (0.55 + k * 0.5), -r * 0.04, r * 0.5, r * 0.09);
+      c.restore();
+    }
     c.restore();
 
     // Mining reticle on the target tile.
@@ -674,7 +682,7 @@ class Renderer {
       const px = ox + t.x * ppt, py = oy + t.y * ppt;
       c.save();
       c.globalAlpha = 0.28 + sw * 0.5;
-      c.strokeStyle = p.tool === 1 ? '#ff8a5c' : (solid ? '#ffe6a8' : '#8fa4c8');
+      c.strokeStyle = solid ? '#ffe6a8' : '#8fa4c8';
       c.lineWidth = Math.max(1, ppt * 0.05);
       const m = ppt * 0.16;
       c.beginPath();

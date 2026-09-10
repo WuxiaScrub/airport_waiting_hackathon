@@ -36,12 +36,11 @@ Mobile Controls
 Design for smartphone touchscreens first.
 
 * Virtual joystick: horizontal axis moves, vertical axis AIMS the tool.
-* One primary action button.
-* A dedicated jump button.
-* Tool selector for switching equipment.
-* Pickaxe is the default tool.
-* Pickaxe + action button = mine adjacent tile.
-* Dynamite + action button = place dynamite.
+* Three action buttons, one verb each. There is NO tool selector and no
+  equipped-tool state — the button you press is the thing that happens.
+  - MINE — hold to swing the pickaxe at the tile you are aiming at.
+  - JUMP — hold for height.
+  - DYNAMITE — tap to place one stick on the aimed tile.
 * Support keyboard/mouse on desktop as a secondary control scheme.
 
 Controls should be simple, responsive, and comfortable on small screens.
@@ -114,6 +113,8 @@ Gem Thief / Bat
 The secondary economic threat.
 
 * Small stylized bat.
+* CANNOT dig. It flies, and steers around solid tiles — open air is the only
+  route it has to the player. Only the Spider digs.
 * Does NOT directly damage the player.
 * Can approach and steal one unbanked gem.
 * When this happens, visibly animate the gem/score count decreasing.
