@@ -168,6 +168,10 @@ html, body {
   width: 52%; height: 62%;
   pointer-events: auto;
 }
+/* The stick is parked here whenever no thumb is on it, so the player can
+   always see where it is and which way they are pointing. A touch anywhere in
+   the zone re-anchors it under the thumb (JS sets left/top, which wins over
+   this parked `bottom`). */
 #stickbase {
   position: absolute;
   width: 116px; height: 116px;
@@ -175,11 +179,39 @@ html, body {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255,255,255,.07), rgba(255,255,255,.03));
   border: 2px solid rgba(255,255,255,.16);
-  opacity: 0;
+  opacity: .4;
   transition: opacity .14s ease;
-  left: -999px; top: -999px;
+  left: calc(var(--safe-l) + 92px);
+  bottom: calc(var(--safe-b) + 100px);
 }
 #stickbase.on { opacity: .95; }
+
+/* Cardinal ticks — a quiet reference for "where is straight down". */
+#stickring {
+  position: absolute; inset: 12px;
+  border-radius: 50%;
+  background:
+    linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)) 50% 0 / 2px 9px no-repeat,
+    linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)) 50% 100% / 2px 9px no-repeat,
+    linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)) 0 50% / 9px 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,.16)) 100% 50% / 9px 2px no-repeat;
+}
+
+/* Aim arrow: rotated to the snapped 8-way direction the pickaxe will swing. */
+#stickaim {
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity .1s ease;
+}
+#stickaim.on { opacity: 1; }
+#stickaim i {
+  position: absolute; left: 50%; top: -23px;
+  width: 17px; height: 14px; margin-left: -8.5px;
+  background: var(--gold);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 4px rgba(255,201,94,.5));
+}
+
 #stickknob {
   position: absolute;
   left: 50%; top: 50%;
@@ -325,6 +357,10 @@ html, body {
 .pip { width: 15px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.13); }
 .pip.on { background: var(--gold); }
 
+/* A consumable row can offer two prices (one stick / fill the satchel). */
+.shop-item .buys { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.shop-item .buys .buy { min-width: 82px; padding: 7px 9px; font-size: 11px; }
+
 .buy {
   flex-shrink: 0;
   min-width: 66px; padding: 9px 10px;
@@ -383,6 +419,11 @@ body.lang-cjk .btn.ghost { font-size: 12.5px; }
   #stickzone { width: 40%; }
   #action { width: 88px; height: 88px; }
   .act.small { width: 68px; height: 68px; }
+}
+
+/* Short screens: lift the parked stick clear of the action cluster. */
+@media (max-height: 700px) {
+  #stickbase { bottom: calc(var(--safe-b) + 132px); }
 }
 
 /* Narrow phones: three control clusters have to share one thumb's width. */

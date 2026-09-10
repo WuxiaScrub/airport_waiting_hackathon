@@ -23,6 +23,7 @@ class Input {
     this.zone = document.getElementById('stickzone');
     this.base = document.getElementById('stickbase');
     this.knob = document.getElementById('stickknob');
+    this.aim = document.getElementById('stickaim');
     this.mineBtn = document.getElementById('action');
     this.jumpBtn = document.getElementById('jump');
     this.dynBtn = document.getElementById('dynamite');
@@ -54,15 +55,43 @@ class Input {
     this._jumpEdge = false;
     this._dynEdge = false;
     this.stickId = null;
-    this.base.classList.remove('on');
+    this.park();
+    this.syncStick();
     for (const b of [this.mineBtn, this.jumpBtn, this.dynBtn]) b.classList.remove('held');
   }
 
   /* ------------------------------------------------------------- joystick */
 
+  /** Drop the inline anchor so the stick falls back to its parked corner. */
+  park() {
+    this.base.style.left = '';
+    this.base.style.top = '';
+  }
+
+  /**
+   * Push the current heading into the on-screen stick: the knob shows how hard
+   * you are pushing, the arrow shows the snapped 8-way direction the pickaxe
+   * will actually swing at. Keyboard input drives it too.
+   */
+  syncStick() {
+    const R = Input.KNOB_TRAVEL;
+    const dx = this.dir.x, dy = this.dir.y;
+    this.knob.style.transform = `translate(${(dx * R).toFixed(1)}px, ${(dy * R).toFixed(1)}px)`;
+    const live = Math.hypot(dx, dy) > 0.12;
+    if (live) {
+      const a = aimDir(dx, dy);
+      const deg = Math.atan2(a.y, a.x) * 180 / Math.PI + 90;
+      this.aim.style.transform = `rotate(${deg.toFixed(0)}deg)`;
+    }
+    this.aim.classList.toggle('on', live);
+    // Bright while a thumb is on it or while any input is coming in (keyboard
+    // included); dimmed back to a parked outline the rest of the time.
+    this.base.classList.toggle('on', this.stickId !== null || live);
+  }
+
   bindStick() {
     const z = this.zone;
-    const radius = 52;
+    const radius = Input.STICK_RADIUS;
 
     const start = (e) => {
       const t = e.changedTouches ? e.changedTouches[0] : e;
@@ -71,8 +100,8 @@ class Input {
       this.origin.x = t.clientX; this.origin.y = t.clientY;
       this.base.style.left = t.clientX + 'px';
       this.base.style.top = t.clientY + 'px';
-      this.base.classList.add('on');
-      this.knob.style.transform = 'translate(0px, 0px)';
+      this.dir.x = 0; this.dir.y = 0;
+      this.syncStick();
       Sfx.init();
       e.preventDefault();
     };
@@ -81,16 +110,15 @@ class Input {
       if (this.stickId === null) return;
       const t = this.findTouch(e);
       if (!t) return;
-      let dx = t.clientX - this.origin.x;
-      let dy = t.clientY - this.origin.y;
+      const dx = t.clientX - this.origin.x;
+      const dy = t.clientY - this.origin.y;
       const len = Math.hypot(dx, dy);
-      const clamped = Math.min(len, radius);
       const ux = len ? dx / len : 0, uy = len ? dy / len : 0;
-      this.knob.style.transform = `translate(${ux * clamped}px, ${uy * clamped}px)`;
       // Dead zone keeps the miner from twitching when a thumb rests on glass.
       const mag = len < 9 ? 0 : Math.min(1, (len - 9) / (radius - 9));
       this.dir.x = ux * mag;
       this.dir.y = uy * mag;
+      this.syncStick();
       e.preventDefault();
     };
 
@@ -99,8 +127,8 @@ class Input {
       if (e.changedTouches && !this.findTouch(e, true)) return;
       this.stickId = null;
       this.dir.x = 0; this.dir.y = 0;
-      this.base.classList.remove('on');
-      this.knob.style.transform = 'translate(0px, 0px)';
+      this.park();
+      this.syncStick();
     };
 
     z.addEventListener('touchstart', start, { passive: false });
@@ -182,15 +210,23 @@ class Input {
 
   /** Fold keyboard state into `dir` — the joystick wins if it is in use. */
   update() {
-    if (this.stickId !== null) return;
-    const k = this.keys;
-    const kx = (k.r ? 1 : 0) - (k.l ? 1 : 0);
-    const ky = (k.d ? 1 : 0) - (k.u ? 1 : 0);
-    if (kx || ky) {
-      const len = Math.hypot(kx, ky);
-      this.dir.x = kx / len; this.dir.y = ky / len;
-    } else {
-      this.dir.x = 0; this.dir.y = 0;
+    if (this.stickId === null) {
+      const k = this.keys;
+      const kx = (k.r ? 1 : 0) - (k.l ? 1 : 0);
+      const ky = (k.d ? 1 : 0) - (k.u ? 1 : 0);
+      if (kx || ky) {
+        const len = Math.hypot(kx, ky);
+        this.dir.x = kx / len; this.dir.y = ky / len;
+      } else {
+        this.dir.x = 0; this.dir.y = 0;
+      }
+      this.syncStick();
     }
   }
 }
+
+/** Thumb travel, in CSS pixels, that counts as a full push. */
+Input.STICK_RADIUS = 52;
+/** How far the drawn knob slides at a full push — it stays inside the ring, so
+ *  the aim arrow on the rim is never covered by it. */
+Input.KNOB_TRAVEL = 32;

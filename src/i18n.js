@@ -48,9 +48,11 @@ const STRINGS = {
     'help.move.k': 'MOVE',
     'help.move.v': 'Drag anywhere on the left half. <b>A</b> / <b>D</b> on desktop.',
     'help.mine.k': 'MINE',
-    'help.mine.v': 'Hold <b>MINE</b>. Aim with the stick — push down to dig the floor, up for the ceiling.',
+    'help.mine.v': 'Hold <b>MINE</b>. Aim with the stick — down digs the floor, up the ceiling, and a <b>diagonal</b> cuts the corner tile.',
     'help.jump.k': 'JUMP',
-    'help.jump.v': 'You fall now. Hold <b>JUMP</b> to clear a ledge. Dig <b>steps</b>, not a pit — a sheer shaft is a one-way trip.',
+    'help.jump.v': 'You fall now. Hold <b>JUMP</b> to clear a ledge. Dig <b>steps</b>, not a pit.',
+    'help.grip.k': 'GRAPPLE',
+    'help.grip.v': 'Falling past a wall? Hold the stick <b>into</b> it and the hook catches. <b>JUMP</b> from there, catch again — that is how a shaft is climbed.',
     'help.boom.k': 'DYNAMITE',
     'help.boom.v': 'Tap 🧨 to drop a stick on the tile you are aiming at. Clears a 3×3 and blasts rock.',
     'help.bank.k': 'BANK IT',
@@ -72,8 +74,13 @@ const STRINGS = {
     'shop.depth': 'DEPTH',
     'shop.nothingToBank': 'NOTHING TO BANK',
     'shop.secured': '{v} SECURED',
-    'shop.dynamiteRestocked': 'DYNAMITE RESTOCKED',
     'shop.hatRepaired': 'HARD HAT REPAIRED',
+
+    /* Supplies (bought, never handed out) */
+    'supply.dynamite.name': 'Dynamite',
+    'supply.dynamite.desc': 'Sticks in the satchel  ({cur}/{max})',
+    'supply.buyOne': '+1 · {v}',
+    'supply.buyFill': 'FILL · {v}',
 
     /* Heal items */
     'heal.bandage.name': 'Bandage',
@@ -122,6 +129,7 @@ const STRINGS = {
     'toast.cantPlace': 'CAN’T PLACE THERE',
     'toast.notEnoughGold': 'NOT ENOUGH GOLD',
     'toast.alreadyFull': 'ALREADY AT FULL HEALTH',
+    'toast.satchelFull': 'SATCHEL IS FULL',
     'toast.sound': 'SOUND {s}',
     'toast.heartstoneAtSurface': 'THE HEARTSTONE ONLY PAYS AT THE SURFACE',
     'toast.getToSurface': 'GET TO THE SURFACE',
@@ -169,9 +177,11 @@ const STRINGS = {
     'help.move.k': '移动',
     'help.move.v': '在屏幕左半边任意位置拖动。电脑上用 <b>A</b> / <b>D</b>。',
     'help.mine.k': '挖掘',
-    'help.mine.v': '按住<b>挖掘</b>。用摇杆瞄准 —— 向下推挖脚下，向上推挖头顶。',
+    'help.mine.v': '按住<b>挖掘</b>。用摇杆瞄准 —— 向下推挖脚下，向上推挖头顶，推<b>斜向</b>可以挖对角的那一格。',
     'help.jump.k': '跳跃',
-    'help.jump.v': '你现在会下坠。长按<b>跳跃</b>翻上台阶。要挖成<b>阶梯</b>，别挖成直井 —— 垂直竖井有去无回。',
+    'help.jump.v': '你现在会下坠。长按<b>跳跃</b>翻上台阶。要挖成<b>阶梯</b>，别挖成深坑。',
+    'help.grip.k': '抓钩',
+    'help.grip.v': '从墙边坠落时，把摇杆<b>推向</b>墙面，抓钩就会咬住。再按<b>跳跃</b>，然后重新抓住 —— 竖井就是这样爬上去的。',
     'help.boom.k': '炸药',
     'help.boom.v': '点 🧨 在瞄准的格子上放一根。炸出 3×3 范围，连岩石也炸得开。',
     'help.bank.k': '存起来',
@@ -193,8 +203,13 @@ const STRINGS = {
     'shop.depth': '深度',
     'shop.nothingToBank': '没有可存入的财富',
     'shop.secured': '{v} 已入库',
-    'shop.dynamiteRestocked': '炸药已补满',
     'shop.hatRepaired': '安全帽已修复',
+
+    /* Supplies (bought, never handed out) */
+    'supply.dynamite.name': '炸药',
+    'supply.dynamite.desc': '工具包里的存货（{cur}/{max}）',
+    'supply.buyOne': '+1 · {v}',
+    'supply.buyFill': '补满 · {v}',
 
     /* Heal items */
     'heal.bandage.name': '绷带',
@@ -243,6 +258,7 @@ const STRINGS = {
     'toast.cantPlace': '这里放不了',
     'toast.notEnoughGold': '金币不足',
     'toast.alreadyFull': '生命值已满',
+    'toast.satchelFull': '工具包已装满',
     'toast.sound': '音效{s}',
     'toast.heartstoneAtSurface': '心髓石只有回到地面才能兑现',
     'toast.getToSurface': '快回地面',

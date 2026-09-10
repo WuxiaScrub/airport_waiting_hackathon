@@ -40,11 +40,19 @@ class Player {
     this.buffer = 0;             // jump pressed slightly before landing
     this.jumping = false;        // true while the launch can still be cut short
     this.airTime = 0;
+
+    this.gripping = false;       // hooked onto a wall with the grapple
+    this.gripDir = 0;            // -1 / +1 — which side the hook bit into
+    this.gripTile = null;        // {x, y} of the tile being held, for drawing
+    this.gripAnim = 0;           // 0..1, hook-fires flourish
   }
 
   get tile() { return { x: Math.floor(this.x), y: Math.floor(this.y) }; }
 
-  /** The tile the pickaxe / dynamite will act on. */
+  /**
+   * The tile the pickaxe / dynamite will act on. `facing` is an 8-way snap, so
+   * this reaches the diagonal neighbour when the stick is held on a diagonal.
+   */
   targetTile() {
     return { x: Math.floor(this.x) + this.facing.x, y: Math.floor(this.y) + this.facing.y };
   }
@@ -55,6 +63,7 @@ class Player {
     this.swing = Math.max(0, this.swing - dt);
     this.swingAnim = Math.max(0, this.swingAnim - dt * 4.2);
     this.throwAnim = Math.max(0, this.throwAnim - dt * 3.4);
+    this.gripAnim = Math.max(0, this.gripAnim - dt * 3.6);
     this.lampFlicker = lerp(this.lampFlicker, Math.random(), dt * 9);
     this.rechargeHat(dt, game);
 
@@ -63,7 +72,8 @@ class Player {
     const ix = input.dir.x, iy = input.dir.y;
 
     // The stick still sets facing on both axes — that is how you aim a swing.
-    if (Math.hypot(ix, iy) > 0.12) this.facing = cardinal(ix, iy);
+    // Eight directions: a held diagonal reaches the corner tile.
+    if (Math.hypot(ix, iy) > 0.12) this.facing = aimDir(ix, iy);
 
     /* ---- horizontal steering ---- */
     const drive = Math.abs(ix) > 0.14 ? clamp(ix, -1, 1) : 0;
@@ -76,10 +86,13 @@ class Player {
       this.vx = lerp(this.vx, 0, clamp(dt * (this.grounded ? 20 : 5), 0, 1));
     }
 
+    /* ---- grapple grip ---- */
+    this.updateGrip(w, ix, game);
+
     /* ---- jumping ---- */
     this.coyote = this.grounded ? P.coyote : Math.max(0, this.coyote - dt);
     this.buffer = input.consumeJump() ? P.jumpBuffer : Math.max(0, this.buffer - dt);
-    if (this.buffer > 0 && this.coyote > 0) this.jump(game);
+    if (this.buffer > 0 && (this.coyote > 0 || this.gripping)) this.jump(game);
     // Releasing early clips the arc, so a tap is a hop and a hold is a leap.
     if (this.jumping && !input.jumpHeld && this.vy < 0) {
       this.vy *= P.jumpCut;
@@ -87,8 +100,9 @@ class Player {
     }
     if (this.vy >= 0) this.jumping = false;
 
-    /* ---- gravity ---- */
-    this.vy = Math.min(this.vy + P.gravity * dt, P.maxFall);
+    /* ---- gravity (a grip holds you against it) ---- */
+    if (this.gripping) this.vy = Math.min(this.vy, P.gripSlide);
+    else this.vy = Math.min(this.vy + P.gravity * dt, P.maxFall);
 
     /* ---- collision, axis at a time ---- */
     const nx = this.x + this.vx * dt;
@@ -119,21 +133,72 @@ class Player {
   }
 
   /**
-   * Feet probe. Deliberately narrower than the collision radius: a full-width
-   * probe brushes the wall you are pressed against and hands you a wall-jump.
+   * Feet probe. Still narrower than the collision radius — a full-width probe
+   * brushes the wall you are pressed against and hands you a free wall-jump —
+   * but wide and deep enough that standing on the lip of a tile counts.
    */
   standingOn(w) {
-    return !w.isFree(this.x, this.y + CFG.player.groundProbe, this.r * 0.82);
+    return !w.isFree(this.x, this.y + CFG.player.groundProbe, this.r * CFG.player.groundWidth);
+  }
+
+  /* ---------------------------------------------------------- grapple grip */
+
+  /**
+   * Push the stick into a wall while falling and the grapple bites: the miner
+   * hangs off that tile instead of dropping past it, and can jump from there.
+   * Climbing a sheer shaft becomes grip → jump → grip, which is deliberate
+   * work rather than a free ride to the surface.
+   */
+  updateGrip(w, ix, game) {
+    const was = this.gripping;
+    const tile = this.gripTarget(w, ix);
+    this.gripping = !!tile;
+    this.gripTile = tile;
+    if (!tile) { this.gripDir = 0; return; }
+
+    this.gripDir = ix > 0 ? 1 : -1;
+    if (!was) {
+      this.gripAnim = 1;
+      this.vy = Math.min(this.vy, CFG.player.gripSlide);
+      Sfx.play('grip', { v: 0.9 });
+      game.fx.burst(tile.x + 0.5 - this.gripDir * 0.4, tile.y + 0.5, 4,
+        ['#c8a06a', '#8a6440', '#cfd6df'], { speed: 2.6, life: 0.3, size: 0.09 });
+    }
+  }
+
+  /**
+   * The tile the hook would catch, or null. Head, waist and feet all count, so
+   * a ledge caught at any height on the way past is a grip.
+   */
+  gripTarget(w, ix) {
+    const P = CFG.player;
+    // Only while airborne, and only once you have stopped rising: a grip must
+    // never eat the jump that is carrying you up the shaft.
+    if (this.dead || this.grounded || this.vy < 0) return null;
+    if (Math.abs(ix) < P.gripDeadzone) return null;
+
+    const dir = ix > 0 ? 1 : -1;
+    const tx = Math.floor(this.x + dir * (this.r + P.gripReach));
+    for (const off of [-this.r * 0.9, 0, this.r * 0.9]) {
+      const ty = Math.floor(this.y + off);
+      if (w.isSolid(tx, ty)) return { x: tx, y: ty };
+    }
+    return null;
   }
 
   jump(game) {
-    this.vy = -this.jumpVel;
+    const fromGrip = this.gripping;
+    this.vy = -this.jumpVel * (fromGrip ? CFG.player.gripJumpBoost : 1);
     this.jumping = true;
     this.grounded = false;
+    this.gripping = false;
+    this.gripTile = null;
     this.coyote = 0;
     this.buffer = 0;
     Sfx.play('jump');
-    game.fx.burst(this.x, this.y + 0.35, 5, ['#8a6440', '#a97c4f', '#5d4429'],
+    const px = fromGrip ? this.x + this.gripDir * 0.3 : this.x;
+    const py = fromGrip ? this.y : this.y + 0.35;
+    game.fx.burst(px, py, 5, ['#8a6440', '#a97c4f', '#5d4429'],
       { speed: 2.6, life: 0.28, size: 0.1, grav: 16 });
   }
 

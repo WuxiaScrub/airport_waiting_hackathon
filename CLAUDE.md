@@ -35,7 +35,10 @@ Mobile Controls
 
 Design for smartphone touchscreens first.
 
-* Virtual joystick: horizontal axis moves, vertical axis AIMS the tool.
+* Virtual joystick: horizontal axis moves, vertical axis AIMS the tool. Aim
+  snaps to 8 directions — a held diagonal targets the corner tile. The stick is
+  always drawn on screen (parked when idle, under the thumb while held) with a
+  knob for the push and a rim arrow for the direction being aimed at.
 * Three action buttons, one verb each. There is NO tool selector and no
   equipped-tool state — the button you press is the thing that happens.
   - MINE — hold to swing the pickaxe at the tile you are aiming at.
@@ -69,9 +72,15 @@ Player Physics
 * Gravity applies to the player as well as to dirt.
 * The player can jump; jump height is upgradable.
 * There is no fall damage — falling dirt is the punishment for careless digging.
-* A sheer vertical shaft must remain a one-way trip. Climbing back up is a
-  staircase, a jump, or a pile of dirt the player knocked loose on purpose.
-  Never add a mechanic that trivializes the return to the surface.
+* Climbing back up is work: a staircase, a jump, a pile of dirt the player
+  knocked loose on purpose, or the grapple below. Never add a mechanic that
+  trivializes the return to the surface — no teleports, no ropes to the camp,
+  no free ascent.
+* Grapple: holding the stick into an adjacent solid tile while falling hooks
+  the player onto it, stopping the fall, and they may jump from there. A sheer
+  shaft is therefore climbable, but only one jump at a time and only where
+  there is wall to catch — the ascent still costs the time the mine can use to
+  fall on them, and lava does not wait.
 
 Dynamite
 
@@ -140,6 +149,11 @@ Initial upgrades:
 * Hard hat — absorbs falling dirt, one charge per level, re-forms over time
 
 Keep upgrades simple and data-driven.
+
+Dynamite is a consumable the shop SELLS, per stick. Reaching a checkpoint never
+refills the satchel for free — spending gems on charges is part of the risk
+budget. A run still starts with a full satchel, and the hard hat still re-forms
+for free.
 
 Headlights
 

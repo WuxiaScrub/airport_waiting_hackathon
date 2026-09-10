@@ -213,8 +213,9 @@ class Game {
       return;
     }
 
-    const restocked = this.player.dynMax - this.player.dynamite;
-    this.player.dynamite = this.player.dynMax;
+    // Dynamite is NOT topped up here — it is stock the lantern sells, and the
+    // shop below is where you buy it. The hard hat still re-forms for free;
+    // it does that on a timer out in the mine anyway.
     const rehatted = this.player.refillHat(this);
     this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
@@ -225,7 +226,6 @@ class Game {
     const sub = () => {
       const bits = [];
       if (gemTotal > 0) bits.push(loc('shop.secured', { v: fmt(gemTotal) }));
-      if (restocked > 0) bits.push(loc('shop.dynamiteRestocked'));
       if (rehatted > 0) bits.push(loc('shop.hatRepaired'));
       return bits.join(' · ') || loc('shop.nothingToBank');
     };
@@ -267,7 +267,9 @@ class Game {
       if (id === 'health') { p.maxHealth += CFG.upgradeEffect.health; p.health += CFG.upgradeEffect.health; this.ui.syncHealth(p); }
       if (id === 'speed') p.speed = CFG.player.speed * (1 + this.save.upgrades.speed * CFG.upgradeEffect.speed);
       if (id === 'light') p.light = CFG.player.light + this.save.upgrades.light * CFG.upgradeEffect.light;
-      if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite = p.dynMax; this.ui.syncDynamite(p); }
+      // A bigger satchel comes with the sticks it adds, but it is not a free
+      // refill of the ones you already spent.
+      if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite += CFG.upgradeEffect.dynamite; this.ui.syncDynamite(p); }
       if (id === 'jump') p.jumpVel = CFG.player.jumpVel + this.save.upgrades.jump * CFG.upgradeEffect.jump;
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
     }
@@ -275,6 +277,26 @@ class Game {
 
     // Every panel knows how to rebuild itself, so prices and pips refresh
     // without this having to work out which shop is on screen.
+    this.ui.repaint();
+  }
+
+  /** Sticks are bought, never handed out. `all` fills the satchel in one go. */
+  buyDynamite(all) {
+    const p = this.player;
+    if (!p || p.dead) return;
+    const missing = p.dynMax - p.dynamite;
+    if (missing <= 0) { this.ui.toast(loc('toast.satchelFull')); return; }
+
+    const n = all ? missing : 1;
+    const cost = n * CFG.restock.dynamiteCost;
+    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+
+    this.save.gold -= cost;
+    p.dynamite += n;
+    this.persist();
+    Sfx.play('buy');
+    this.ui.syncDynamite(p);
+    this.ui.syncWallet(this);
     this.ui.repaint();
   }
 

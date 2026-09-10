@@ -41,10 +41,23 @@ const CFG = {
     // two-deep starting shaft. Drop it and the very first hole becomes a trap.
     jumpVel: 12.2,
     jumpCut: 0.50,       // vy kept when the button is released early
-    coyote: 0.11,        // grace period to still jump after walking off a ledge
-    jumpBuffer: 0.12,    // a jump pressed just before landing still fires
+    // Jump forgiveness. These three are the difference between "the jump feels
+    // responsive" and "I have to frame-time it": leave yourself room to be late
+    // (coyote), early (buffer), and slightly off the edge of a tile (probe).
+    coyote: 0.20,        // grace period to still jump after walking off a ledge
+    jumpBuffer: 0.22,    // a jump pressed just before landing still fires
     airControl: 0.62,    // fraction of ground steering available mid-air
-    groundProbe: 0.12,   // how far below the feet counts as "standing on it"
+    groundProbe: 0.20,   // how far below the feet counts as "standing on it"
+    groundWidth: 0.90,   // fraction of the collision radius the feet probe uses
+
+    // --- grapple grip ------------------------------------------------------
+    // Hold the stick into a wall while falling and the miner hooks on. This is
+    // how a sheer shaft is climbed: grip, jump, grip again. It is still work —
+    // you only rise one jump at a time, and only where there is wall to hook.
+    gripDeadzone: 0.35,  // stick push toward the wall needed to hook on
+    gripReach: 0.22,     // how far past the collision radius the hook bites
+    gripSlide: 0,        // tiles/sec the miner sinks while hanging (0 = holds)
+    gripJumpBoost: 1.0,  // launch speed multiplier for a jump off a grip
 
     // --- hard hat ----------------------------------------------------------
     hatRecharge: 11,     // seconds for one dented hard-hat charge to re-form
@@ -53,6 +66,10 @@ const CFG = {
   mining: {
     dirtHits: 2,         // pickaxe hits to destroy soft dirt
     gemHits: 2,
+    // Aim snaps to 8 directions. The smaller stick axis must reach this
+    // fraction of the larger one before a swing counts as diagonal, so a
+    // slightly sloppy "left" still digs left.
+    diagonalBand: 0.45,
     fallDelay: 0.90,     // how long weakened, unsupported dirt hangs in the air
     fallSpeed: 15,       // tiles/sec terminal velocity for falling blocks
     fallDamage: 1,
@@ -140,6 +157,12 @@ const CFG = {
     { id: 'bandage', cost: 40,  amount: 1 },   // cheap: +1 HP
     { id: 'medpack', cost: 120, amount: 999 },  // expensive: restore to full HP
   ],
+
+  // Dynamite is a consumable, not a free refill: a lantern sells it, it does
+  // not hand it out. Spending the run's gems on charges is the trade.
+  restock: {
+    dynamiteCost: 20,    // gold per stick bought at a lantern
+  },
 
   lava: {
     startOffset: 10,     // rows below the Heartstone where the lava begins
