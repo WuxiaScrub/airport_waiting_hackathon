@@ -91,6 +91,8 @@ const Sfx = {
       case 'place':     this._tone('triangle', 300, 200, 0.07, 0.13); break;
       case 'jump':      this._tone('sine', 300, 520, 0.11, 0.16 * v);
                         this._noise(0.07, 0.10 * v, 'highpass', 2400, 1400); break;
+      case 'grip':      this._noise(0.09, 0.22 * v, 'bandpass', 620, 220);
+                        this._tone('triangle', 210, 330, 0.07, 0.11 * v); break;
       case 'land':      this._noise(0.13, 0.26 * v, 'lowpass', 700, 160);
                         this._tone('sine', 130, 70, 0.10, 0.13 * v); break;
       case 'hurt':

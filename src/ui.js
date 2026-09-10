@@ -168,7 +168,7 @@ class UI {
 
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'mine', 'jump', 'boom', 'bank', 'dark'].map(k =>
+    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'dark'].map(k =>
       `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v')}</span></div>`).join('');
 
     this._repaint = () => this.title(save);
@@ -200,6 +200,26 @@ class UI {
 
     const p = game.player;
     const inRun = game.state === 'paused' && p && !p.dead;
+
+    // Consumables. Dynamite is stock the lantern sells — walking in no longer
+    // refills the satchel, so this row is the only way to top it back up.
+    const missing = inRun ? p.dynMax - p.dynamite : 0;
+    const one = CFG.restock.dynamiteCost;
+    const fill = missing * one;
+    const dynSection = inRun ? `
+      <div class="shop-item">
+        <div class="info">
+          <div class="nm">${loc('supply.dynamite.name')}</div>
+          <div class="ds">${loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax })}</div>
+        </div>
+        <div class="buys">
+          <button class="buy" data-dyn="one"
+            ${missing <= 0 || game.save.gold < one ? 'disabled' : ''}>${loc('supply.buyOne', { v: fmt(one) })}</button>
+          ${missing > 1 ? `<button class="buy" data-dyn="all"
+            ${game.save.gold < fill ? 'disabled' : ''}>${loc('supply.buyFill', { v: fmt(fill) })}</button>` : ''}
+        </div>
+      </div>` : '';
+
     const healSection = inRun ? CFG.healItems.map(h => {
       const atMax = p.health >= p.maxHealth;
       const afford = game.save.gold >= h.cost;
@@ -241,11 +261,12 @@ class UI {
         <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
         <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('common.metres', { n: game.depth() })}</div></div>
       </div>
-      <div class="shop-list">${healSection}${items}</div>
+      <div class="shop-list">${dynSection}${healSection}${items}</div>
       <button class="btn" id="closeShop">${res(o.closeLabel, 'shop.back')}</button>
       ${o.extra ? res(o.extra) : ''}
       ${this.langButton()}
     `);
+    this.onAll('[data-dyn]', (el) => game.buyDynamite(el.dataset.dyn === 'all'));
     this.onAll('[data-heal]', (el) => game.buyHeal(el.dataset.heal));
     this.onAll('[data-up]', (el) => game.buyUpgrade(el.dataset.up));
     this.on('#closeShop', () => game.closePanel());

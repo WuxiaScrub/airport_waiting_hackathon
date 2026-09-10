@@ -68,6 +68,21 @@ function cardinal(dx, dy) {
   return { x: 0, y: dy >= 0 ? 1 : -1 };
 }
 
+/**
+ * Snap a stick vector to one of 8 directions — the four cardinals plus the
+ * diagonals, so the pickaxe can reach the corner tile. The minor axis has to
+ * be a real push (`CFG.mining.diagonalBand` of the major one) before the aim
+ * leaves the cardinal, otherwise a thumb drifting off "left" would silently
+ * start digging down-left.
+ */
+function aimDir(dx, dy) {
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  const band = CFG.mining.diagonalBand;
+  const sx = dx >= 0 ? 1 : -1, sy = dy >= 0 ? 1 : -1;
+  if (ax >= ay) return { x: sx, y: ay >= ax * band ? sy : 0 };
+  return { x: ax >= ay * band ? sx : 0, y: sy };
+}
+
 /** Format a currency-ish number with thin separators. */
 function fmt(n) {
   n = Math.round(n);

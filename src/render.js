@@ -579,11 +579,54 @@ class Renderer {
     }
   }
 
+  /**
+   * The hook holding the miner off a wall tile: a taut line from the hand to
+   * the tile face, a bitten-in claw, and a flash on the frame it catches.
+   */
+  drawGrapple(c, p, cx, cy, r, ox, oy, ppt) {
+    const t = p.gripTile;
+    const dir = p.gripDir;
+    const ax = ox + (t.x + 0.5 - dir * 0.44) * ppt;   // the face of the tile
+    const ay = oy + (t.y + 0.42) * ppt;
+    const hx = cx + dir * r * 0.42, hy = cy - r * 0.3;
+    const sway = Math.sin(p.gripAnim * 8) * r * 0.12;
+
+    c.save();
+    c.lineCap = 'round';
+    c.strokeStyle = '#d8c39a';
+    c.lineWidth = Math.max(1.4, ppt * 0.055);
+    c.beginPath();
+    c.moveTo(hx, hy);
+    c.quadraticCurveTo((hx + ax) / 2, (hy + ay) / 2 + sway, ax, ay);
+    c.stroke();
+
+    // Claw.
+    c.strokeStyle = '#cfd6df';
+    c.lineWidth = Math.max(1.4, ppt * 0.07);
+    c.beginPath();
+    c.arc(ax, ay, r * 0.34, dir > 0 ? -1.3 : Math.PI + 1.3, dir > 0 ? 1.3 : Math.PI - 1.3, dir < 0);
+    c.stroke();
+
+    if (p.gripAnim > 0) {
+      c.globalAlpha = p.gripAnim * 0.8;
+      c.strokeStyle = '#ffe6a8';
+      c.lineWidth = Math.max(1, ppt * 0.05);
+      c.beginPath();
+      c.arc(ax, ay, r * (0.5 + (1 - p.gripAnim) * 1.1), 0, TAU);
+      c.stroke();
+    }
+    c.restore();
+  }
+
   drawPlayer(c, game, ox, oy, ppt) {
     const p = game.player;
     const cx = ox + p.x * ppt, cy = oy + p.y * ppt;
     const r = ppt * 0.34;
     const blink = p.invuln > 0 && Math.sin(game.time * 40) > 0;
+
+    // Grapple line first, so the rope runs behind the miner and the hook reads
+    // as bitten into the tile rather than pasted on top of it.
+    if (p.gripping && p.gripTile) this.drawGrapple(c, p, cx, cy, r, ox, oy, ppt);
 
     c.save();
     c.translate(cx, cy);
