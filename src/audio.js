@@ -89,6 +89,10 @@ const Sfx = {
         this._tone('sawtooth', 220, 40, 0.32, 0.18);
         break;
       case 'place':     this._tone('triangle', 300, 200, 0.07, 0.13); break;
+      case 'jump':      this._tone('sine', 300, 520, 0.11, 0.16 * v);
+                        this._noise(0.07, 0.10 * v, 'highpass', 2400, 1400); break;
+      case 'land':      this._noise(0.13, 0.26 * v, 'lowpass', 700, 160);
+                        this._tone('sine', 130, 70, 0.10, 0.13 * v); break;
       case 'hurt':
         this._tone('sawtooth', 300, 90, 0.28, 0.32);
         this._noise(0.20, 0.24, 'lowpass', 900, 200);

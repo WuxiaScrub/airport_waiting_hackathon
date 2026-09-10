@@ -23,7 +23,9 @@ html, body {
   overflow: hidden;
   background: #05040a;
   color: var(--ink);
-  font-family: ui-rounded, "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: ui-rounded, "Avenir Next", "Segoe UI", system-ui, -apple-system,
+               "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC",
+               "Source Han Sans SC", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
@@ -63,6 +65,18 @@ html, body {
 }
 .heart.empty { background: #40304a; }
 .heart.pop { transform: scale(1.45); }
+
+/* Hard-hat dents: one pip per charge the helmet can still absorb. */
+.helmet { display: flex; gap: 3px; }
+.helmet.hidden { display: none; }
+.hardhat {
+  width: 16px; height: 14px;
+  background: var(--gold);
+  clip-path: polygon(2% 100%, 2% 78%, 20% 78%, 20% 40%, 32% 18%, 68% 18%, 80% 40%, 80% 78%, 98% 78%, 98% 100%);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+  transition: transform .12s ease;
+}
+.hardhat.empty { background: #3c3450; }
 
 .depth {
   font-size: 11px; font-weight: 800; letter-spacing: .12em;
@@ -187,47 +201,56 @@ html, body {
   pointer-events: auto;
 }
 
-#tools { display: flex; flex-direction: column; gap: 9px; }
-.tool {
-  position: relative;
-  width: 50px; height: 50px;
-  border-radius: 15px;
-  border: 2px solid rgba(255,255,255,.16);
-  background: rgba(18,14,28,.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: grid; place-items: center;
+/* Three verbs, one press each. MINE is the thumb-resting primary; JUMP and
+   DYNAMITE sit beside it, smaller, in their own colours so they read apart. */
+.act {
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.22);
+  color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+  font-weight: 900; letter-spacing: .1em;
+  box-shadow: 0 6px 20px rgba(0,0,0,.55);
   cursor: pointer;
-  transition: transform .1s ease, border-color .12s ease, background .12s ease;
+  transition: transform .07s ease, background .12s ease, opacity .12s ease;
 }
-.tool svg { width: 28px; height: 28px; opacity: .62; }
-.tool.active { border-color: var(--gold); background: rgba(70,50,14,.6); }
-.tool.active svg { opacity: 1; }
-.tool:active { transform: scale(.92); }
-.tool .count {
-  position: absolute; right: -4px; bottom: -4px;
+.act svg { width: 22px; height: 22px; opacity: .92; }
+.act:active, .act.held { transform: scale(.93); }
+.act.small { width: 74px; height: 74px; font-size: 9.5px; margin-bottom: 8px; }
+
+#action {
+  width: 100px; height: 100px;
+  font-size: 13px;
+  background: radial-gradient(circle at 38% 32%, #4a3a72, #241a3c);
+}
+#action:active, #action.held {
+  background: radial-gradient(circle at 38% 32%, #6d55a8, #33265a);
+}
+
+#jump {
+  color: var(--carry);
+  background: radial-gradient(circle at 38% 32%, #2f6a58, #17392f);
+}
+#jump:active, #jump.held {
+  background: radial-gradient(circle at 38% 32%, #46997e, #1f5445);
+}
+
+#dynamite {
+  position: relative;
+  color: #ffb59f;
+  background: radial-gradient(circle at 38% 32%, #6d3227, #3a1a14);
+}
+#dynamite:active, #dynamite.held {
+  background: radial-gradient(circle at 38% 32%, #a04a37, #5a271d);
+}
+#dynamite.depleted { opacity: .42; }
+#dynamite .count {
+  position: absolute; right: -3px; top: -3px;
   min-width: 20px; height: 20px; padding: 0 4px;
   border-radius: 10px;
   background: #241a34; border: 1.5px solid rgba(255,255,255,.2);
   font-size: 11px; font-weight: 900; line-height: 17px; text-align: center;
-  color: var(--ink);
-}
-.tool.depleted { opacity: .42; }
-
-#action {
-  width: 100px; height: 100px;
-  border-radius: 50%;
-  border: 3px solid rgba(255,255,255,.22);
-  background: radial-gradient(circle at 38% 32%, #4a3a72, #241a3c);
-  color: var(--ink);
-  font-size: 13px; font-weight: 900; letter-spacing: .1em;
-  box-shadow: 0 6px 20px rgba(0,0,0,.55);
-  cursor: pointer;
-  transition: transform .07s ease, background .12s ease;
-}
-#action:active, #action.held {
-  transform: scale(.93);
-  background: radial-gradient(circle at 38% 32%, #6d55a8, #33265a);
+  color: var(--ink); letter-spacing: 0;
 }
 
 /* --------------------------------------------------------- Panel */
@@ -337,10 +360,37 @@ html, body {
 .help .row { display: flex; gap: 8px; margin-bottom: 3px; }
 .help .row span:first-child { flex-shrink: 0; min-width: 78px; color: var(--gold); font-weight: 800; }
 
+/* ------------------------------------------------- CJK typography
+   The wide Latin letter-spacing used across the HUD looks broken on Chinese,
+   which is already generously spaced by its own glyph metrics. */
+body.lang-cjk .depth,
+body.lang-cjk .wallet .lbl,
+body.lang-cjk .toast,
+body.lang-cjk .banner p,
+body.lang-cjk .panel h2,
+body.lang-cjk .panel .sub,
+body.lang-cjk .panel .tagline,
+body.lang-cjk .stat .k,
+body.lang-cjk .btn,
+body.lang-cjk .act { letter-spacing: .02em; }
+body.lang-cjk .help { line-height: 1.75; }
+body.lang-cjk .help .row span:first-child { min-width: 58px; }
+body.lang-cjk .banner h1 { letter-spacing: .06em; }
+body.lang-cjk .btn.ghost { font-size: 12.5px; }
+
 /* Wider layout: keep the thumbs where they belong on tablets/desktop. */
 @media (min-width: 720px) and (min-height: 520px) {
   #stickzone { width: 40%; }
   #action { width: 88px; height: 88px; }
+  .act.small { width: 68px; height: 68px; }
+}
+
+/* Narrow phones: three control clusters have to share one thumb's width. */
+@media (max-width: 400px) {
+  #buttons { gap: 8px; right: calc(var(--safe-r) + 10px); }
+  #action { width: 84px; height: 84px; }
+  .act.small { width: 62px; height: 62px; font-size: 9px; }
+  .act svg { width: 19px; height: 19px; }
 }
 @media (hover: hover) and (pointer: fine) {
   #controls { opacity: .55; transition: opacity .2s ease; }

@@ -18,16 +18,29 @@ The player starts at the surface and progressively digs deeper into a procedural
 * Gems collected since the last checkpoint are unbanked and can be lost before being secured.
 * Checkpoints bank the player’s collected wealth and provide access to the shop.
 
+Localization
+
+The game ships in English and Simplified Chinese.
+
+* Every user-facing string lives in `src/i18n.js`, keyed, with an entry in BOTH
+  `STRINGS.en` and `STRINGS.zh`.
+* Never write a display string inline. Read it with `loc('some.key')`, or mark
+  static markup with `data-i18n` / `data-i18n-aria`.
+* Any new feature must add both translations in the same change. A key missing
+  from `zh` falls back to English and warns — it is a bug, not a default.
+* The language follows the browser on first load, is switchable from every menu,
+  and persists separately from the save file.
+
 Mobile Controls
 
 Design for smartphone touchscreens first.
 
-* Virtual joystick for movement.
-* One primary action button.
-* Tool selector for switching equipment.
-* Pickaxe is the default tool.
-* Pickaxe + action button = mine adjacent tile.
-* Dynamite + action button = place dynamite.
+* Virtual joystick: horizontal axis moves, vertical axis AIMS the tool.
+* Three action buttons, one verb each. There is NO tool selector and no
+  equipped-tool state — the button you press is the thing that happens.
+  - MINE — hold to swing the pickaxe at the tile you are aiming at.
+  - JUMP — hold for height.
+  - DYNAMITE — tap to place one stick on the aimed tile.
 * Support keyboard/mouse on desktop as a secondary control scheme.
 
 Controls should be simple, responsive, and comfortable on small screens.
@@ -45,9 +58,20 @@ Soft Dirt
 
 * Requires two pickaxe hits to completely destroy.
 * First hit weakens the tile.
-* A weakened tile falls after a short delay if unsupported.
+* A weakened tile falls after a delay if unsupported. The delay is deliberately
+  generous (see `CFG.mining.fallDelay`) so a collapse can be read and dodged.
 * Falling dirt settles onto the next solid tile below.
+* A falling block damages the player — unless a hard hat absorbs it.
 * Terrain manipulation should be an important part of gameplay.
+
+Player Physics
+
+* Gravity applies to the player as well as to dirt.
+* The player can jump; jump height is upgradable.
+* There is no fall damage — falling dirt is the punishment for careless digging.
+* A sheer vertical shaft must remain a one-way trip. Climbing back up is a
+  staircase, a jump, or a pile of dirt the player knocked loose on purpose.
+  Never add a mechanic that trivializes the return to the surface.
 
 Dynamite
 
@@ -89,6 +113,8 @@ Gem Thief / Bat
 The secondary economic threat.
 
 * Small stylized bat.
+* CANNOT dig. It flies, and steers around solid tiles — open air is the only
+  route it has to the player. Only the Spider digs.
 * Does NOT directly damage the player.
 * Can approach and steal one unbanked gem.
 * When this happens, visibly animate the gem/score count decreasing.
@@ -108,8 +134,10 @@ Initial upgrades:
 
 * Maximum health
 * Movement speed
+* Jump height
 * Headlight/visibility range
 * Dynamite capacity
+* Hard hat — absorbs falling dirt, one charge per level, re-forms over time
 
 Keep upgrades simple and data-driven.
 

@@ -590,18 +590,31 @@ class Renderer {
     if (p.dead) c.rotate(clamp(game.deathAnim * 3, 0, 1) * 1.4);
     c.globalAlpha = blink ? 0.42 : 1;
 
-    const step = p.moving ? Math.sin(p.walk) : 0;
-    const bob = p.moving ? Math.abs(Math.sin(p.walk)) * ppt * 0.045 : 0;
+    const air = !p.grounded && !p.dead;
+    const rising = air && p.vy < 0;
+    const step = (p.moving && !air) ? Math.sin(p.walk) : 0;
+    const bob = (p.moving && !air) ? Math.abs(Math.sin(p.walk)) * ppt * 0.045 : 0;
     c.translate(0, -bob);
+    // Stretch on the way up, squash on the way down: the whole read of "I am
+    // airborne" in one transform.
+    if (air) {
+      const k = clamp(p.vy / CFG.player.maxFall, -0.6, 0.6);
+      c.scale(1 - k * 0.12, 1 + k * 0.12);
+    }
 
-    // Legs.
+    // Legs — tucked while airborne, striding on the ground.
     c.strokeStyle = '#2f3550';
     c.lineWidth = Math.max(1.6, ppt * 0.09);
     c.lineCap = 'round';
     for (const side of [-1, 1]) {
       c.beginPath();
       c.moveTo(side * r * 0.28, r * 0.35);
-      c.lineTo(side * r * 0.28 + step * side * r * 0.42, r * 0.92);
+      if (air) {
+        const tuck = rising ? 0.62 : 0.86;
+        c.lineTo(side * r * (0.28 + 0.3), r * tuck);
+      } else {
+        c.lineTo(side * r * 0.28 + step * side * r * 0.42, r * 0.92);
+      }
       c.stroke();
     }
     // Torso.
@@ -611,41 +624,55 @@ class Renderer {
     c.fill();
     c.fillStyle = '#2c5390';
     c.fillRect(-r * 0.52, r * 0.22, r * 1.04, r * 0.16);
-    // Head + helmet.
+    // Head + helmet. An intact hard hat rides higher and is trimmed white, so
+    // "I still have a dent to spend" is visible without checking the HUD.
+    const hatted = p.hat > 0;
     c.fillStyle = '#e8c9a4';
     c.beginPath(); c.arc(0, -r * 0.5, r * 0.36, 0, TAU); c.fill();
-    c.fillStyle = '#e8a63c';
+    c.fillStyle = hatted ? '#ffcf5c' : '#e8a63c';
     c.beginPath();
-    c.arc(0, -r * 0.56, r * 0.44, Math.PI, TAU);
+    c.arc(0, -r * 0.56, r * (hatted ? 0.48 : 0.44), Math.PI, TAU);
     c.closePath(); c.fill();
     c.fillRect(-r * 0.5 + p.facing.x * r * 0.16, -r * 0.62, r, r * 0.14);
+    if (hatted) {
+      c.fillStyle = 'rgba(255,255,255,.7)';
+      c.fillRect(-r * 0.06, -r * 1.02, r * 0.12, r * 0.42);
+    }
 
     // Headlamp — the light itself is drawn in the mask pass.
     const lampX = p.facing.x * r * 0.42, lampY = -r * 0.62;
     c.fillStyle = `rgba(255,240,190,${0.75 + p.lampFlicker * 0.25})`;
     c.beginPath(); c.arc(lampX, lampY, r * 0.16, 0, TAU); c.fill();
 
-    // Pickaxe / dynamite in hand, arcing through the swing.
+    // The pickaxe is always in hand now that there is no tool to select; it
+    // arcs through the swing.
     const sw = p.swingAnim;
-    const ang = Math.atan2(p.facing.y, p.facing.x) - 0.9 + sw * 1.9;
+    const aim = Math.atan2(p.facing.y, p.facing.x);
     c.save();
-    c.rotate(ang);
-    if (p.tool === 0) {
-      c.strokeStyle = '#c8a06a';
-      c.lineWidth = Math.max(1.6, ppt * 0.075);
-      c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
-      c.strokeStyle = '#cfd6df';
-      c.lineWidth = Math.max(1.6, ppt * 0.085);
-      c.beginPath();
-      c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
-      c.stroke();
-    } else {
-      c.fillStyle = '#c94b3c';
-      c.fillRect(r * 0.7, -r * 0.16, r * 0.6, r * 0.32);
-      c.fillStyle = '#f0e2c2';
-      c.fillRect(r * 0.7, -r * 0.05, r * 0.6, r * 0.1);
-    }
+    c.rotate(aim - 0.9 + sw * 1.9);
+    c.strokeStyle = '#c8a06a';
+    c.lineWidth = Math.max(1.6, ppt * 0.075);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
+    c.strokeStyle = '#cfd6df';
+    c.lineWidth = Math.max(1.6, ppt * 0.085);
+    c.beginPath();
+    c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
+    c.stroke();
     c.restore();
+
+    // Off-hand lob when a stick was just placed — the only tell that the
+    // dynamite button did anything at the miner's end.
+    if (p.throwAnim > 0) {
+      const k = 1 - p.throwAnim;                     // 0 at the press, 1 at rest
+      c.save();
+      c.rotate(aim + 0.5 - k * 1.1);
+      c.globalAlpha = p.throwAnim;
+      c.fillStyle = '#c94b3c';
+      c.fillRect(r * (0.55 + k * 0.5), -r * 0.15, r * 0.5, r * 0.3);
+      c.fillStyle = '#f0e2c2';
+      c.fillRect(r * (0.55 + k * 0.5), -r * 0.04, r * 0.5, r * 0.09);
+      c.restore();
+    }
     c.restore();
 
     // Mining reticle on the target tile.
@@ -655,7 +682,7 @@ class Renderer {
       const px = ox + t.x * ppt, py = oy + t.y * ppt;
       c.save();
       c.globalAlpha = 0.28 + sw * 0.5;
-      c.strokeStyle = p.tool === 1 ? '#ff8a5c' : (solid ? '#ffe6a8' : '#8fa4c8');
+      c.strokeStyle = solid ? '#ffe6a8' : '#8fa4c8';
       c.lineWidth = Math.max(1, ppt * 0.05);
       const m = ppt * 0.16;
       c.beginPath();
