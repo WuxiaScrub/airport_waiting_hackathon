@@ -222,6 +222,10 @@ class Game {
     this.ui.syncWallet(this);
     this.persist();
 
+    // A lantern out in the mine burns out as it is used: whatever you buy, you
+    // buy now. Only the surface camp can be walked back into.
+    if (!home) cp.spent = true;
+
     // Thunks, not strings: the panel re-runs them if the language is switched
     // while it is open.
     const sub = () => {
@@ -240,7 +244,11 @@ class Game {
         wire: (ui) => ui.on('#newMine', () => this.endRun('abandon')),
       }));
     } else {
-      this.openPanel(() => this.ui.shop(this, { title: () => loc('shop.supplyLantern'), sub }));
+      this.openPanel(() => this.ui.shop(this, {
+        title: () => loc('shop.supplyLantern'),
+        sub,
+        note: () => loc('shop.singleUse'),
+      }));
       if (this.player.hasHeartstone) {
         setTimeout(() => this.ui.toast(loc('toast.heartstoneAtSurface'), 2600), 400);
       }
@@ -281,19 +289,22 @@ class Game {
     this.ui.repaint();
   }
 
-  /** Sticks are bought, never handed out. `all` fills the satchel in one go. */
-  buyDynamite(all) {
+  /**
+   * Sticks are bought, never handed out, and only by the satchel-full. One
+   * price for a full reload keeps the decision at the lantern a single one —
+   * which matters now that a lantern in the mine is good for one visit.
+   */
+  buyDynamite() {
     const p = this.player;
     if (!p || p.dead) return;
     const missing = p.dynMax - p.dynamite;
     if (missing <= 0) { this.ui.toast(loc('toast.satchelFull')); return; }
 
-    const n = all ? missing : 1;
-    const cost = n * CFG.restock.dynamiteCost;
+    const cost = CFG.supplies.dynamiteCost;
     if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
 
     this.save.gold -= cost;
-    p.dynamite += n;
+    p.dynamite = p.dynMax;
     this.persist();
     Sfx.play('buy');
     this.ui.syncDynamite(p);
@@ -301,17 +312,18 @@ class Game {
     this.ui.repaint();
   }
 
-  buyHeal(id) {
-    const h = CFG.healItems.find(x => x.id === id);
-    if (!h) return;
+  /** One heal, and it is the whole bar. There is no cheap top-up any more. */
+  buyHeal() {
     const p = this.player;
     if (!p || p.dead || p.health >= p.maxHealth) { this.ui.toast(loc('toast.alreadyFull')); return; }
-    if (this.save.gold < h.cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
 
-    this.save.gold -= h.cost;
+    const cost = CFG.supplies.healCost;
+    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+
+    this.save.gold -= cost;
     this.persist();
     Sfx.play('buy');
-    p.heal(h.amount, this);
+    p.heal(p.maxHealth, this);
     this.ui.syncWallet(this);
     this.ui.repaint();
   }
@@ -512,8 +524,12 @@ class Game {
 
     const tx = Math.floor(p.x), ty = Math.floor(p.y);
     if (this.world.get(tx, ty) !== T.CHECKPOINT) return;
+    const cp = this.world.checkpointAt(tx, ty);
+    if (!cp) return;
     this.lockCheckpoint(tx, ty);
-    const cp = this.world.checkpoints.find(c => c.x === tx && c.y === ty) || { x: tx, y: ty, home: ty < this.world.surface };
+    // A lantern down in the mine is good for exactly one visit. Locking first
+    // means the "it's spent" toast fires once rather than on every step.
+    if (cp.spent) { this.ui.toast(loc('toast.lanternSpent')); return; }
     this.bankAt(cp);
   }
 
@@ -564,7 +580,10 @@ class Game {
     L.push({ x: p.x, y: p.y, r: 1.5, a: 1 });
 
     for (const c of this.world.checkpoints) {
-      if (Math.abs(c.x - p.x) < 26 && Math.abs(c.y - p.y) < 20) L.push({ x: c.x + 0.5, y: c.y + 0.5, r: 5.2, a: 0.9 });
+      if (Math.abs(c.x - p.x) >= 26 || Math.abs(c.y - p.y) >= 20) continue;
+      // A spent lantern keeps a stub of a glow — enough to recognise it as the
+      // one you already used, not enough to light the room by.
+      L.push({ x: c.x + 0.5, y: c.y + 0.5, r: c.spent ? 2.2 : 5.2, a: c.spent ? 0.5 : 0.9 });
     }
     for (const d of this.dynamites) L.push({ x: d.x, y: d.y, r: 2.6, a: 0.8 });
     for (const g of this.gems) L.push({ x: g.x, y: g.y, r: g.heart ? 5 : 1.5, a: 0.75 });

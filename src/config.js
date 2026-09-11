@@ -21,6 +21,17 @@ const CFG = {
     bottomPad: 12,       // rows of mine below the chamber before bedrock
     caveScale: 7.5,      // noise frequency for caverns
     rockScale: 4.5,      // noise frequency for rock veins
+
+    // The run opens with the miner already down a pre-dug shaft, one step
+    // below the camp. `startDepth` rows of it are cut out, and a single step
+    // tile beside the shaft keeps the climb back out a two-jump affair.
+    startDepth: 3,       // rows of shaft carved out under the surface lip
+    campOffset: 3,       // tiles the camp lantern sits to one side of the shaft
+
+    // A station floor that spans the full width with rock can strand a player
+    // who has run out of dynamite. Every station keeps this many soft patches.
+    stationGaps: 3,      // soft (mineable) patches punched through each floor
+    stationGapWidth: 2,  // max tiles wide a single patch can be
   },
 
   player: {
@@ -37,18 +48,23 @@ const CFG = {
     // --- gravity & jumping -------------------------------------------------
     gravity: 34,         // tiles/sec^2 pulling the miner down
     maxFall: 19,         // terminal velocity (must stay under 1 tile/step)
-    // 12.2 clears ~2.2 tiles, which is what it takes to climb out of the
-    // two-deep starting shaft. Drop it and the very first hole becomes a trap.
+    // 12.2 clears ~2.2 tiles, which is what it takes to climb a two-tile step.
+    // Drop it and the very first hole becomes a trap.
     jumpVel: 12.2,
     jumpCut: 0.50,       // vy kept when the button is released early
-    // Jump forgiveness. These three are the difference between "the jump feels
+    // Jump forgiveness. These are the difference between "the jump feels
     // responsive" and "I have to frame-time it": leave yourself room to be late
-    // (coyote), early (buffer), and slightly off the edge of a tile (probe).
+    // (coyote), early (buffer), and slightly off the centre of a tile (probe,
+    // nudge).
     coyote: 0.20,        // grace period to still jump after walking off a ledge
     jumpBuffer: 0.22,    // a jump pressed just before landing still fires
     airControl: 0.62,    // fraction of ground steering available mid-air
     groundProbe: 0.20,   // how far below the feet counts as "standing on it"
     groundWidth: 0.90,   // fraction of the collision radius the feet probe uses
+    // Corner correction. A jump up a one-tile shaft must not die on the lip of
+    // the tile next door just because the miner was standing slightly off
+    // centre — if this much of a sideways scrape clears the ceiling, take it.
+    cornerNudge: 0.42,   // tiles the miner is shifted sideways past a corner
 
     // --- grapple grip ------------------------------------------------------
     // Hold the stick into a wall while falling and the miner hooks on. This is
@@ -78,6 +94,10 @@ const CFG = {
   dynamite: {
     capacity: 3,
     fuse: 1.35,
+    // A lit stick is dropped at the miner's feet and obeys the same gravity as
+    // everything else down here — it never hangs in the air.
+    gravity: 40,         // tiles/sec^2
+    maxFall: 15,         // terminal velocity, tiles/sec
     radius: 1,           // tile radius of destruction (1 = 3x3, diagonals in)
     blastRadius: 1.75,   // entity damage radius, in tiles
     enemyDamage: 6,
@@ -151,19 +171,19 @@ const CFG = {
 
   checkpoint: {
     radius: 0.9,
-    reopenDelay: 3,      // seconds of play before a used lantern can open again
+    // A lantern down in the mine burns out the moment it is used: one visit,
+    // one set of decisions. The surface camp is the only station you can walk
+    // back into, and that walk is the whole point of the game.
+    reopenDelay: 3,      // seconds of play before the camp can open again
     reopenDist: 3,       // ...and tiles the player must step away from it first
   },
 
-  healItems: [
-    { id: 'bandage', cost: 40,  amount: 1 },   // cheap: +1 HP
-    { id: 'medpack', cost: 120, amount: 999 },  // expensive: restore to full HP
-  ],
-
-  // Dynamite is a consumable, not a free refill: a lantern sells it, it does
-  // not hand it out. Spending the run's gems on charges is the trade.
-  restock: {
-    dynamiteCost: 20,    // gold per stick bought at a lantern
+  // Consumables a lantern sells. Both are all-or-nothing and deliberately
+  // expensive: a cave lantern is single use, so this is one decision rather
+  // than a tap-fest, and the price has to compete with going deeper.
+  supplies: {
+    healCost: 900,       // restore to full health
+    dynamiteCost: 850,   // refill the satchel to capacity
   },
 
   lava: {

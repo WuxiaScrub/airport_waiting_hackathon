@@ -109,6 +109,7 @@ class Player {
     if (w.isFree(nx, this.y, this.r)) this.x = nx; else this.vx = 0;
     const ny = this.y + this.vy * dt;
     if (w.isFree(this.x, ny, this.r)) this.y = ny;
+    else if (this.vy < 0 && this.squeezePast(w, ny)) { /* scraped past a corner */ }
     else {
       if (this.vy > 3.5) this.land(game);
       this.vy = 0;
@@ -139,6 +140,36 @@ class Player {
    */
   standingOn(w) {
     return !w.isFree(this.x, this.y + CFG.player.groundProbe, this.r * CFG.player.groundWidth);
+  }
+
+  /**
+   * Corner correction for a rising jump. A one-tile shaft is barely wider than
+   * the miner, so being a hand's width off centre used to bury the jump in the
+   * lip of the tile next door — you were standing under the hole and still
+   * bounced off the ceiling. If a small sideways scrape clears it, take it.
+   *
+   * The nudge only happens on the way *up*: catching a lip on the way down is
+   * a ledge you landed on, which is exactly what should happen.
+   */
+  squeezePast(w, ny) {
+    const max = CFG.player.cornerNudge;
+    const step = 0.07;
+    // Favour the side you are already drifting toward — that is almost always
+    // the one the opening is on.
+    const order = this.vx >= 0 ? [1, -1] : [-1, 1];
+    for (let d = step; d <= max + 1e-4; d += step) {
+      for (const s of order) {
+        const nx = this.x + s * d;
+        // Legal at both heights, or the shift would post the miner through a
+        // wall instead of round a corner.
+        if (w.isFree(nx, this.y, this.r) && w.isFree(nx, ny, this.r)) {
+          this.x = nx;
+          this.y = ny;
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /* ---------------------------------------------------------- grapple grip */
@@ -292,9 +323,15 @@ class Player {
     if (!didSomething) Sfx.play('mine', { v: 0.4 });
   }
 
+  /**
+   * The stick goes where the miner is standing, never where they are aiming:
+   * you drop it at your feet and then run. It falls under gravity from there,
+   * so dropping one over a shaft sends it down the shaft rather than leaving
+   * it hanging in mid-air.
+   */
   placeDynamite(game) {
     if (this.dynamite <= 0) { Sfx.play('clink', { v: 0.5 }); game.ui.toast(loc('toast.noDynamite')); return; }
-    const tt = this.targetTile();
+    const tt = this.tile;
     if (game.world.get(tt.x, tt.y) === T.BEDROCK) { game.ui.toast(loc('toast.cantPlace')); return; }
     if (game.dynamites.some(d => d.tx === tt.x && d.ty === tt.y && !d.dead)) return;
 

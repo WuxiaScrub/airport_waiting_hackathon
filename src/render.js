@@ -312,7 +312,7 @@ class Renderer {
               CFG.gems.types[Math.max(0, w.gem[i] - 1)].glow);
             break;
           case T.LAVA:    this.drawLavaTile(c, px, py, S, game.time, x, y); break;
-          case T.CHECKPOINT: this.drawCheckpoint(c, px, py, ppt, game.time); break;
+          case T.CHECKPOINT: this.drawCheckpoint(c, px, py, ppt, game.time, w.isSpent(x, y)); break;
           case T.HEART:   this.drawHeartstone(c, px + ppt / 2, py + ppt / 2, ppt, game.time); break;
         }
 
@@ -341,13 +341,21 @@ class Renderer {
     c.fillRect(px, py + S * 0.78, S, S * 0.22);
   }
 
-  drawCheckpoint(c, px, py, ppt, time) {
+  /**
+   * A live lantern breathes warm gold. A spent one — every station in the mine
+   * is good for a single visit — keeps the same silhouette on a dull ember, so
+   * it still reads as a landmark you can navigate by while being unmistakably
+   * one you have already burned.
+   */
+  drawCheckpoint(c, px, py, ppt, time, spent) {
     const cx = px + ppt / 2, cy = py + ppt / 2;
-    const pulse = 0.72 + 0.28 * Math.sin(time * 2.6);
+    const pulse = spent ? 0.26 + 0.06 * Math.sin(time * 1.1) : 0.72 + 0.28 * Math.sin(time * 2.6);
+    const halo = spent ? 0.12 : 0.45 * pulse;
+    const tint = spent ? '168,138,104' : '255,208,110';
     // Halo.
     const g = c.createRadialGradient(cx, cy, 0, cx, cy, ppt * 1.5);
-    g.addColorStop(0, `rgba(255,208,110,${0.45 * pulse})`);
-    g.addColorStop(1, 'rgba(255,208,110,0)');
+    g.addColorStop(0, `rgba(${tint},${halo})`);
+    g.addColorStop(1, `rgba(${tint},0)`);
     c.fillStyle = g;
     c.fillRect(cx - ppt * 1.5, cy - ppt * 1.5, ppt * 3, ppt * 3);
     // Post + lantern.
@@ -357,8 +365,9 @@ class Renderer {
     c.fillRect(cx - ppt * 0.22, cy + ppt * 0.42, ppt * 0.44, ppt * 0.08);
     c.fillStyle = '#2c2118';
     c.fillRect(cx - ppt * 0.19, cy - ppt * 0.42, ppt * 0.38, ppt * 0.36);
-    c.fillStyle = `rgba(255,214,120,${pulse})`;
+    c.fillStyle = spent ? `rgba(190,120,70,${pulse})` : `rgba(255,214,120,${pulse})`;
     c.fillRect(cx - ppt * 0.13, cy - ppt * 0.36, ppt * 0.26, ppt * 0.24);
+    if (spent) return;
     c.fillStyle = `rgba(255,255,220,${pulse})`;
     c.fillRect(cx - ppt * 0.06, cy - ppt * 0.3, ppt * 0.12, ppt * 0.12);
   }

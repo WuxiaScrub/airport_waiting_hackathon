@@ -190,9 +190,9 @@ class UI {
   }
 
   /**
-   * `opts.title` / `.sub` / `.closeLabel` / `.extra` may be plain strings or
-   * thunks. Pass a thunk for anything localized: the panel re-runs it when the
-   * language changes, so labels fixed at open time still follow the switch.
+   * `opts.title` / `.sub` / `.note` / `.closeLabel` / `.extra` may be plain
+   * strings or thunks. Pass a thunk for anything localized: the panel re-runs it
+   * when the language changes, so labels fixed at open time follow the switch.
    */
   shop(game, opts) {
     const o = opts || {};
@@ -201,38 +201,31 @@ class UI {
     const p = game.player;
     const inRun = game.state === 'paused' && p && !p.dead;
 
-    // Consumables. Dynamite is stock the lantern sells — walking in no longer
-    // refills the satchel, so this row is the only way to top it back up.
-    const missing = inRun ? p.dynMax - p.dynamite : 0;
-    const one = CFG.restock.dynamiteCost;
-    const fill = missing * one;
+    // Consumables, both all-or-nothing. Walking in refills nothing any more,
+    // and a lantern in the mine only opens once, so each of these is a single
+    // expensive decision rather than something to tap at.
+    const S = CFG.supplies;
     const dynSection = inRun ? `
       <div class="shop-item">
         <div class="info">
           <div class="nm">${loc('supply.dynamite.name')}</div>
           <div class="ds">${loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax })}</div>
         </div>
-        <div class="buys">
-          <button class="buy" data-dyn="one"
-            ${missing <= 0 || game.save.gold < one ? 'disabled' : ''}>${loc('supply.buyOne', { v: fmt(one) })}</button>
-          ${missing > 1 ? `<button class="buy" data-dyn="all"
-            ${game.save.gold < fill ? 'disabled' : ''}>${loc('supply.buyFill', { v: fmt(fill) })}</button>` : ''}
-        </div>
+        <button class="buy" data-dyn="1"
+          ${p.dynamite >= p.dynMax || game.save.gold < S.dynamiteCost ? 'disabled' : ''}
+        >${fmt(S.dynamiteCost)}</button>
       </div>` : '';
 
-    const healSection = inRun ? CFG.healItems.map(h => {
-      const atMax = p.health >= p.maxHealth;
-      const afford = game.save.gold >= h.cost;
-      return `
-        <div class="shop-item">
-          <div class="info">
-            <div class="nm">${loc('heal.' + h.id + '.name')}</div>
-            <div class="ds">${loc('heal.' + h.id + '.desc', { cur: p.health, max: p.maxHealth })}</div>
-          </div>
-          <button class="buy" data-heal="${h.id}"
-            ${atMax || !afford ? 'disabled' : ''}>${fmt(h.cost)}</button>
-        </div>`;
-    }).join('') : '';
+    const healSection = inRun ? `
+      <div class="shop-item">
+        <div class="info">
+          <div class="nm">${loc('supply.heal.name')}</div>
+          <div class="ds">${loc('supply.heal.desc', { cur: p.health, max: p.maxHealth })}</div>
+        </div>
+        <button class="buy" data-heal="1"
+          ${p.health >= p.maxHealth || game.save.gold < S.healCost ? 'disabled' : ''}
+        >${fmt(S.healCost)}</button>
+      </div>` : '';
 
     const items = CFG.upgrades.map(u => {
       const lvl = game.save.upgrades[u.id] || 0;
@@ -257,6 +250,7 @@ class UI {
     this.show(`
       <h2>${res(o.title, 'shop.supplyLantern')}</h2>
       <div class="sub">${res(o.sub, 'shop.wealthSecured')}</div>
+      ${o.note ? `<div class="note">${res(o.note)}</div>` : ''}
       <div class="stats">
         <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
         <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('common.metres', { n: game.depth() })}</div></div>
@@ -266,8 +260,8 @@ class UI {
       ${o.extra ? res(o.extra) : ''}
       ${this.langButton()}
     `);
-    this.onAll('[data-dyn]', (el) => game.buyDynamite(el.dataset.dyn === 'all'));
-    this.onAll('[data-heal]', (el) => game.buyHeal(el.dataset.heal));
+    this.onAll('[data-dyn]', () => game.buyDynamite());
+    this.onAll('[data-heal]', () => game.buyHeal());
     this.onAll('[data-up]', (el) => game.buyUpgrade(el.dataset.up));
     this.on('#closeShop', () => game.closePanel());
     if (o.wire) o.wire(this);

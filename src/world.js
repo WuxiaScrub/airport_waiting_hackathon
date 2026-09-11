@@ -22,7 +22,7 @@ class World {
     this.variant = new Uint8Array(n);    // visual variant index
 
     this.pendingFalls = new Map();       // tile index -> seconds until it drops
-    this.checkpoints = [];               // {x, y} of every station anchor
+    this.checkpoints = [];               // {x, y, home, spent} of every station
     this.heartstone = { x: 0, y: 0 };
     this.spawnPoint = { x: 0, y: 0 };
     this.lavaRow = this.h + 4;           // above this row is safe; starts off-map
@@ -46,6 +46,18 @@ class World {
 
   isSolid(x, y) { return SOLID[this.get(x, y)] === 1; }
   isMineable(x, y) { return MINEABLE[this.get(x, y)] === 1; }
+
+  /** The station record on a tile, if there is one. */
+  checkpointAt(x, y) {
+    for (const c of this.checkpoints) if (c.x === x && c.y === y) return c;
+    return null;
+  }
+
+  /** A burnt-out lantern still draws, but it is scenery from here on. */
+  isSpent(x, y) {
+    const c = this.checkpointAt(x, y);
+    return !!(c && c.spent);
+  }
 
   /** Is a circle of `r` tiles at world-tile position (px,py) free of walls? */
   isFree(px, py, r) {
@@ -99,6 +111,30 @@ class World {
     this.carveSurface();
     this.carveCheckpoints();
     this.carveHeartstoneChamber();
+    this.ensureRowsPassable();
+  }
+
+  /**
+   * No row of the mine may be sealed off by rock from wall to wall — a player
+   * who has spent their last stick of dynamite would have nowhere to go. The
+   * bedrock floor at the very bottom is the one exception; it is the end of
+   * the mine, not a wall across it.
+   */
+  ensureRowsPassable() {
+    for (let y = this.surface; y < this.h - 1; y++) {
+      let soft = 0;
+      for (let x = 1; x < this.w - 1; x++) {
+        const t = this.t[y * this.w + x];
+        if (t !== T.ROCK && t !== T.BEDROCK) soft++;
+      }
+      if (soft > 0) continue;
+      // Punch a couple of soft patches through, well clear of the walls.
+      const n = 1 + this.rng.int(0, 1);
+      for (let k = 0; k < n; k++) {
+        const gx = this.rng.int(3, this.w - 4);
+        this.set(gx, y, T.DIRT, CFG.mining.dirtHits);
+      }
+    }
   }
 
   /** Gem rarity by depth — the deeper you push, the better the odds. */
@@ -110,29 +146,52 @@ class World {
     return 0;
   }
 
-  /** The camp: an open shelf with the home checkpoint the run cashes out at. */
+  /**
+   * The camp: an open shelf with the home lantern the run cashes out at, and
+   * the shaft the run starts at the bottom of.
+   *
+   * The miner begins underground — somebody has already cut the first few rows
+   * out — with the camp a few tiles to one side rather than straight overhead,
+   * so the hole reads as a hole and the lantern as a destination. A single step
+   * beside the shaft keeps the climb home to two ordinary jumps.
+   */
   carveSurface() {
+    const cfg = CFG.world;
     const cx = (this.w / 2) | 0;
+    const side = this.rng.chance(0.5) ? 1 : -1;   // which way the camp sits
+    const bottom = this.surface + cfg.startDepth - 1;
+
     for (let x = 1; x < this.w - 1; x++) {
       // A rocky lip along the surface so the camp reads as a solid ledge.
       const i = this.idx(x, this.surface);
       if (this.t[i] !== T.BEDROCK) { this.t[i] = T.ROCK; this.hp[i] = 0; this.gem[i] = 0; }
     }
-    // Punch a starting shaft so the first dig is obvious.
-    for (let y = this.surface; y < this.surface + 2; y++) this.set(cx, y, T.DIRT, CFG.mining.dirtHits);
 
-    this.set(cx, this.surface - 1, T.CHECKPOINT);
-    this.checkpoints.push({ x: cx, y: this.surface - 1, home: true });
-    this.spawnPoint = { x: cx + 0.5, y: this.surface - 1 + 0.5 };
+    // The shaft itself, already dug, plus a step out of it on the camp side.
+    for (let y = this.surface; y <= bottom; y++) this.set(cx, y, T.EMPTY);
+    for (let y = this.surface; y < bottom; y++) this.set(cx + side, y, T.EMPTY);
+    // Guarantee footing: the noise pass is free to open a cavern directly under
+    // the shaft, and spawning into a fall is a rotten first second.
+    if (!this.isSolid(cx, bottom + 1)) this.set(cx, bottom + 1, T.DIRT, CFG.mining.dirtHits);
+
+    const hx = cx + side * cfg.campOffset;
+    this.set(hx, this.surface - 1, T.CHECKPOINT);
+    this.checkpoints.push({ x: hx, y: this.surface - 1, home: true, spent: false });
+    this.spawnPoint = { x: cx + 0.5, y: bottom + 0.5 };
   }
 
   /**
    * Checkpoints span the full width of the mine. That guarantees the player
    * finds one on any descent — no hunting for a hidden room in the dark.
+   *
+   * The floor under one is rock, but never solid rock from wall to wall: a
+   * handful of soft patches are punched through it so a player who has run out
+   * of dynamite always has somewhere to dig.
    */
   carveCheckpoints() {
-    const every = CFG.world.checkpointEvery;
-    for (let r = this.surface + every; r < CFG.world.heartstoneRow - 12; r += every) {
+    const cfg = CFG.world;
+    const every = cfg.checkpointEvery;
+    for (let r = this.surface + every; r < cfg.heartstoneRow - 12; r += every) {
       for (let x = 1; x < this.w - 1; x++) {
         this.set(x, r, T.EMPTY);
         this.set(x, r + 1, T.EMPTY);
@@ -140,7 +199,17 @@ class World {
       }
       const cx = this.rng.int(5, this.w - 6);
       this.set(cx, r + 1, T.CHECKPOINT);
-      this.checkpoints.push({ x: cx, y: r + 1, home: false });
+      this.checkpoints.push({ x: cx, y: r + 1, home: false, spent: false });
+
+      // The first soft patch is always within sight of the lantern, so the way
+      // on is somewhere the player is already standing. The rest are scattered,
+      // so the route down is never quite the same twice.
+      for (let k = 0; k < cfg.stationGaps; k++) {
+        const gw = this.rng.int(1, cfg.stationGapWidth);
+        const gx = k === 0 ? clamp(cx + this.rng.int(-4, 4), 2, this.w - 2 - gw)
+          : this.rng.int(2, this.w - 2 - gw);
+        for (let x = gx; x < gx + gw; x++) this.set(x, r + 2, T.DIRT, CFG.mining.dirtHits);
+      }
     }
   }
 
@@ -198,7 +267,10 @@ class World {
     if (!this.inBounds(x, y)) return;
     const i = this.idx(x, y);
     const type = this.t[i];
-    if (type === T.BEDROCK) return;
+    // Bedrock is the edge of the world; a station is the one landmark a run
+    // navigates by, so neither is blastable. Losing a lantern to a stray stick
+    // of dynamite would strand the loot you came back up to bank.
+    if (type === T.BEDROCK || type === T.CHECKPOINT) return;
 
     const g = this.game;
     if (type === T.GEM && this.gem[i] > 0) {
@@ -255,12 +327,15 @@ class World {
     this.checkNeighbours(x, y);
   }
 
-  /** Dynamite: flatten a 3x3, bedrock excepted. */
+  /** Dynamite: flatten a 3x3. Bedrock and stations ride it out. */
   explode(cx, cy) {
     const r = CFG.dynamite.radius;
     for (let y = cy - r; y <= cy + r; y++)
-      for (let x = cx - r; x <= cx + r; x++)
-        if (this.get(x, y) !== T.BEDROCK && this.get(x, y) !== T.EMPTY) this.destroy(x, y);
+      for (let x = cx - r; x <= cx + r; x++) {
+        const t = this.get(x, y);
+        if (t === T.EMPTY || t === T.BEDROCK || t === T.CHECKPOINT) continue;
+        this.destroy(x, y);
+      }
     this.checkNeighbours(cx, cy);
   }
 
