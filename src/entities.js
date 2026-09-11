@@ -53,12 +53,30 @@ class Dynamite {
   constructor(x, y) {
     this.x = x; this.y = y;      // tile-centre position
     this.tx = x | 0; this.ty = y | 0;
+    this.vy = 0;
     this.fuse = CFG.dynamite.fuse;
     this.dead = false;
     this._beep = 0;
   }
 
+  /**
+   * A lit stick falls like the dirt does, and rests centred on the first solid
+   * tile under it — which is the tile the blast is keyed to. Nothing is cached:
+   * blast the floor out from under a stick and it carries on down.
+   */
+  fall(dt, w) {
+    const C = CFG.dynamite;
+    this.vy = Math.min(this.vy + C.gravity * dt, C.maxFall);
+    const ny = this.y + this.vy * dt;
+    const tx = this.x | 0;
+    const under = Math.floor(ny + 0.5);
+    if (w.isSolid(tx, under)) { this.y = under - 0.5; this.vy = 0; }
+    else this.y = ny;
+    this.tx = tx; this.ty = Math.floor(this.y);
+  }
+
   update(dt, game) {
+    this.fall(dt, game.world);
     this.fuse -= dt;
     this._beep -= dt;
     if (this._beep <= 0) {

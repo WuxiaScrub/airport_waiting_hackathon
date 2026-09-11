@@ -36,7 +36,7 @@ GitHub Actions*.
 | Aim        | Push the stick up or down                | `W` / `S` or ↑ / ↓      |
 | Mine / hit | Hold **MINE**                            | Hold `J` / `Enter`      |
 | Jump       | Tap **JUMP**                             | `Space` (hold for height) |
-| Dynamite   | Tap **BOMB**                             | `F`                     |
+| Dynamite   | Tap **BOMB** (drops at your feet)        | `F`                     |
 | Pause      | —                                        | `Esc`                   |
 | Mute       | Pause menu                               | `M`                     |
 
@@ -52,10 +52,14 @@ to chew at the ceiling.
 
 Descend → mine → collect → risk going deeper → checkpoint → shop → repeat.
 
+- **You start underground.** Somebody has already cut the first few rows; the
+  run opens at the bottom of that shaft with the camp lantern a few tiles to one
+  side, up a single step. The way out is the way back in.
 - **You fall.** Gravity applies to the miner as well as the dirt. Getting back
-  up is a jump, a staircase you cut on the way down, or a pile of dirt you
-  knocked loose on purpose. A sheer one-tile shaft is a one-way trip, which is
-  what keeps "climb out the way you came" an actual decision.
+  up is a jump, a staircase you cut on the way down, a pile of dirt you knocked
+  loose on purpose, or the grapple — hold the stick into a wall while falling
+  and the hook catches. Climbing is always work, which is what keeps "climb out
+  the way you came" an actual decision.
 - **Soft dirt** takes two pickaxe hits. The first hit only *weakens* it, and
   weakened dirt with nothing beneath it hangs for ~0.9 s before falling and
   settling on the next solid tile below. Intact dirt is structural and never
@@ -63,13 +67,21 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   spider, or onto your own head. A **hard hat** from the shop absorbs a falling
   block outright and re-forms after a few seconds.
 - **Rock** is immune to the pickaxe. Dynamite goes through it.
-- **Dynamite** has a short fuse and flattens a 3×3, diagonals included. Mining
-  tool, escape tool, and weapon.
+- **Dynamite** has a short fuse and flattens a 3×3, diagonals included. It is
+  dropped *at your feet*, not at what you are aiming at, and it falls like
+  everything else down here — so you place it and run, and a stick dropped over
+  a shaft goes down the shaft. Mining tool, escape tool, and weapon.
 - **Gems** — sapphire, emerald, ruby, diamond — are worth more the deeper you
   find them. What you carry is *unbanked* and lost if you die.
 - **Checkpoint lanterns** span the full width of the mine every ~34 m, so any
-  descent will run into one. They bank your gems, heal you, restock dynamite,
-  and open the shop.
+  descent will run into one. They bank your gems and open the shop, which sells
+  exactly two consumables — a full heal and a full satchel of dynamite, both
+  expensive. A lantern down in the mine **lights once**: it burns out as you
+  leave, so what you buy there is a single decision, not a refill station. Only
+  the surface camp can be walked back into. Nothing blasts a lantern, either —
+  dynamite goes straight through the rock around it and leaves the post standing.
+  Their rock floors always keep a few soft patches, one of them within sight of
+  the lantern, so an empty satchel never means a dead end.
 - **Your headlamp is the only light.** Terrain you have already seen stays
   faintly visible as memory, but anything alive in an unlit tunnel is invisible.
   Upgrading the lamp genuinely changes how the game plays.

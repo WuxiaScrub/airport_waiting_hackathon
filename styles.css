@@ -318,6 +318,15 @@ html, body {
   font-size: 11px; font-weight: 700; letter-spacing: .12em;
   color: var(--dim); margin-bottom: 16px;
 }
+/* The one-visit warning on a cave lantern — it has to read before the buttons. */
+.panel .note {
+  font-size: 11px; font-weight: 800; letter-spacing: .1em;
+  color: var(--gold);
+  background: rgba(255, 201, 94, .1);
+  border: 1px solid rgba(255, 201, 94, .32);
+  border-radius: 10px;
+  padding: 8px 10px; margin: -8px 0 14px;
+}
 .panel .logo {
   font-size: clamp(38px, 13vw, 62px);
   font-weight: 900; letter-spacing: .12em; line-height: 1;
@@ -356,10 +365,6 @@ html, body {
 .pips { display: flex; gap: 3px; margin-top: 5px; }
 .pip { width: 15px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.13); }
 .pip.on { background: var(--gold); }
-
-/* A consumable row can offer two prices (one stick / fill the satchel). */
-.shop-item .buys { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
-.shop-item .buys .buy { min-width: 82px; padding: 7px 9px; font-size: 11px; }
 
 .buy {
   flex-shrink: 0;
@@ -405,6 +410,7 @@ body.lang-cjk .toast,
 body.lang-cjk .banner p,
 body.lang-cjk .panel h2,
 body.lang-cjk .panel .sub,
+body.lang-cjk .panel .note,
 body.lang-cjk .panel .tagline,
 body.lang-cjk .stat .k,
 body.lang-cjk .btn,

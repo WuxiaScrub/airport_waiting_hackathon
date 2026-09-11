@@ -54,9 +54,9 @@ const STRINGS = {
     'help.grip.k': 'GRAPPLE',
     'help.grip.v': 'Falling past a wall? Hold the stick <b>into</b> it and the hook catches. <b>JUMP</b> from there, catch again — that is how a shaft is climbed.',
     'help.boom.k': 'DYNAMITE',
-    'help.boom.v': 'Tap 🧨 to drop a stick on the tile you are aiming at. Clears a 3×3 and blasts rock.',
+    'help.boom.v': 'Tap 🧨 to drop a stick <b>at your feet</b>, then run. It falls like you do. Clears a 3×3 and blasts rock.',
     'help.bank.k': 'BANK IT',
-    'help.bank.v': 'Loot you carry is <b>lost if you die</b>. Lanterns bank it and restock you.',
+    'help.bank.v': 'Loot you carry is <b>lost if you die</b>. Lanterns bank it — but one down in the mine lights <b>once</b>.',
     'help.dark.k': 'DARK',
     'help.dark.v': 'Your lamp is all you have. Something down there wants your gems.',
 
@@ -75,18 +75,13 @@ const STRINGS = {
     'shop.nothingToBank': 'NOTHING TO BANK',
     'shop.secured': '{v} SECURED',
     'shop.hatRepaired': 'HARD HAT REPAIRED',
+    'shop.singleUse': 'THIS LANTERN BURNS OUT WHEN YOU LEAVE — ONE VISIT ONLY',
 
-    /* Supplies (bought, never handed out) */
-    'supply.dynamite.name': 'Dynamite',
-    'supply.dynamite.desc': 'Sticks in the satchel  ({cur}/{max})',
-    'supply.buyOne': '+1 · {v}',
-    'supply.buyFill': 'FILL · {v}',
-
-    /* Heal items */
-    'heal.bandage.name': 'Bandage',
-    'heal.bandage.desc': 'Restore 1 HP  ({cur}/{max})',
-    'heal.medpack.name': 'Med Pack',
-    'heal.medpack.desc': 'Restore to full HP  ({cur}/{max})',
+    /* Supplies (bought, never handed out — and only by the full load) */
+    'supply.dynamite.name': 'Dynamite Reload',
+    'supply.dynamite.desc': 'Fill the satchel to the brim  ({cur}/{max})',
+    'supply.heal.name': 'Med Pack',
+    'supply.heal.desc': 'Patch up to full health  ({cur}/{max})',
 
     /* Upgrades */
     'up.health.name': 'Reinforced Vest',
@@ -130,6 +125,7 @@ const STRINGS = {
     'toast.notEnoughGold': 'NOT ENOUGH GOLD',
     'toast.alreadyFull': 'ALREADY AT FULL HEALTH',
     'toast.satchelFull': 'SATCHEL IS FULL',
+    'toast.lanternSpent': 'THIS LANTERN IS BURNT OUT',
     'toast.sound': 'SOUND {s}',
     'toast.heartstoneAtSurface': 'THE HEARTSTONE ONLY PAYS AT THE SURFACE',
     'toast.getToSurface': 'GET TO THE SURFACE',
@@ -183,9 +179,9 @@ const STRINGS = {
     'help.grip.k': '抓钩',
     'help.grip.v': '从墙边坠落时，把摇杆<b>推向</b>墙面，抓钩就会咬住。再按<b>跳跃</b>，然后重新抓住 —— 竖井就是这样爬上去的。',
     'help.boom.k': '炸药',
-    'help.boom.v': '点 🧨 在瞄准的格子上放一根。炸出 3×3 范围，连岩石也炸得开。',
+    'help.boom.v': '点 🧨 把一根炸药丢在<b>脚下</b>，然后快跑。它和你一样会往下掉。炸出 3×3 范围，连岩石也炸得开。',
     'help.bank.k': '存起来',
-    'help.bank.v': '身上携带的战利品<b>一死就没</b>。灯站可以帮你存入并补给。',
+    'help.bank.v': '身上携带的战利品<b>一死就没</b>。灯站可以帮你存入 —— 但矿洞里的灯站只能用<b>一次</b>。',
     'help.dark.k': '黑暗',
     'help.dark.v': '你只有头灯。下面有东西盯上了你的宝石。',
 
@@ -204,18 +200,13 @@ const STRINGS = {
     'shop.nothingToBank': '没有可存入的财富',
     'shop.secured': '{v} 已入库',
     'shop.hatRepaired': '安全帽已修复',
+    'shop.singleUse': '这盏灯在你离开后就会熄灭 —— 只能用一次',
 
-    /* Supplies (bought, never handed out) */
-    'supply.dynamite.name': '炸药',
-    'supply.dynamite.desc': '工具包里的存货（{cur}/{max}）',
-    'supply.buyOne': '+1 · {v}',
-    'supply.buyFill': '补满 · {v}',
-
-    /* Heal items */
-    'heal.bandage.name': '绷带',
-    'heal.bandage.desc': '恢复 1 点生命（{cur}/{max}）',
-    'heal.medpack.name': '急救包',
-    'heal.medpack.desc': '生命恢复至上限（{cur}/{max}）',
+    /* Supplies (bought, never handed out — and only by the full load) */
+    'supply.dynamite.name': '炸药补给',
+    'supply.dynamite.desc': '一次把工具包装满（{cur}/{max}）',
+    'supply.heal.name': '急救包',
+    'supply.heal.desc': '生命恢复至上限（{cur}/{max}）',
 
     /* Upgrades */
     'up.health.name': '加固背心',
@@ -259,6 +250,7 @@ const STRINGS = {
     'toast.notEnoughGold': '金币不足',
     'toast.alreadyFull': '生命值已满',
     'toast.satchelFull': '工具包已装满',
+    'toast.lanternSpent': '这盏灯已经熄灭了',
     'toast.sound': '音效{s}',
     'toast.heartstoneAtSurface': '心髓石只有回到地面才能兑现',
     'toast.getToSurface': '快回地面',
