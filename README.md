@@ -84,7 +84,14 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   the lantern, so an empty satchel never means a dead end.
 - **Your headlamp is the only light.** Terrain you have already seen stays
   faintly visible as memory, but anything alive in an unlit tunnel is invisible.
-  Upgrading the lamp genuinely changes how the game plays.
+  The lamp upgrades in small increments on purpose — a fully kitted miner still
+  works in the dark, and the dark stays an opponent rather than a starter
+  problem you buy your way out of.
+- **The mountain is on a clock.** Ten minutes into a run the volcano erupts by
+  itself, Heartstone or not. The HUD counts it down from the first second and
+  warns at 5:00, 1:00 and 0:15, so every descent is a bet against a deadline you
+  can see: bank early and surface, or push one more shaft and climb out ahead of
+  the lava.
 
 ### What's down there
 
@@ -106,6 +113,33 @@ melts everything but bedrock, there is no teleport out, and the only route home
 is the tunnel network you dug on the way down. The bounty pays out only at the
 surface camp.
 
+Taking the Heartstone is the *early* trigger. Left alone, the same eruption
+arrives on the ten-minute clock anyway — the Heartstone just buys it forward in
+exchange for the biggest payout in the game.
+
+### Scores
+
+A score is the gold a single run **banked** — wealth secured at a lantern or the
+camp. Gems still in your pockets when the lava caught you never count, so the
+board rewards cashing out rather than diving. The top five hauls show on the
+title screen and again on the run summary, with the row you just set picked out.
+
+Only a personal board exists today, kept in `localStorage`. `src/highscore.js`
+is written so a **global board drops in without touching anything else**:
+
+```js
+Highscore.useBackend({
+  name: 'my-board',
+  submit(entry) { /* -> Promise<void> */ },
+  top(n)        { /* -> Promise<entry[]> */ },
+});
+```
+
+Every finished run is then handed to that backend alongside the local write, and
+`Highscore.globalTop(n)` returns a promise the panel can render. There is no
+network code in the file: the game is a static site, and a board that is down
+must never break a run.
+
 ## Layout
 
 ```
@@ -114,6 +148,7 @@ styles.css          UI shell (the canvas draws only the mine)
 src/config.js       ← every balance number in the game
 src/i18n.js         ← every user-facing string, in English and 简体中文
 src/util.js         math, seeded RNG, value noise
+src/highscore.js    banked-haul board (local today, global backend ready)
 src/audio.js        Web Audio synthesis (swap for samples here)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights
@@ -130,8 +165,12 @@ src/main.js         boot
 ### Tuning
 
 `src/config.js` holds everything: gem values and rarity by depth, enemy speeds
-and telegraph timings, lava rise rate, upgrade costs, light radius, spawn rates.
-Nothing gameplay-facing is hard-coded elsewhere. The game object is exposed as
+and telegraph timings, lava rise rate and eruption fuse, upgrade costs and level
+counts, light radius, spawn rates. Nothing gameplay-facing is hard-coded
+elsewhere. Two stats also carry a ceiling — `player.maxHealthCap` (10 hearts)
+and `dynamite.capacityCap` (20 sticks) — and their upgrade `max` is tuned to
+land exactly on it; `Player.maxHealthFor()` and friends are the single place a
+level becomes a number, including for the price tags in the shop. The game object is exposed as
 `window.game` for poking at from the console.
 
 Two notes for anyone extending this:

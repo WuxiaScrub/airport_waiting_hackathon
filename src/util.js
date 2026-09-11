@@ -88,3 +88,12 @@ function fmt(n) {
   n = Math.round(n);
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
+
+/** Seconds -> m:ss for the eruption clock. Rounds up, so it never shows 0:00
+ *  while there is still time on it. */
+function fmtTime(s) {
+  s = Math.max(0, Math.ceil(s));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return m + ':' + (r < 10 ? '0' : '') + r;
+}
