@@ -21,6 +21,9 @@
       <div id="hearts" class="hearts"></div>
       <div id="helmet" class="helmet hidden"></div>
       <div id="depth" class="depth" data-i18n="hud.surface">SURFACE</div>
+      <!-- Eruption clock. Hidden until a run starts, and again once the
+           mountain is awake — from then on the depth line carries the lava. -->
+      <div id="timer" class="timer hidden"></div>
     </div>
     <div class="hud-right">
       <div class="wallet">
@@ -85,6 +88,7 @@
 <script src="src/config.js"></script>
 <script src="src/i18n.js"></script>
 <script src="src/util.js"></script>
+<script src="src/highscore.js"></script>
 <script src="src/audio.js"></script>
 <script src="src/world.js"></script>
 <script src="src/particles.js"></script>

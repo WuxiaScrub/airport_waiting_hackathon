@@ -8,18 +8,41 @@
  * ========================================================================== */
 
 class Player {
+  /* --------------------------------------------------------- derived stats
+   * An upgrade level becomes a number in exactly one place: here. Two of these
+   * stats have a ceiling, and the shop needs the same arithmetic to quote what
+   * the next level actually buys, so nobody re-derives them inline. */
+
+  static maxHealthFor(level) {
+    return Math.min(CFG.player.maxHealthCap,
+      CFG.player.maxHealth + (level || 0) * CFG.upgradeEffect.health);
+  }
+  static dynCapacityFor(level) {
+    return Math.min(CFG.dynamite.capacityCap,
+      CFG.dynamite.capacity + (level || 0) * CFG.upgradeEffect.dynamite);
+  }
+  static lightFor(level) {
+    return CFG.player.light + (level || 0) * CFG.upgradeEffect.light;
+  }
+  static speedFor(level) {
+    return CFG.player.speed * (1 + (level || 0) * CFG.upgradeEffect.speed);
+  }
+  static jumpVelFor(level) {
+    return CFG.player.jumpVel + (level || 0) * CFG.upgradeEffect.jump;
+  }
+
   constructor(x, y, upgrades) {
     this.x = x; this.y = y;
     this.vx = 0; this.vy = 0;
     this.r = CFG.player.radius;
 
-    this.maxHealth = CFG.player.maxHealth + (upgrades.health || 0) * CFG.upgradeEffect.health;
+    this.maxHealth = Player.maxHealthFor(upgrades.health);
     this.health = this.maxHealth;
-    this.speed = CFG.player.speed * (1 + (upgrades.speed || 0) * CFG.upgradeEffect.speed);
-    this.light = CFG.player.light + (upgrades.light || 0) * CFG.upgradeEffect.light;
-    this.dynMax = CFG.dynamite.capacity + (upgrades.dynamite || 0) * CFG.upgradeEffect.dynamite;
+    this.speed = Player.speedFor(upgrades.speed);
+    this.light = Player.lightFor(upgrades.light);
+    this.dynMax = Player.dynCapacityFor(upgrades.dynamite);
     this.dynamite = this.dynMax;
-    this.jumpVel = CFG.player.jumpVel + (upgrades.jump || 0) * CFG.upgradeEffect.jump;
+    this.jumpVel = Player.jumpVelFor(upgrades.jump);
     this.hatMax = (upgrades.helmet || 0) * CFG.upgradeEffect.helmet;
     this.hat = this.hatMax;
     this.hatTimer = 0;

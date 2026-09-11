@@ -38,6 +38,9 @@ const CFG = {
     radius: 0.34,        // collision radius, in tiles (fits a 1-tile corridor)
     speed: 4.5,
     maxHealth: 3,
+    // Hard ceiling on hearts, however many vests get bought. The vest upgrade's
+    // level count is tuned to land exactly here.
+    maxHealthCap: 10,
     invuln: 1.1,         // i-frames after taking a hit
     swingTime: 0.28,     // action cooldown
     swingReach: 1.15,    // melee reach for hitting enemies
@@ -93,6 +96,10 @@ const CFG = {
 
   dynamite: {
     capacity: 3,
+    // Hard ceiling on the satchel. The satchel upgrade still adds
+    // `upgradeEffect.dynamite` a level; the final level simply stops here, so
+    // the shop quotes the real gain rather than a full step.
+    capacityCap: 20,
     fuse: 1.35,
     // A lit stick is dropped at the miner's feet and obeys the same gravity as
     // everything else down here — it never hangs in the air.
@@ -188,6 +195,11 @@ const CFG = {
 
   lava: {
     startOffset: 10,     // rows below the Heartstone where the lava begins
+    // Every run is on a clock, Heartstone or not: the mountain wakes on its own
+    // once this much play time has passed, and the HUD counts it down. Banking
+    // early is therefore always a live option, never a wasted trip.
+    fuse: 600,           // seconds of play before the volcano erupts by itself
+    warnAt: [300, 60, 15], // seconds remaining that earn a toast (descending)
     // Climbing under gravity is slower than the old free-flight ascent, so the
     // escape was re-tuned to stay winnable rather than merely survivable.
     riseSpeed: 0.52,     // rows per second
@@ -197,19 +209,22 @@ const CFG = {
   },
 
   // Names and descriptions live in i18n.js under `up.<id>.name` / `.desc`.
+  // `max` is how many times an upgrade can be bought; where a stat also has a
+  // ceiling (hearts, dynamite) the two are tuned to meet exactly.
   upgrades: [
-    { id: 'health',   max: 5, base: 70,  step: 1.85 },
+    { id: 'health',   max: 7, base: 70,  step: 1.85 },  // 3 + 7 = 10 hearts
     { id: 'speed',    max: 5, base: 60,  step: 1.80 },
     { id: 'jump',     max: 4, base: 65,  step: 1.85 },
     { id: 'light',    max: 5, base: 80,  step: 1.75 },
-    { id: 'dynamite', max: 5, base: 90,  step: 1.90 },
+    { id: 'dynamite', max: 9, base: 90,  step: 1.90 },  // 3 + 2/lvl, capped at 20
     { id: 'helmet',   max: 3, base: 55,  step: 2.00 },
   ],
 
   upgradeEffect: {
     health: 1,           // hearts per level
     speed: 0.11,         // fractional speed per level
-    light: 1.3,          // tiles per level
+    light: 0.6,          // tiles per level — light is the scarcest stat, so it
+                         // climbs slowly and the dark stays a real opponent
     dynamite: 2,         // sticks per level
     helmet: 1,           // hard-hat charges per level
     jump: 1.15,          // extra launch speed per level (~+0.6 tiles of height)

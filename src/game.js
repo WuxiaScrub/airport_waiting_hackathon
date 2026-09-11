@@ -67,12 +67,14 @@ class Game {
   wipeSave() {
     this.save = { gold: 0, best: 0, upgrades: {}, audio: Sfx.enabled };
     this.persist();
+    Highscore.reset();
     this.ui.title(this.save);
   }
 
   /* ---------------------------------------------------------- run lifecycle */
 
-  resetRunStats() { this.runStats = { banked: 0, depth: 0, gems: 0, lost: 0 }; }
+  // `score` is filled in by endRun with whatever Highscore made of the haul.
+  resetRunStats() { this.runStats = { banked: 0, depth: 0, gems: 0, lost: 0, score: null }; }
 
   startRun(quiet) {
     if (!quiet) Sfx.init();
@@ -94,6 +96,10 @@ class Game {
     this.lavaShakeTimer = 0;
     this.deathAnim = 0;
     this.spawnTimer = CFG.spawn.interval;
+    // The eruption clock. It only advances while the mine is actually being
+    // played, so a paused game or the title-screen mine never burns it down.
+    this.runTime = 0;
+    this.nextWarn = 0;
     this.resetRunStats();
 
     // Standing on the home lantern at spawn shouldn't instantly open the shop.
@@ -107,6 +113,7 @@ class Game {
     this.ui.syncHat(this.player);
     this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
+    this.ui.syncTimer(this);
     this.input.reset();
     this.state = 'play';
     if (!quiet) this.ui.toast(loc('toast.digDown'), 1600);
@@ -121,11 +128,20 @@ class Game {
       this.player.hasHeartstone = false;
     }
     this.save.best = Math.max(this.save.best || 0, this.runStats.depth);
+    // The score is what the run BANKED — loot that was still in the miner's
+    // pockets never made it out, so it never makes the board.
+    this.runStats.score = Highscore.submit({
+      value: this.runStats.banked,
+      depth: this.runStats.depth,
+      gems: this.runStats.gems,
+      kind,
+    });
     this.persist();
     Sfx.stopRumble();
     this.state = 'over';
     this.input.reset();
     this.ui.syncWallet(this);
+    this.ui.syncTimer(this);
     this.ui.summary(this, kind);
   }
 
@@ -257,6 +273,21 @@ class Game {
 
   upgradeCost(u, level) { return Math.round(u.base * Math.pow(u.step, level)); }
 
+  /**
+   * Placeholders for an upgrade's shop description. Most upgrades hand out a
+   * flat step and need none; the satchel's last level runs into the capacity
+   * ceiling, so it quotes what that level actually buys rather than the step.
+   */
+  upgradeDescParams(u, level) {
+    if (u.id === 'dynamite') {
+      // A maxed row has no "next" level; quote the last one it sold instead of
+      // an honest but useless "+0".
+      const lv = Math.min(level, u.max - 1);
+      return { n: Player.dynCapacityFor(lv + 1) - Player.dynCapacityFor(lv) };
+    }
+    return null;
+  }
+
   buyUpgrade(id) {
     const u = CFG.upgrades.find(x => x.id === id);
     if (!u) return;
@@ -270,16 +301,27 @@ class Game {
     this.persist();
     Sfx.play('buy');
 
-    // Apply live so the purchase is felt immediately, not next run.
+    // Apply live so the purchase is felt immediately, not next run. Each stat
+    // is recomputed from its level rather than nudged, so a capped level adds
+    // exactly what it is worth instead of a full step.
     const p = this.player;
     if (p && !p.dead) {
-      if (id === 'health') { p.maxHealth += CFG.upgradeEffect.health; p.health += CFG.upgradeEffect.health; this.ui.syncHealth(p); }
-      if (id === 'speed') p.speed = CFG.player.speed * (1 + this.save.upgrades.speed * CFG.upgradeEffect.speed);
-      if (id === 'light') p.light = CFG.player.light + this.save.upgrades.light * CFG.upgradeEffect.light;
+      const lv = this.save.upgrades;
+      if (id === 'health') {
+        const gain = Player.maxHealthFor(lv.health) - p.maxHealth;
+        p.maxHealth += gain; p.health += gain;
+        this.ui.syncHealth(p);
+      }
+      if (id === 'speed') p.speed = Player.speedFor(lv.speed);
+      if (id === 'light') p.light = Player.lightFor(lv.light);
       // A bigger satchel comes with the sticks it adds, but it is not a free
       // refill of the ones you already spent.
-      if (id === 'dynamite') { p.dynMax += CFG.upgradeEffect.dynamite; p.dynamite += CFG.upgradeEffect.dynamite; this.ui.syncDynamite(p); }
-      if (id === 'jump') p.jumpVel = CFG.player.jumpVel + this.save.upgrades.jump * CFG.upgradeEffect.jump;
+      if (id === 'dynamite') {
+        const gain = Player.dynCapacityFor(lv.dynamite) - p.dynMax;
+        p.dynMax += gain; p.dynamite += gain;
+        this.ui.syncDynamite(p);
+      }
+      if (id === 'jump') p.jumpVel = Player.jumpVelFor(lv.jump);
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
     }
     this.ui.syncWallet(this);
@@ -405,7 +447,8 @@ class Game {
 
   /* -------------------------------------------------------------- volcano */
 
-  awakenVolcano() {
+  /** `cause` is 'heartstone' (the climax) or 'timer' (the clock ran out). */
+  awakenVolcano(cause) {
     if (this.volcano) return;
     this.volcano = true;
     this.lavaSpeed = CFG.lava.riseSpeed;
@@ -414,8 +457,38 @@ class Game {
     setTimeout(() => Sfx.play('awaken'), 300);
     Sfx.startRumble();
     this.shake(26);
-    this.ui.banner(loc('banner.volcano'), loc('banner.climbNow'));
+    this.ui.banner(loc('banner.volcano'), loc(cause === 'timer' ? 'banner.timeUp' : 'banner.climbNow'));
     this.ui.toast(loc('toast.getToSurface'), 3000);
+    this.ui.syncTimer(this);
+  }
+
+  /** Seconds left on the eruption clock. Zero once the mountain is awake. */
+  fuseLeft() {
+    if (this.volcano) return 0;
+    return Math.max(0, CFG.lava.fuse - this.runTime);
+  }
+
+  /**
+   * The run is on a clock whether or not the Heartstone has been found: sit in
+   * the mine long enough and the mountain wakes by itself. Warnings fire on the
+   * way down so the deadline is read, never sprung.
+   */
+  updateFuse(dt) {
+    if (this.volcano) return;
+    this.runTime += dt;
+
+    const warns = CFG.lava.warnAt;
+    const left = this.fuseLeft();
+    while (this.nextWarn < warns.length && left <= warns[this.nextWarn]) {
+      const at = warns[this.nextWarn++];
+      // A warning the clock skipped past (a long frame) is not worth shouting.
+      if (left > at - 2) {
+        Sfx.play('alert', { v: 0.8 });
+        this.ui.toast(loc('toast.eruptionWarn', { t: fmtTime(left) }), 2400);
+      }
+    }
+
+    if (left <= 0) this.awakenVolcano('timer');
   }
 
   updateLava(dt) {
@@ -450,6 +523,8 @@ class Game {
     this.shakeX = (Math.random() - 0.5) * s;
     this.shakeY = (Math.random() - 0.5) * s;
 
+    this.ui.syncTimer(this);
+
     // Paused / title / summary still animate the mine behind the panel.
     if (this.state !== 'play') {
       this.fx.update(dt);
@@ -462,6 +537,7 @@ class Game {
     if (this.player.dead) this.deathAnim += dt;
 
     this.world.update(dt);
+    this.updateFuse(dt);
     this.updateLava(dt);
     this.updateSpawns(dt);
 

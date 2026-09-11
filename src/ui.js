@@ -12,6 +12,7 @@ class UI {
       hearts: document.getElementById('hearts'),
       helmet: document.getElementById('helmet'),
       depth: document.getElementById('depth'),
+      timer: document.getElementById('timer'),
       banked: document.getElementById('banked'),
       unbanked: document.getElementById('unbanked'),
       dynCount: document.getElementById('dynCount'),
@@ -94,6 +95,28 @@ class UI {
   }
 
   /**
+   * The eruption clock. It is only on screen while there is still time on it —
+   * once the mountain is awake the depth line takes over with the lava gap,
+   * which is the number that matters from then on.
+   */
+  syncTimer(game) {
+    const el = this.el.timer;
+    const live = (game.state === 'play' || game.state === 'paused') && !game.volcano;
+    el.classList.toggle('hidden', !live);
+    if (!live) return;
+
+    const left = game.fuseLeft();
+    const label = loc('hud.eruption', { t: fmtTime(left) });
+    if (el.textContent !== label) el.textContent = label;
+
+    // Amber at the second-to-last warning, red at the last one, so the colour
+    // follows the toasts instead of a second set of magic numbers.
+    const w = CFG.lava.warnAt;
+    el.classList.toggle('soon', left <= w[Math.max(0, w.length - 2)]);
+    el.classList.toggle('warn', left <= w[w.length - 1]);
+  }
+
+  /**
    * Redraw the open panel from scratch. Every panel registers how to rebuild
    * itself, so callers never have to sniff the DOM to work out which one it is.
    */
@@ -166,10 +189,32 @@ class UI {
   langButton() { return `<button class="btn ghost" id="langBtn">${loc('lang.switch')}</button>`; }
   wireLang() { this.on('#langBtn', () => I18N.cycle()); }
 
+  /**
+   * The personal haul board. `highlightId` marks the row a run just set.
+   *
+   * A global board slots in here unchanged: register a backend with
+   * Highscore.useBackend() and render Highscore.globalTop() into a second list
+   * beside this one — see src/highscore.js.
+   */
+  scoreBoard(highlightId) {
+    const list = Highscore.list();
+    const body = list.length
+      ? list.map((e, i) => `
+          <div class="score-row${e.id && e.id === highlightId ? ' you' : ''}">
+            <span class="rk">${i + 1}</span>
+            <span class="vv">${fmt(e.value)}</span>
+            <span class="dd">${loc('common.metres', { n: e.depth })}</span>
+          </div>`).join('')
+      : `<div class="score-empty">${loc('score.empty')}</div>`;
+    return `<div class="scores">
+      <div class="score-head">${loc('score.title')}</div>${body}
+    </div>`;
+  }
+
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'dark'].map(k =>
-      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v')}</span></div>`).join('');
+    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'clock', 'dark'].map(k =>
+      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60) })}</span></div>`).join('');
 
     this._repaint = () => this.title(save);
     this.show(`
@@ -177,12 +222,14 @@ class UI {
       <div class="tagline">${loc('title.tagline')}</div>
       <div class="stats">
         <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(save.gold || 0)}</div></div>
-        <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
+        <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v carry">${fmt(Highscore.best())}</div></div>
+        <div class="stat wide"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
       </div>
+      ${this.scoreBoard()}
       <div class="help">${rows}</div>
       <button class="btn" id="startBtn">${loc('title.start')}</button>
       ${this.langButton()}
-      ${save.gold ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
+      ${save.gold || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
     `);
     this.on('#startBtn', () => this.game.startRun());
     this.on('#wipeBtn', () => this.game.wipeSave());
@@ -238,7 +285,7 @@ class UI {
         <div class="shop-item">
           <div class="info">
             <div class="nm">${loc('up.' + u.id + '.name')}</div>
-            <div class="ds">${loc('up.' + u.id + '.desc')}</div>
+            <div class="ds">${loc('up.' + u.id + '.desc', game.upgradeDescParams(u, lvl))}</div>
             <div class="pips">${pips}</div>
           </div>
           <button class="buy ${maxed ? 'max' : ''}" data-up="${u.id}"
@@ -277,16 +324,25 @@ class UI {
       : isDeath ? loc('sum.lootLost', { v: fmt(s.lost) })
       : loc('sum.hauledOut');
 
+    // The haul this run banked is the score. A record earns the note; anything
+    // else that made the board just gets its row highlighted.
+    const score = s.score || null;
+    const note = score && score.record ? loc('score.newBest')
+      : score && score.rank ? loc('score.ranked', { n: score.rank })
+      : '';
+
     this._repaint = () => this.summary(game, kind);
     this.show(`
       <h2>${title}</h2>
       <div class="sub">${sub}</div>
+      ${note ? `<div class="note">${note}</div>` : ''}
       <div class="stats">
         <div class="stat"><div class="k">${loc('sum.bankedThisRun')}</div><div class="v gold">${fmt(s.banked)}</div></div>
         <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: s.depth })}</div></div>
         <div class="stat"><div class="k">${loc('sum.gems')}</div><div class="v carry">${s.gems}</div></div>
         <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
       </div>
+      ${this.scoreBoard(score ? score.id : 0)}
       <button class="btn" id="shopBtn">${loc('sum.spend')}</button>
       <button class="btn ghost" id="againBtn">${loc('shop.newMine')}</button>
       ${this.langButton()}

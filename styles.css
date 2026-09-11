@@ -84,6 +84,19 @@ html, body {
   text-shadow: 0 1px 3px #000;
 }
 
+/* Eruption clock. Neutral for most of a run, amber at the first real warning,
+   red and pulsing at the last one — the colour is the alarm, not the digits. */
+.timer {
+  font-size: 12px; font-weight: 900; letter-spacing: .12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  text-shadow: 0 1px 3px #000;
+}
+.timer.hidden { display: none; }
+.timer.soon { color: var(--gold); }
+.timer.warn { color: var(--danger); animation: tick .9s steps(1, end) infinite; }
+@keyframes tick { 0%, 55% { opacity: 1 } 56%, 100% { opacity: .35 } }
+
 .wallet { display: flex; align-items: baseline; gap: 6px; }
 .wallet .lbl {
   font-size: 8.5px; font-weight: 800; letter-spacing: .14em; color: var(--dim);
@@ -351,6 +364,38 @@ html, body {
 .stat .v { font-size: 19px; font-weight: 900; font-variant-numeric: tabular-nums; }
 .stat .v.gold { color: var(--gold); }
 .stat .v.carry { color: var(--carry); }
+/* An odd stat out sits across the whole row rather than leaving a hole. */
+.stat.wide { grid-column: 1 / -1; }
+
+/* ---------------------------------------------------- Highscore board
+   One row per banked haul. The row a run just set is highlighted, so the
+   summary answers "where did that land?" without any extra copy. */
+.scores {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 9px 11px; margin-bottom: 16px;
+}
+.score-head {
+  font-size: 9px; font-weight: 800; letter-spacing: .12em;
+  color: var(--dim); margin-bottom: 6px;
+}
+.score-empty { font-size: 11px; font-weight: 700; color: var(--dim); }
+.score-row {
+  display: flex; align-items: baseline; gap: 9px;
+  padding: 3px 5px; margin: 0 -5px;
+  border-radius: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.score-row .rk {
+  flex-shrink: 0; min-width: 14px;
+  font-size: 10px; font-weight: 900; color: var(--dim);
+}
+.score-row .vv { flex: 1; font-size: 14px; font-weight: 900; color: var(--gold); }
+.score-row .dd { font-size: 10px; font-weight: 700; color: var(--dim); }
+.score-row.you { background: rgba(126, 240, 208, .11); }
+.score-row.you .rk { color: var(--carry); }
+.score-row.you .vv { color: var(--carry); }
 
 .shop-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .shop-item {
@@ -405,6 +450,8 @@ html, body {
    The wide Latin letter-spacing used across the HUD looks broken on Chinese,
    which is already generously spaced by its own glyph metrics. */
 body.lang-cjk .depth,
+body.lang-cjk .timer,
+body.lang-cjk .score-head,
 body.lang-cjk .wallet .lbl,
 body.lang-cjk .toast,
 body.lang-cjk .banner p,
