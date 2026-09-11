@@ -66,7 +66,13 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   falls, so collapses are something you cause on purpose — including onto a
   spider, or onto your own head. A **hard hat** from the shop absorbs a falling
   block outright and re-forms after a few seconds.
-- **Rock** is immune to the pickaxe. Dynamite goes through it.
+- **Rock** is immune to the pickaxe. Dynamite goes through it. Beyond the veins
+  the noise lays down, loose boulders are scattered through every stretch
+  between stations, and there are steadily more of them the deeper you go — the
+  bottom of the mine is roughly five times as rocky as the top. Routing around
+  them (or spending a stick) is most of what makes a deep shaft slower than a
+  shallow one. The rows either side of a lantern stay clear, and no row is ever
+  sealed wall to wall.
 - **Dynamite** has a short fuse and flattens a 3×3, diagonals included. It is
   dropped *at your feet*, not at what you are aiming at, and it falls like
   everything else down here — so you place it and run, and a stick dropped over
@@ -149,6 +155,7 @@ src/config.js       ← every balance number in the game
 src/i18n.js         ← every user-facing string, in English and 简体中文
 src/util.js         math, seeded RNG, value noise
 src/highscore.js    banked-haul board (local today, global backend ready)
+src/guard.js        refresh / Back confirmation while a run is live
 src/audio.js        Web Audio synthesis (swap for samples here)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights
@@ -182,6 +189,13 @@ Two notes for anyone extending this:
   `destination-in` intersects them instead, which blacks out the screen.
 - **Audio is one function.** `Sfx.play(name)` maps names to synth recipes; point
   those names at decoded buffers to drop in real sound effects later.
+- **A live run exists only in memory.** The save file holds banked gold and
+  upgrades, nothing else, so `src/guard.js` stands between a stray tap and a
+  lost descent: `beforeunload` covers a reload or a closed tab (the browser
+  draws that prompt, and ignores our wording), while the Back button is caught
+  by a spare same-document history entry the first press lands on, which lets
+  the game ask in its own panel instead. Both ask `game.runAtRisk()`, so neither
+  fires on the title screen or a finished run.
 - **No string is written inline.** Every player-visible word lives in
   `src/i18n.js` under a key present in *both* `en` and `zh`, and is read with
   `loc('some.key')` (or a `data-i18n` attribute in `index.html`). Adding a

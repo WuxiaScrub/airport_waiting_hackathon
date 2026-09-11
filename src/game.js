@@ -116,7 +116,19 @@ class Game {
     this.ui.syncTimer(this);
     this.input.reset();
     this.state = 'play';
+    // From here on a reload or a Back press would cost the player a run.
+    ExitGuard.sync();
     if (!quiet) this.ui.toast(loc('toast.digDown'), 1600);
+  }
+
+  /**
+   * True while leaving the page would throw work away. A run lives only in
+   * memory — the save file holds banked gold and upgrades, nothing else — so
+   * every live run counts, carrying loot or not.
+   */
+  runAtRisk() {
+    if (this.state !== 'play' && this.state !== 'paused') return false;
+    return !!this.player && !this.player.dead;
   }
 
   endRun(kind) {

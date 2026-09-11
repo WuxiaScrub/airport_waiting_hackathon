@@ -119,6 +119,12 @@ const STRINGS = {
     'sum.gems': 'GEMS',
     'sum.spend': 'SPEND AT CAMP',
 
+    /* Leaving the page mid-run (refresh, Back, tab close) */
+    'confirm.leaveTitle': 'LEAVE THE MINE?',
+    'confirm.leaveBody': 'Reloading or leaving this page ends the run. Loot you are carrying is not saved — only what you have already banked.',
+    'confirm.stay': 'KEEP DIGGING',
+    'confirm.leave': 'LEAVE ANYWAY',
+
     /* Pause */
     'pause.title': 'PAUSED',
     'pause.sub': '{d} m DEEP · {v} CARRIED',
@@ -256,6 +262,12 @@ const STRINGS = {
     'sum.bankedThisRun': '本次存入',
     'sum.gems': '宝石',
     'sum.spend': '去营地消费',
+
+    /* Leaving the page mid-run (refresh, Back, tab close) */
+    'confirm.leaveTitle': '要离开矿洞吗？',
+    'confirm.leaveBody': '刷新或离开本页面会结束这次探矿。携带中的战利品不会被保存 —— 只有已经存入的财富才留得住。',
+    'confirm.stay': '继续挖矿',
+    'confirm.leave': '仍然离开',
 
     /* Pause */
     'pause.title': '已暂停',

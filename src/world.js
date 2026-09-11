@@ -103,6 +103,10 @@ class World {
           continue;
         }
 
+        // Gems are rolled first on purpose: a boulder replaces dirt that would
+        // have been plain, so scattering more of them never thins the loot.
+        if (this.scatterRock(y, depth)) { this.t[i] = T.ROCK; continue; }
+
         this.t[i] = T.DIRT;
         this.hp[i] = CFG.mining.dirtHits;
       }
@@ -135,6 +139,31 @@ class World {
         this.set(gx, y, T.DIRT, CFG.mining.dirtHits);
       }
     }
+  }
+
+  /**
+   * Lone boulders, sprinkled through the stretches between stations. The noise
+   * veins give the mine its shape; these give it grit — single unmineable tiles
+   * that have to be walked around or blasted, and there are steadily more of
+   * them the deeper the shaft goes.
+   *
+   * Two places stay clear of them. The pre-dug shaft the run opens in, so the
+   * first few swings are always soft, and a band either side of every station
+   * floor, so the approach to a lantern reads the same at any depth. Rows that
+   * end up sealed wall to wall are reopened later by `ensureRowsPassable()`.
+   */
+  scatterRock(y, depth) {
+    const cfg = CFG.world;
+    if (y <= this.surface + cfg.startDepth + 1) return false;
+
+    // Station floors sit at rows surface + n*checkpointEvery .. +2.
+    const rel = (y - this.surface) % cfg.checkpointEvery;
+    if (rel <= 2 + cfg.scatterRockClear) return false;
+    if (rel >= cfg.checkpointEvery - cfg.scatterRockClear) return false;
+
+    const p = Math.min(cfg.scatterRockMax,
+      cfg.scatterRock + Math.max(0, depth) * cfg.scatterRockDepth);
+    return this.rng.chance(p);
   }
 
   /** Gem rarity by depth — the deeper you push, the better the odds. */
