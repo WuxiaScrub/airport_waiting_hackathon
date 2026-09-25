@@ -1,9 +1,10 @@
 /* ============================================================================
  * Highscore — the ledger of hauls that actually made it out of the mine.
  *
- * A score is the gold a single run BANKED: wealth secured at a lantern or the
- * surface camp. Gems still in the miner's pockets when the lava caught them
- * never count, which is the whole point — the board rewards cashing out.
+ * A score is what a CAMPAIGN carried out of the mines, less whatever it spent
+ * at the lanterns on the way. Gems still in the miner's pockets when the lava
+ * caught them never count — the board rewards getting out. A campaign writes
+ * one row and updates it as it escapes mine after mine.
  *
  * Only the personal board exists today, and it is stored in localStorage under
  * its own key so it survives a save wipe policy change. A GLOBAL board is meant
@@ -54,6 +55,7 @@ const Highscore = {
       value: int(e.value),
       depth: int(e.depth),
       gems: int(e.gems),
+      mine: Math.max(1, int(e.mine)),
       kind: typeof e.kind === 'string' ? e.kind : 'run',
       at: int(e.at),
     };
@@ -69,20 +71,24 @@ const Highscore = {
   best() { const l = this.load(); return l.length ? l[0].value : 0; },
 
   /**
-   * Record a finished run. `run` is { value, depth, gems, kind }.
+   * Record a result. `run` is { value, depth, gems, mine, kind }. `replaceId`
+   * is a row this campaign wrote earlier, which the new one supersedes.
    * Returns { id, rank, record } when the haul made the board, or null when it
    * did not — an empty-handed run is not a score and never clutters the list.
    */
-  submit(run) {
+  submit(run, replaceId) {
     const value = Math.max(0, Math.round(run.value || 0));
     if (value <= 0) return null;
 
-    const list = this.load();
+    let list = this.load();
+    if (replaceId) {
+      list = this.entries = list.filter(e => e.id !== replaceId);
+    }
     const prevBest = list.length ? list[0].value : 0;
     const entry = this.clean({
       // Unique enough for "is this the row I just set?" — it is never a key.
       id: Date.now() * 1000 + Math.floor(Math.random() * 1000),
-      value, depth: run.depth, gems: run.gems, kind: run.kind, at: Date.now(),
+      value, depth: run.depth, gems: run.gems, mine: run.mine, kind: run.kind, at: Date.now(),
     });
 
     list.push(entry);

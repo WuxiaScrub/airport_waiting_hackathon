@@ -13,7 +13,7 @@ class UI {
       helmet: document.getElementById('helmet'),
       depth: document.getElementById('depth'),
       timer: document.getElementById('timer'),
-      banked: document.getElementById('banked'),
+      score: document.getElementById('score'),
       unbanked: document.getElementById('unbanked'),
       dynCount: document.getElementById('dynCount'),
       dynBtn: document.getElementById('dynamite'),
@@ -65,8 +65,9 @@ class UI {
     for (let i = 0; i < kids.length; i++) kids[i].classList.toggle('empty', i >= p.hat);
   }
 
+  /** SCORE is what the campaign already carried out; CARRYING is at risk. */
   syncWallet(game) {
-    this.setVal(this.el.banked, game.save.gold);
+    this.setVal(this.el.score, game.campaign.score);
     this.setVal(this.el.unbanked, game.carryValue());
   }
 
@@ -87,6 +88,8 @@ class UI {
 
   syncDepth(depth, world, player) {
     let label = depth <= 0 ? loc('hud.surfaceCamp') : loc('hud.deep', { d: depth });
+    const mine = this.game.campaign.mine;
+    if (mine > 1) label = loc('hud.mineN', { n: mine }) + '  ·  ' + label;
     if (this.game.volcano) {
       const gap = Math.max(0, Math.round(world.lavaRow - player.y));
       label += '  ·  ' + loc('hud.lavaBelow', { d: gap });
@@ -203,7 +206,7 @@ class UI {
           <div class="score-row${e.id && e.id === highlightId ? ' you' : ''}">
             <span class="rk">${i + 1}</span>
             <span class="vv">${fmt(e.value)}</span>
-            <span class="dd">${loc('common.metres', { n: e.depth })}</span>
+            <span class="dd">${loc('score.mineDepth', { n: e.mine, d: e.depth })}</span>
           </div>`).join('')
       : `<div class="score-empty">${loc('score.empty')}</div>`;
     return `<div class="scores">
@@ -213,25 +216,25 @@ class UI {
 
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'clock', 'dark'].map(k =>
-      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60) })}</span></div>`).join('');
+    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'heart', 'clock', 'dark'].map(k =>
+      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
 
     this._repaint = () => this.title(save);
     this.show(`
       <div class="logo">DEEPCUT</div>
       <div class="tagline">${loc('title.tagline')}</div>
       <div class="stats">
-        <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(save.gold || 0)}</div></div>
-        <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v carry">${fmt(Highscore.best())}</div></div>
+        <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
+        <div class="stat"><div class="k">${loc('title.furthestMine')}</div><div class="v carry">${save.bestMine || 0}</div></div>
         <div class="stat wide"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
       </div>
       ${this.scoreBoard()}
       <div class="help">${rows}</div>
       <button class="btn" id="startBtn">${loc('title.start')}</button>
       ${this.langButton()}
-      ${save.gold || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
+      ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
     `);
-    this.on('#startBtn', () => this.game.startRun());
+    this.on('#startBtn', () => this.game.newCampaign());
     this.on('#wipeBtn', () => this.game.wipeSave());
     this.wireLang();
   }
@@ -248,10 +251,12 @@ class UI {
     const p = game.player;
     const inRun = game.state === 'paused' && p && !p.dead;
 
-    // Consumables, both all-or-nothing. Walking in refills nothing any more,
-    // and a lantern in the mine only opens once, so each of these is a single
-    // expensive decision rather than something to tap at.
+    // Consumables, both all-or-nothing. Walking in refills nothing, and a
+    // lantern in the mine only opens once, so each of these is a single
+    // decision rather than something to tap at. Everything is paid for out of
+    // the carried gems — which is to say, out of the score.
     const S = CFG.supplies;
+    const cash = game.purse();
     const dynSection = inRun ? `
       <div class="shop-item">
         <div class="info">
@@ -259,7 +264,7 @@ class UI {
           <div class="ds">${loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax })}</div>
         </div>
         <button class="buy" data-dyn="1"
-          ${p.dynamite >= p.dynMax || game.save.gold < S.dynamiteCost ? 'disabled' : ''}
+          ${p.dynamite >= p.dynMax || cash < S.dynamiteCost ? 'disabled' : ''}
         >${fmt(S.dynamiteCost)}</button>
       </div>` : '';
 
@@ -270,15 +275,15 @@ class UI {
           <div class="ds">${loc('supply.heal.desc', { cur: p.health, max: p.maxHealth })}</div>
         </div>
         <button class="buy" data-heal="1"
-          ${p.health >= p.maxHealth || game.save.gold < S.healCost ? 'disabled' : ''}
+          ${p.health >= p.maxHealth || cash < S.healCost ? 'disabled' : ''}
         >${fmt(S.healCost)}</button>
       </div>` : '';
 
     const items = CFG.upgrades.map(u => {
-      const lvl = game.save.upgrades[u.id] || 0;
+      const lvl = game.campaign.upgrades[u.id] || 0;
       const maxed = lvl >= u.max;
       const cost = game.upgradeCost(u, lvl);
-      const afford = game.save.gold >= cost;
+      const afford = cash >= cost;
       const pips = Array.from({ length: u.max }, (_, i) =>
         `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
       return `
@@ -296,11 +301,11 @@ class UI {
     this._repaint = () => this.shop(game, o);
     this.show(`
       <h2>${res(o.title, 'shop.supplyLantern')}</h2>
-      <div class="sub">${res(o.sub, 'shop.wealthSecured')}</div>
+      <div class="sub">${res(o.sub, 'shop.paysFromCarry')}</div>
       ${o.note ? `<div class="note">${res(o.note)}</div>` : ''}
       <div class="stats">
-        <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
-        <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('common.metres', { n: game.depth() })}</div></div>
+        <div class="stat"><div class="k">${loc('hud.carrying')}</div><div class="v carry">${fmt(cash)}</div></div>
+        <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('score.mineDepth', { n: game.campaign.mine, d: game.depth() })}</div></div>
       </div>
       <div class="shop-list">${dynSection}${healSection}${items}</div>
       <button class="btn" id="closeShop">${res(o.closeLabel, 'shop.back')}</button>
@@ -315,21 +320,40 @@ class UI {
     this.wireLang();
   }
 
+  /**
+   * The end of a mine. After an escape the campaign goes on and the panel
+   * offers the next mine; anything else ends the campaign and shows how the
+   * final score was made — found, plus Heartstones, minus what was spent and
+   * lost. The lost line is whatever makes the sum come out, so it covers bats,
+   * death, and dropped gems alike without any of them being tracked twice.
+   */
   summary(game, kind) {
+    const c = game.campaign;
     const s = game.runStats;
     const isWin = kind === 'win';
-    const isDeath = kind === 'death';
+    const isDeath = kind === 'death' || kind === 'abandon';
     const title = isWin ? loc('sum.escaped') : isDeath ? loc('sum.died') : loc('sum.complete');
-    const sub = isWin ? loc('sum.heartstoneYours')
-      : isDeath ? loc('sum.lootLost', { v: fmt(s.lost) })
+    const sub = isWin ? loc('sum.nextMine', { n: c.mine + 1 })
+      : isDeath ? (s.lost > 0 ? loc('sum.lootLost', { v: fmt(s.lost) }) : loc('sum.nothingLost'))
       : loc('sum.hauledOut');
 
-    // The haul this run banked is the score. A record earns the note; anything
-    // else that made the board just gets its row highlighted.
-    const score = s.score || null;
-    const note = score && score.record ? loc('score.newBest')
-      : score && score.rank ? loc('score.ranked', { n: score.rank })
+    const r = c.result || null;
+    const note = isDeath && c.mine > 1 && c.score > 0 ? loc('sum.escapedKept')
+      : r && r.record ? loc('score.newBest')
+      : r && r.rank ? loc('score.ranked', { n: r.rank })
       : '';
+
+    const heartsValue = c.hearts * CFG.gems.heartstoneValue;
+    const lost = Math.max(0, c.found + heartsValue - c.spent - c.score);
+    const line = (k, v, cls) => `<div class="row"><span>${loc(k)}</span><span class="${cls || ''}">${v}</span></div>`;
+    const ledger = `
+      <div class="help ledger">
+        ${line('sum.found', '+' + fmt(c.found))}
+        ${c.hearts ? line('sum.heartstones', '+' + fmt(heartsValue)) : ''}
+        ${line('sum.spent', '−' + fmt(c.spent))}
+        ${lost ? line('sum.lost', '−' + fmt(lost)) : ''}
+        ${line(isWin ? 'sum.scoreSoFar' : 'sum.finalScore', fmt(c.score), 'total')}
+      </div>`;
 
     this._repaint = () => this.summary(game, kind);
     this.show(`
@@ -337,23 +361,23 @@ class UI {
       <div class="sub">${sub}</div>
       ${note ? `<div class="note">${note}</div>` : ''}
       <div class="stats">
-        <div class="stat"><div class="k">${loc('sum.bankedThisRun')}</div><div class="v gold">${fmt(s.banked)}</div></div>
-        <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: s.depth })}</div></div>
-        <div class="stat"><div class="k">${loc('sum.gems')}</div><div class="v carry">${s.gems}</div></div>
-        <div class="stat"><div class="k">${loc('title.vault')}</div><div class="v gold">${fmt(game.save.gold)}</div></div>
+        <div class="stat"><div class="k">${loc(isWin ? 'sum.hauledThisMine' : 'sum.score')}</div><div class="v gold">${fmt(isWin ? s.hauled : c.score)}</div></div>
+        <div class="stat"><div class="k">${loc('sum.mine')}</div><div class="v">${c.mine}</div></div>
+        <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: c.depth })}</div></div>
+        <div class="stat"><div class="k">${loc('sum.gems')}</div><div class="v carry">${c.gems}</div></div>
       </div>
-      ${this.scoreBoard(score ? score.id : 0)}
-      <button class="btn" id="shopBtn">${loc('sum.spend')}</button>
-      <button class="btn ghost" id="againBtn">${loc('shop.newMine')}</button>
+      ${ledger}
+      ${isWin ? '' : this.scoreBoard(r ? r.id : 0)}
+      ${isWin
+        ? `<div class="note">${loc('sum.gearCarries')}</div>
+           <button class="btn" id="nextBtn">${loc('sum.descend', { n: c.mine + 1 })}</button>
+           <button class="btn ghost" id="retireBtn">${loc('sum.retire')}</button>`
+        : `<button class="btn" id="againBtn">${loc('sum.newCampaign')}</button>`}
       ${this.langButton()}
     `);
-    this.on('#shopBtn', () => this.shop(game, {
-      title: loc('shop.campOutfitter'),
-      sub: loc('shop.gearUp'),
-      closeLabel: loc('shop.newMine'),
-      wire: (ui) => ui.on('#closeShop', () => game.startRun()),
-    }));
-    this.on('#againBtn', () => game.startRun());
+    this.on('#nextBtn', () => game.nextMine());
+    this.on('#retireBtn', () => this.summary(game, 'cashout'));
+    this.on('#againBtn', () => game.newCampaign());
     this.wireLang();
   }
 
