@@ -71,14 +71,15 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   dropped *at your feet*, not at what you are aiming at, and it falls like
   everything else down here — so you place it and run, and a stick dropped over
   a shaft goes down the shaft. Mining tool, escape tool, and weapon.
-- **Gems** — sapphire, emerald, ruby, diamond — are worth more the deeper you
-  find them. What you carry is *unbanked* and lost if you die.
+- **Gems** — sapphire, emerald, ruby, diamond — are each worth a fixed amount
+  wherever they are found; going deeper pays by making the rarer ones likelier.
+  What you carry is *unbanked* and lost if you die.
 - **Checkpoint lanterns** span the full width of the mine every ~34 m, so any
   descent will run into one. They bank your gems and open the shop, which sells
   exactly two consumables — a full heal and a full satchel of dynamite, both
   expensive. A lantern down in the mine **lights once**: it burns out as you
-  leave, so what you buy there is a single decision, not a refill station. Only
-  the surface camp can be walked back into. Nothing blasts a lantern, either —
+  leave, so what you buy there is a single decision, not a refill station. Walking
+  back into the surface camp banks your haul and ends the run. Nothing blasts a lantern, either —
   dynamite goes straight through the rock around it and leaves the post standing.
   Their rock floors always keep a few soft patches, one of them within sight of
   the lantern, so an empty satchel never means a dead end.

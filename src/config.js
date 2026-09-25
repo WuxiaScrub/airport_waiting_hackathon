@@ -116,11 +116,16 @@ const CFG = {
     // Order matters: index is the gem id used everywhere else.
     // `name` is a designer-facing label only — it is never shown to the player,
     // so it does not go through i18n. Add a key to i18n.js if that changes.
+    //
+    // A gem is worth a flat `value` wherever it is found. These are the old
+    // depth-scaled values averaged over the mine: base 10/26/62/150 at the top
+    // and ~3x that at the floor (depth 154, +1.3% per row) average to ~2x. The
+    // deep game pays through the rarity table below, not through inflation.
     types: [
-      { name: 'Sapphire', value: 10,  color: '#4a8fe8', glow: '#9fd0ff' },
-      { name: 'Emerald',  value: 26,  color: '#3fc47a', glow: '#a8ffcf' },
-      { name: 'Ruby',     value: 62,  color: '#e8465e', glow: '#ffa8ba' },
-      { name: 'Diamond',  value: 150, color: '#7ef0ff', glow: '#e6ffff' },
+      { name: 'Sapphire', value: 20,  color: '#4a8fe8', glow: '#9fd0ff' },
+      { name: 'Emerald',  value: 52,  color: '#3fc47a', glow: '#a8ffcf' },
+      { name: 'Ruby',     value: 124, color: '#e8465e', glow: '#ffa8ba' },
+      { name: 'Diamond',  value: 300, color: '#7ef0ff', glow: '#e6ffff' },
     ],
     // Rarity weights by depth. First entry whose depth is <= current wins.
     table: [
@@ -129,7 +134,6 @@ const CFG = {
       { depth: 45,  w: [48, 34, 15,  3] },
       { depth: 0,   w: [78, 20,  2,  0] },
     ],
-    depthBonus: 0.013,   // value multiplier gained per row of depth
     density: 0.055,      // base chance a dirt tile hides a gem
     densityDepth: 0.00022,
     heartstoneValue: 4000,
@@ -179,8 +183,8 @@ const CFG = {
   checkpoint: {
     radius: 0.9,
     // A lantern down in the mine burns out the moment it is used: one visit,
-    // one set of decisions. The surface camp is the only station you can walk
-    // back into, and that walk is the whole point of the game.
+    // one set of decisions. Walking back into the surface camp ends the run
+    // and banks the haul — that walk is the whole point of the game.
     reopenDelay: 3,      // seconds of play before the camp can open again
     reopenDist: 3,       // ...and tiles the player must step away from it first
   },

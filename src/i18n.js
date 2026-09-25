@@ -73,14 +73,11 @@ const STRINGS = {
 
     /* Shop */
     'shop.supplyLantern': 'SUPPLY LANTERN',
-    'shop.surfaceCamp': 'SURFACE CAMP',
     'shop.campOutfitter': 'CAMP OUTFITTER',
     'shop.wealthSecured': 'WEALTH SECURED',
     'shop.gearUp': 'GEAR UP FOR THE NEXT DESCENT',
     'shop.back': 'BACK TO THE MINE',
-    'shop.backDown': 'BACK DOWN',
     'shop.newMine': 'NEW MINE',
-    'shop.abandonMine': 'ABANDON THIS MINE',
     'shop.max': 'MAX',
     'shop.depth': 'DEPTH',
     'shop.nothingToBank': 'NOTHING TO BANK',
@@ -211,14 +208,11 @@ const STRINGS = {
 
     /* Shop */
     'shop.supplyLantern': '补给灯站',
-    'shop.surfaceCamp': '地面营地',
     'shop.campOutfitter': '营地装备商',
     'shop.wealthSecured': '财富已入库',
     'shop.gearUp': '为下一次下潜备好装备',
     'shop.back': '返回矿洞',
-    'shop.backDown': '继续下潜',
     'shop.newMine': '新的矿洞',
-    'shop.abandonMine': '放弃这座矿洞',
     'shop.max': '满级',
     'shop.depth': '深度',
     'shop.nothingToBank': '没有可存入的财富',
