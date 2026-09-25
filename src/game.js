@@ -161,9 +161,12 @@ class Game {
 
   depth() { return Math.max(0, Math.floor(this.player.y) - this.world.surface); }
 
-  gemValue(type, depth) {
-    return Math.round(CFG.gems.types[type].value * (1 + Math.max(0, depth) * CFG.gems.depthBonus));
-  }
+  /**
+   * A gem is worth the same wherever it is picked up. Depth pays by making the
+   * rarer gems likelier, not by inflating the ones you already carry — so a
+   * gem a bat stole near the top is worth no more for being recovered deeper.
+   */
+  gemValue(type) { return CFG.gems.types[type].value; }
 
   carryValue() {
     let v = 0;
@@ -181,7 +184,7 @@ class Game {
       this.fx.flyToHud(scr.x, scr.y, '#ff7a3c', CFG.gems.heartstoneValue);
       this.awakenVolcano();
     } else {
-      const value = this.gemValue(g.type, this.depth());
+      const value = this.gemValue(g.type);
       this.carry.push({ type: g.type, value });
       this.runStats.gems++;
       Sfx.play('gem', { tier: g.type });
@@ -230,6 +233,18 @@ class Game {
       return;
     }
 
+    // Reaching the camp is how a run is cashed out: the haul is banked above,
+    // and the run ends here. Upgrades are bought from the run summary.
+    if (home) {
+      this.volcano = false;
+      Sfx.stopRumble();
+      this.ui.banner(loc('sum.complete'), loc('sum.hauledOut'));
+      this.persist();
+      this.ui.syncWallet(this);
+      setTimeout(() => { if (this.state === 'play') this.endRun('cashout'); }, 1400);
+      return;
+    }
+
     // Dynamite is NOT topped up here — it is stock the lantern sells, and the
     // shop below is where you buy it. The hard hat still re-forms for free;
     // it does that on a timer out in the mine anyway.
@@ -239,8 +254,8 @@ class Game {
     this.persist();
 
     // A lantern out in the mine burns out as it is used: whatever you buy, you
-    // buy now. Only the surface camp can be walked back into.
-    if (!home) cp.spent = true;
+    // buy now.
+    cp.spent = true;
 
     // Thunks, not strings: the panel re-runs them if the language is switched
     // while it is open.
@@ -251,23 +266,13 @@ class Game {
       return bits.join(' · ') || loc('shop.nothingToBank');
     };
 
-    if (home) {
-      this.openPanel(() => this.ui.shop(this, {
-        title: () => loc('shop.surfaceCamp'),
-        sub,
-        closeLabel: () => loc('shop.backDown'),
-        extra: () => `<button class="btn ghost" id="newMine">${loc('shop.abandonMine')}</button>`,
-        wire: (ui) => ui.on('#newMine', () => this.endRun('abandon')),
-      }));
-    } else {
-      this.openPanel(() => this.ui.shop(this, {
-        title: () => loc('shop.supplyLantern'),
-        sub,
-        note: () => loc('shop.singleUse'),
-      }));
-      if (this.player.hasHeartstone) {
-        setTimeout(() => this.ui.toast(loc('toast.heartstoneAtSurface'), 2600), 400);
-      }
+    this.openPanel(() => this.ui.shop(this, {
+      title: () => loc('shop.supplyLantern'),
+      sub,
+      note: () => loc('shop.singleUse'),
+    }));
+    if (this.player.hasHeartstone) {
+      setTimeout(() => this.ui.toast(loc('toast.heartstoneAtSurface'), 2600), 400);
     }
   }
 
@@ -615,6 +620,7 @@ class Game {
     const aspect = this.renderer.cw / this.renderer.ch;
     const halfW = (aspect >= 1 ? view * aspect : view) / 2;
     const halfH = (aspect >= 1 ? view : view / aspect) / 2;
+    this.viewHalf = { w: halfW, h: halfH };
 
     // Lead the camera slightly toward where the player is heading. The vertical
     // lead is gentler than the horizontal one — gravity makes vy spike, and a
@@ -629,6 +635,13 @@ class Game {
     if (w.w > halfW * 2) this.cam.x = clamp(this.cam.x, halfW, w.w - halfW);
     else this.cam.x = w.w / 2;
     this.cam.y = clamp(this.cam.y, halfH - CFG.world.surfaceRow, w.h - halfH);
+  }
+
+  /** Is a point within `pad` tiles of the visible screen? */
+  onScreen(x, y, pad = 0) {
+    const v = this.viewHalf;
+    if (!v) return true;
+    return Math.abs(x - this.cam.x) <= v.w + pad && Math.abs(y - this.cam.y) <= v.h + pad;
   }
 
   markExplored() {

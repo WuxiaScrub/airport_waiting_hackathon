@@ -262,7 +262,7 @@ class Bat extends Enemy {
       }
     } else this.stuck = 0;
 
-    if (this.penned(dt, px, py)) { this.dead = true; return; }
+    if (this.penned(dt, px, py) && !game.onScreen(this.x, this.y, 1)) { this.dead = true; return; }
 
     if (Math.abs(this.vx) > 0.2) this.face = this.vx > 0 ? 1 : -1;
     if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game);
@@ -273,7 +273,8 @@ class Bat extends Enemy {
    * around holding a spawn slot for the rest of the run. Path length, not net
    * displacement, is the test: a bat circling a room covers plenty of ground,
    * a bat wedged in one tile covers almost none. One carrying loot never gives
-   * up, so you always get your shot at taking the gem back.
+   * up, so you always get your shot at taking the gem back — and one the
+   * player can see never does either: bats do not blink out of existence.
    */
   penned(dt, px, py) {
     this.travel += dist(this.x, this.y, px, py);
