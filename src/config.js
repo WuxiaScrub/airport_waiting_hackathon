@@ -209,13 +209,14 @@ const CFG = {
     reopenDist: 3,       // ...and tiles the player must step away from it first
   },
 
-  // Consumables a lantern sells. Both are all-or-nothing: a cave lantern is
-  // single use, so this is one decision rather than a tap-fest. Everything
-  // bought comes straight out of the carried gems — i.e. out of the score —
-  // so these are priced against one mine's haul, not a lifetime vault.
+  // Consumables a lantern sells. Both are all-or-nothing and deliberately
+  // expensive: a cave lantern is single use, so this is one decision rather
+  // than a tap-fest, and the price has to compete with going deeper. They come
+  // straight out of the carried gems — i.e. out of the score — so a miner can
+  // only afford one on a rich haul, and never often.
   supplies: {
-    healCost: 300,       // restore to full health
-    dynamiteCost: 250,   // refill the satchel to capacity
+    healCost: 900,       // restore to full health
+    dynamiteCost: 850,   // refill the satchel to capacity
   },
 
   lava: {
