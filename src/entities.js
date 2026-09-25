@@ -15,6 +15,8 @@ class GemPickup {
     this.age = 0;
     this.dead = false;
     this.heart = !!o.heart;
+    this.value = o.value;          // set only for a gem a bat dropped
+    this.recovered = !!o.recovered;
     this.grace = 0.12;      // brief window before the magnet can grab it
   }
 
@@ -50,9 +52,11 @@ class GemPickup {
 }
 
 class Dynamite {
-  constructor(x, y) {
+  /** `extra` is the tiles of blast the Big Bang upgrade adds on top. */
+  constructor(x, y, extra) {
     this.x = x; this.y = y;      // tile-centre position
     this.tx = x | 0; this.ty = y | 0;
+    this.extra = extra || 0;
     this.vy = 0;
     this.fuse = CFG.dynamite.fuse;
     this.dead = false;
@@ -91,16 +95,16 @@ class Dynamite {
     if (this.dead) return;
     this.dead = true;
     const { x, y } = this;
-    game.world.explode(this.tx, this.ty);
+    game.world.explode(this.tx, this.ty, CFG.dynamite.radius + this.extra);
 
     game.fx.burst(x, y, 34, ['#fff3c4', '#ffb03a', '#ff5a1e', '#8a3410'], { speed: 12, life: 0.6, size: 0.24, grav: 4, glow: true });
     game.fx.drift(x, y, 14, ['#4a4048', '#2e272f'], { life: 1.5, size: 0.4, spread: 1.6, rise: 1.0, glow: false });
-    game.fx.ring(x, y, 3.2, '#ffd08a', 0.34);
+    game.fx.ring(x, y, 3.2 + this.extra * 1.6, '#ffd08a', 0.34);
     game.shake(CFG.dynamite.shake);
-    game.addLight(x, y, 9, 0.35);
+    game.addLight(x, y, 9 + this.extra * 3, 0.35);
     Sfx.play('boom');
 
-    const R = CFG.dynamite.blastRadius;
+    const R = CFG.dynamite.blastRadius + this.extra;
     for (const e of game.enemies) {
       if (e.dead) continue;
       if (dist(e.x, e.y, x, y) <= R) e.hurt(CFG.dynamite.enemyDamage, game, e.x - x, e.y - y);

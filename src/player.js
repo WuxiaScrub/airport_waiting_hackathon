@@ -30,6 +30,10 @@ class Player {
   static jumpVelFor(level) {
     return CFG.player.jumpVel + (level || 0) * CFG.upgradeEffect.jump;
   }
+  /** Extra tiles of blast a stick of dynamite gets from the Big Bang upgrade. */
+  static blastFor(level) {
+    return (level || 0) * CFG.dynamite.radiusPerLevel;
+  }
 
   constructor(x, y, upgrades) {
     this.x = x; this.y = y;
@@ -44,6 +48,7 @@ class Player {
     this.dynamite = this.dynMax;
     this.jumpVel = Player.jumpVelFor(upgrades.jump);
     this.hatMax = (upgrades.helmet || 0) * CFG.upgradeEffect.helmet;
+    this.blast = Player.blastFor(upgrades.blast);
     this.hat = this.hatMax;
     this.hatTimer = 0;
 
@@ -359,7 +364,7 @@ class Player {
     if (game.dynamites.some(d => d.tx === tt.x && d.ty === tt.y && !d.dead)) return;
 
     this.dynamite--;
-    game.dynamites.push(new Dynamite(tt.x + 0.5, tt.y + 0.5));
+    game.dynamites.push(new Dynamite(tt.x + 0.5, tt.y + 0.5, this.blast));
     this.throwAnim = 1;
     game.ui.syncDynamite(this);
     Sfx.play('place');

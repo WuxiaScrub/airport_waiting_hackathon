@@ -4,7 +4,7 @@ A mobile-first 2D mining roguelite that runs entirely in the browser. No build
 step, no dependencies, no backend, no art assets — every sprite, particle and
 sound effect is generated in code at runtime.
 
-**Dig down. Bank what you find. Don't wake the volcano.** (Wake the volcano.)
+**Dig down. Carry out what you find. Don't wake the volcano.** (Wake the volcano.)
 
 Playable in English and Simplified Chinese (简体中文) — the language follows the
 browser on first load and can be switched from any menu.
@@ -50,7 +50,7 @@ to chew at the ceiling.
 
 ## The loop
 
-Descend → mine → collect → risk going deeper → checkpoint → shop → repeat.
+Descend → mine → collect → risk going deeper → checkpoint (shop) → repeat → carry it out.
 
 - **You start underground.** Somebody has already cut the first few rows; the
   run opens at the bottom of that shaft with the camp lantern a few tiles to one
@@ -67,19 +67,23 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   spider, or onto your own head. A **hard hat** from the shop absorbs a falling
   block outright and re-forms after a few seconds.
 - **Rock** is immune to the pickaxe. Dynamite goes through it.
-- **Dynamite** has a short fuse and flattens a 3×3, diagonals included. It is
+- **Dynamite** has a short fuse and flattens a 3×3, diagonals included (5×5
+  with the one-level **Big Bang** upgrade — which also flattens the ledges you
+  were going to climb out on). It is
   dropped *at your feet*, not at what you are aiming at, and it falls like
   everything else down here — so you place it and run, and a stick dropped over
   a shaft goes down the shaft. Mining tool, escape tool, and weapon.
 - **Gems** — sapphire, emerald, ruby, diamond — are each worth a fixed amount
   wherever they are found; going deeper pays by making the rarer ones likelier.
-  What you carry is *unbanked* and lost if you die.
+  **There is no bank.** Everything you carry is at risk until it reaches the
+  surface camp, and dying loses all of it.
 - **Checkpoint lanterns** span the full width of the mine every ~34 m, so any
-  descent will run into one. They bank your gems and open the shop, which sells
-  exactly two consumables — a full heal and a full satchel of dynamite, both
-  expensive. A lantern down in the mine **lights once**: it burns out as you
-  leave, so what you buy there is a single decision, not a refill station. Walking
-  back into the surface camp banks your haul and ends the run. Nothing blasts a lantern, either —
+  descent will run into one. They are **shops, not banks**: upgrades plus two
+  consumables (a full heal and a full satchel of dynamite), all paid for out of
+  the gems you carry — so every purchase comes straight off your score. A
+  lantern down in the mine **lights once**: it burns out as you leave, so what
+  you buy there is a single decision, not a refill station. Walking back into
+  the surface camp turns what you carry into score. Nothing blasts a lantern, either —
   dynamite goes straight through the rock around it and leaves the post standing.
   Their rock floors always keep a few soft patches, one of them within sight of
   the lantern, so an empty satchel never means a dead end.
@@ -91,7 +95,7 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
 - **The mountain is on a clock.** Ten minutes into a run the volcano erupts by
   itself, Heartstone or not. The HUD counts it down from the first second and
   warns at 5:00, 1:00 and 0:15, so every descent is a bet against a deadline you
-  can see: bank early and surface, or push one more shaft and climb out ahead of
+  can see: surface early with what you have, or push one more shaft and climb out ahead of
   the lava.
 
 ### What's down there
@@ -100,7 +104,7 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
   they have a clear line. Every pounce is preceded by a visible wind-up: they
   freeze, their eyes flare, and a dashed line shows exactly where they're going.
 - **Bats** ignore your health and go for your wallet. One touch and they take
-  your single most valuable unbanked gem, which then dangles visibly beneath
+  your single most valuable carried gem, which then dangles visibly beneath
   them as they flee. Kill the thief before it escapes and the gem drops back
   into the mine. Unlike spiders they *cannot dig* — they fly, and they steer
   around solid tiles, so the only way one reaches you is through open air. Seal
@@ -111,18 +115,32 @@ Descend → mine → collect → risk going deeper → checkpoint → shop → r
 At 150 m there is a rock-shelled chamber holding the Heartstone. Take it and
 **the volcano awakens**: lava floods the mine from below and rises steadily. It
 melts everything but bedrock, there is no teleport out, and the only route home
-is the tunnel network you dug on the way down. The bounty pays out only at the
-surface camp.
+is the tunnel network you dug on the way down. It is worth a flat **7,000**,
+paid only if it reaches the surface camp — no lantern will take it as payment.
 
 Taking the Heartstone is the *early* trigger. Left alone, the same eruption
 arrives on the ten-minute clock anyway — the Heartstone just buys it forward in
 exchange for the biggest payout in the game.
 
+### Campaigns
+
+Carry the Heartstone out and the **next mine** opens: the Heartstone sits 40 m
+deeper, the eruption clock gets 90 s longer, and more spiders and bats come for
+you (the first mine is deliberately gentle). Your **upgrades come with you**;
+your gems do not — what you carried out is score, and you start the next mine
+with empty pockets.
+
+Walking out *without* the Heartstone, or dying, ends the campaign. Score from
+mines you already escaped is kept. Nothing carries between campaigns — there is
+no vault and no permanent upgrade, so a big past run never buys the next one an
+easy start.
+
 ### Scores
 
-A score is the gold a single run **banked** — wealth secured at a lantern or the
-camp. Gems still in your pockets when the lava caught you never count, so the
-board rewards cashing out rather than diving. The top five hauls show on the
+A score is what a **campaign** carried out of its mines, less everything it
+spent at the lanterns. Gems still in your pockets when the lava caught you never
+count, so the board rewards getting out rather than diving. The summary adds it
+up: gems found, plus Heartstones, minus lantern spending and losses. The top five hauls show on the
 title screen and again on the run summary, with the row you just set picked out.
 
 Only a personal board exists today, kept in `localStorage`. `src/highscore.js`
@@ -149,7 +167,7 @@ styles.css          UI shell (the canvas draws only the mine)
 src/config.js       ← every balance number in the game
 src/i18n.js         ← every user-facing string, in English and 简体中文
 src/util.js         math, seeded RNG, value noise
-src/highscore.js    banked-haul board (local today, global backend ready)
+src/highscore.js    campaign-score board (local today, global backend ready)
 src/audio.js        Web Audio synthesis (swap for samples here)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights

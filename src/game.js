@@ -29,9 +29,8 @@ class Game {
     this.checkpointLock = null;
 
     this.save = this.load();
-    this.resetRunStats();
     // A live mine sits behind the title panel instead of a black rectangle.
-    this.startRun(true);
+    this.newCampaign(true);
     this.state = 'title';
 
     window.addEventListener('resize', () => this.renderer.resize());
@@ -45,16 +44,22 @@ class Game {
 
   /* ------------------------------------------------------------ persistence */
 
+  /**
+   * The save holds records and settings only. There is no vault and no
+   * permanent upgrade: every campaign starts from nothing, so a strong past
+   * run can never buy the next one an easy start.
+   */
   load() {
-    const blank = { gold: 0, best: 0, upgrades: {}, audio: true };
+    const blank = { best: 0, bestMine: 0, audio: true };
     try {
-      const raw = localStorage.getItem(CFG.saveKey);
+      // A v1 save still knows the player's deepest dive and sound setting;
+      // its gold and upgrades belong to the old economy and are dropped.
+      const raw = localStorage.getItem(CFG.saveKey) || localStorage.getItem('deepcut.save.v1');
       if (!raw) return blank;
       const s = JSON.parse(raw);
       return {
-        gold: s.gold || 0,
         best: s.best || 0,
-        upgrades: s.upgrades || {},
+        bestMine: s.bestMine || 0,
         audio: s.audio !== false,
       };
     } catch (e) { return blank; }
@@ -65,7 +70,7 @@ class Game {
   }
 
   wipeSave() {
-    this.save = { gold: 0, best: 0, upgrades: {}, audio: Sfx.enabled };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled };
     this.persist();
     Highscore.reset();
     this.ui.title(this.save);
@@ -73,16 +78,44 @@ class Game {
 
   /* ---------------------------------------------------------- run lifecycle */
 
-  // `score` is filled in by endRun with whatever Highscore made of the haul.
-  resetRunStats() { this.runStats = { banked: 0, depth: 0, gems: 0, lost: 0, score: null }; }
+  /**
+   * A campaign is a chain of mines. Upgrades live here, not in the save: they
+   * carry from one mine to the next and die with the campaign.
+   *
+   * `score` is what is already safe — the hauls of mines escaped with the
+   * Heartstone. The rest are the ledger the summary adds up for the player.
+   * `scoreId` is the board row this campaign has written, so each later escape
+   * (and the final result) updates one row instead of adding another.
+   */
+  newCampaign(quiet) {
+    this.campaign = {
+      mine: 1, upgrades: {}, score: 0,
+      found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
+      scoreId: 0, result: null,
+    };
+    this.startMine(quiet);
+  }
 
-  startRun(quiet) {
+  /** Per-mine numbers. `lost` is what was still being carried at the end. */
+  resetRunStats() { this.runStats = { depth: 0, lost: 0, hauled: 0 }; }
+
+  /** How hard a mine leans on the player; the last entry covers every deeper one. */
+  threat() {
+    const t = CFG.campaign.threat;
+    return t[Math.min(this.campaign.mine, t.length) - 1];
+  }
+
+  startMine(quiet) {
     if (!quiet) Sfx.init();
     Sfx.setEnabled(this.save.audio !== false);
     Sfx.stopRumble();
 
-    this.world = new World((Math.random() * 0xffffffff) >>> 0, this);
-    this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.save.upgrades);
+    const mine = this.campaign.mine;
+    const heartRow = CFG.world.heartstoneRow + (mine - 1) * CFG.campaign.heartstoneStep;
+    this.fuse = CFG.lava.fuse + (mine - 1) * CFG.campaign.fusePerMine;
+
+    this.world = new World((Math.random() * 0xffffffff) >>> 0, this, heartRow);
+    this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.campaign.upgrades);
     this.enemies.length = 0;
     this.gems.length = 0;
     this.dynamites.length = 0;
@@ -116,26 +149,47 @@ class Game {
     this.ui.syncTimer(this);
     this.input.reset();
     this.state = 'play';
-    if (!quiet) this.ui.toast(loc('toast.digDown'), 1600);
+    if (!quiet) {
+      this.save.bestMine = Math.max(this.save.bestMine || 0, mine);
+      this.persist();
+      this.ui.toast(mine > 1 ? loc('toast.mineN', { n: mine }) : loc('toast.digDown'), 1800);
+    }
   }
 
+  /** Straight into the next mine: same gear, empty pockets. */
+  nextMine() {
+    this.campaign.mine++;
+    this.startMine();
+  }
+
+  /**
+   * End the current mine. `kind` is:
+   *   'win'     — surfaced with the Heartstone; the campaign goes on
+   *   'cashout' — walked out without it; the campaign ends, haul kept
+   *   'death' / 'abandon' — the campaign ends, this mine's pockets are lost
+   */
   endRun(kind) {
     if (this.state === 'over') return;
-    const lost = this.carryValue();
+    const c = this.campaign;
     if (kind === 'death' || kind === 'abandon') {
-      this.runStats.lost = lost;
+      this.runStats.lost = this.carryValue();
       this.carry.length = 0;
       this.player.hasHeartstone = false;
     }
     this.save.best = Math.max(this.save.best || 0, this.runStats.depth);
-    // The score is what the run BANKED — loot that was still in the miner's
-    // pockets never made it out, so it never makes the board.
-    this.runStats.score = Highscore.submit({
-      value: this.runStats.banked,
-      depth: this.runStats.depth,
-      gems: this.runStats.gems,
+    c.depth = Math.max(c.depth, this.runStats.depth);
+
+    // The board is written on every escape as well as at the end, so a player
+    // who closes the tab between mines still has the mines they escaped.
+    c.result = Highscore.submit({
+      value: c.score,
+      depth: c.depth,
+      gems: c.gems,
+      mine: c.mine,
       kind,
-    });
+    }, c.scoreId);
+    if (c.result) c.scoreId = c.result.id;
+
     this.persist();
     Sfx.stopRumble();
     this.state = 'over';
@@ -168,11 +222,35 @@ class Game {
    */
   gemValue(type) { return CFG.gems.types[type].value; }
 
-  carryValue() {
+  /** What the carried gems are worth — the only money a lantern will take. */
+  purse() {
     let v = 0;
     for (const g of this.carry) v += g.value;
-    if (this.player && this.player.hasHeartstone) v += CFG.gems.heartstoneValue;
     return v;
+  }
+
+  /** Everything at risk right now, the Heartstone included. */
+  carryValue() {
+    return this.purse() + (this.player && this.player.hasHeartstone ? CFG.gems.heartstoneValue : 0);
+  }
+
+  /**
+   * Pay a lantern out of the carried gems, cheapest first, so the gems a bat
+   * would most like to take are the ones left in the bag. The last gem touched
+   * keeps whatever change is owed, so nothing is rounded away. Every coin spent
+   * here is a coin off the final score.
+   */
+  pay(cost) {
+    if (this.purse() < cost) return false;
+    this.carry.sort((a, b) => a.value - b.value);
+    let owed = cost;
+    while (owed > 0) {
+      const g = this.carry[0];
+      if (g.value <= owed) { owed -= g.value; this.carry.shift(); }
+      else { g.value -= owed; owed = 0; }
+    }
+    this.campaign.spent += cost;
+    return true;
   }
 
   collectGem(g) {
@@ -184,9 +262,11 @@ class Game {
       this.fx.flyToHud(scr.x, scr.y, '#ff7a3c', CFG.gems.heartstoneValue);
       this.awakenVolcano();
     } else {
-      const value = this.gemValue(g.type);
+      // A gem a bat dropped keeps the value it was stolen at; only a gem fresh
+      // out of the rock counts toward what the campaign found.
+      const value = g.value !== undefined ? g.value : this.gemValue(g.type);
       this.carry.push({ type: g.type, value });
-      this.runStats.gems++;
+      if (!g.recovered) { this.campaign.gems++; this.campaign.found += value; }
       Sfx.play('gem', { tier: g.type });
       this.fx.flyToHud(scr.x, scr.y, CFG.gems.types[g.type].color, value);
       this.fx.text(g.x, g.y - 0.4, '+' + fmt(value), CFG.gems.types[g.type].glow, { size: 11, life: 0.8 });
@@ -204,54 +284,19 @@ class Game {
     return gem;
   }
 
-  bankAt(cp) {
-    const gemTotal = this.carry.reduce((s, g) => s + g.value, 0);
-    const home = !!cp.home;
-    const winning = home && this.player.hasHeartstone;
+  /**
+   * Every lantern is a shop, never a bank. The one at the surface camp is the
+   * exit: what you carry through it is score, and the Heartstone with it opens
+   * the next mine.
+   */
+  visitLantern(cp) {
+    if (cp.home) { this.reachCamp(); return; }
 
-    if (gemTotal > 0) {
-      this.save.gold += gemTotal;
-      this.runStats.banked += gemTotal;
-      this.carry.length = 0;
-      Sfx.play('bank');
-      this.fx.text(this.player.x, this.player.y - 0.8, loc('fx.banked', { v: fmt(gemTotal) }), '#ffc95e', { size: 14, life: 1.5 });
-      this.fx.burst(this.player.x, this.player.y, 16, ['#ffc95e', '#fff0c0'], { speed: 5, life: 0.8, size: 0.15, glow: true, grav: -2 });
-    }
-
-    if (winning) {
-      const total = CFG.gems.heartstoneValue + CFG.gems.escapeBonus;
-      this.save.gold += total;
-      this.runStats.banked += total;
-      this.player.hasHeartstone = false;
-      this.volcano = false;
-      Sfx.stopRumble();
-      Sfx.play('win');
-      this.ui.banner(loc('sum.escaped'), loc('banner.bounty', { v: fmt(total) }));
-      this.persist();
-      this.ui.syncWallet(this);
-      setTimeout(() => { if (this.state === 'play') this.endRun('win'); }, 2200);
-      return;
-    }
-
-    // Reaching the camp is how a run is cashed out: the haul is banked above,
-    // and the run ends here. Upgrades are bought from the run summary.
-    if (home) {
-      this.volcano = false;
-      Sfx.stopRumble();
-      this.ui.banner(loc('sum.complete'), loc('sum.hauledOut'));
-      this.persist();
-      this.ui.syncWallet(this);
-      setTimeout(() => { if (this.state === 'play') this.endRun('cashout'); }, 1400);
-      return;
-    }
-
-    // Dynamite is NOT topped up here — it is stock the lantern sells, and the
-    // shop below is where you buy it. The hard hat still re-forms for free;
-    // it does that on a timer out in the mine anyway.
+    // Dynamite is NOT topped up here — it is stock the lantern sells. The hard
+    // hat still re-forms for free; it does that on a timer out in the mine anyway.
     const rehatted = this.player.refillHat(this);
     this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
-    this.persist();
 
     // A lantern out in the mine burns out as it is used: whatever you buy, you
     // buy now.
@@ -260,10 +305,9 @@ class Game {
     // Thunks, not strings: the panel re-runs them if the language is switched
     // while it is open.
     const sub = () => {
-      const bits = [];
-      if (gemTotal > 0) bits.push(loc('shop.secured', { v: fmt(gemTotal) }));
+      const bits = [loc('shop.paysFromCarry')];
       if (rehatted > 0) bits.push(loc('shop.hatRepaired'));
-      return bits.join(' · ') || loc('shop.nothingToBank');
+      return bits.join(' · ');
     };
 
     this.openPanel(() => this.ui.shop(this, {
@@ -274,6 +318,41 @@ class Game {
     if (this.player.hasHeartstone) {
       setTimeout(() => this.ui.toast(loc('toast.heartstoneAtSurface'), 2600), 400);
     }
+  }
+
+  /** Walked back into the camp: the haul becomes score and this mine is over. */
+  reachCamp() {
+    const c = this.campaign;
+    const p = this.player;
+    const hauled = this.purse();
+    const winning = p.hasHeartstone;
+    const total = hauled + (winning ? CFG.gems.heartstoneValue : 0);
+
+    c.score += total;
+    this.runStats.hauled = total;
+    this.carry.length = 0;
+    this.volcano = false;
+    Sfx.stopRumble();
+
+    if (total > 0) {
+      Sfx.play('bank');
+      this.fx.text(p.x, p.y - 0.8, loc('fx.hauled', { v: fmt(total) }), '#ffc95e', { size: 14, life: 1.5 });
+      this.fx.burst(p.x, p.y, 16, ['#ffc95e', '#fff0c0'], { speed: 5, life: 0.8, size: 0.15, glow: true, grav: -2 });
+    }
+
+    if (winning) {
+      p.hasHeartstone = false;
+      c.hearts++;
+      Sfx.play('win');
+      this.ui.banner(loc('sum.escaped'), loc('banner.heartstonePaid', { v: fmt(CFG.gems.heartstoneValue) }));
+      this.ui.syncWallet(this);
+      setTimeout(() => { if (this.state === 'play') this.endRun('win'); }, 2200);
+      return;
+    }
+
+    this.ui.banner(loc('sum.complete'), loc('sum.hauledOut'));
+    this.ui.syncWallet(this);
+    setTimeout(() => { if (this.state === 'play') this.endRun('cashout'); }, 1400);
   }
 
   upgradeCost(u, level) { return Math.round(u.base * Math.pow(u.step, level)); }
@@ -296,14 +375,13 @@ class Game {
   buyUpgrade(id) {
     const u = CFG.upgrades.find(x => x.id === id);
     if (!u) return;
-    const lvl = this.save.upgrades[id] || 0;
+    const ups = this.campaign.upgrades;
+    const lvl = ups[id] || 0;
     if (lvl >= u.max) return;
     const cost = this.upgradeCost(u, lvl);
-    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+    if (!this.pay(cost)) { this.ui.toast(loc('toast.notEnoughGems')); return; }
 
-    this.save.gold -= cost;
-    this.save.upgrades[id] = lvl + 1;
-    this.persist();
+    ups[id] = lvl + 1;
     Sfx.play('buy');
 
     // Apply live so the purchase is felt immediately, not next run. Each stat
@@ -311,7 +389,7 @@ class Game {
     // exactly what it is worth instead of a full step.
     const p = this.player;
     if (p && !p.dead) {
-      const lv = this.save.upgrades;
+      const lv = ups;
       if (id === 'health') {
         const gain = Player.maxHealthFor(lv.health) - p.maxHealth;
         p.maxHealth += gain; p.health += gain;
@@ -328,6 +406,7 @@ class Game {
       }
       if (id === 'jump') p.jumpVel = Player.jumpVelFor(lv.jump);
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
+      if (id === 'blast') p.blast = Player.blastFor(lv.blast);
     }
     this.ui.syncWallet(this);
 
@@ -347,12 +426,9 @@ class Game {
     const missing = p.dynMax - p.dynamite;
     if (missing <= 0) { this.ui.toast(loc('toast.satchelFull')); return; }
 
-    const cost = CFG.supplies.dynamiteCost;
-    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+    if (!this.pay(CFG.supplies.dynamiteCost)) { this.ui.toast(loc('toast.notEnoughGems')); return; }
 
-    this.save.gold -= cost;
     p.dynamite = p.dynMax;
-    this.persist();
     Sfx.play('buy');
     this.ui.syncDynamite(p);
     this.ui.syncWallet(this);
@@ -364,11 +440,8 @@ class Game {
     const p = this.player;
     if (!p || p.dead || p.health >= p.maxHealth) { this.ui.toast(loc('toast.alreadyFull')); return; }
 
-    const cost = CFG.supplies.healCost;
-    if (this.save.gold < cost) { this.ui.toast(loc('toast.notEnoughGold')); return; }
+    if (!this.pay(CFG.supplies.healCost)) { this.ui.toast(loc('toast.notEnoughGems')); return; }
 
-    this.save.gold -= cost;
-    this.persist();
     Sfx.play('buy');
     p.heal(p.maxHealth, this);
     this.ui.syncWallet(this);
@@ -405,6 +478,10 @@ class Game {
   /* -------------------------------------------------------------- spawning */
 
   spawnGem(x, y, type, opt) { this.gems.push(new GemPickup(x, y, type, opt)); }
+  /** A gem shaken loose from a dead bat, worth exactly what it was stolen at. */
+  dropStolenGem(x, y, gem) {
+    this.gems.push(new GemPickup(x, y, gem.type, { speed: 3.2, value: gem.value, recovered: true }));
+  }
   spawnHeartstone(x, y) { this.gems.push(new GemPickup(x, y, 0, { heart: true, speed: 1.2 })); }
   spawnFallingBlock(x, y) { this.blocks.push(new FallingBlock(x, y)); }
 
@@ -416,11 +493,14 @@ class Game {
     const depth = this.depth();
     if (depth < 6) return;
 
-    const maxAlive = CFG.spawn.maxAlive + Math.floor(depth / CFG.spawn.maxAliveDepth) + (this.volcano ? 2 : 0);
+    // Later mines send more of everything; the first is kept gentle.
+    const threat = this.threat();
+    const maxAlive = Math.max(1, Math.round(
+      (CFG.spawn.maxAlive + Math.floor(depth / CFG.spawn.maxAliveDepth)) * threat)) + (this.volcano ? 2 : 0);
     this.spawnTimer -= dt;
     if (this.spawnTimer > 0) return;
 
-    let interval = Math.max(CFG.spawn.intervalMin, CFG.spawn.interval - depth * CFG.spawn.intervalDepth);
+    let interval = Math.max(CFG.spawn.intervalMin, CFG.spawn.interval - depth * CFG.spawn.intervalDepth) / threat;
     if (this.volcano) interval *= CFG.spawn.volcanoMultiplier;
     this.spawnTimer = interval * (0.7 + Math.random() * 0.6);
     if (this.enemies.length >= maxAlive) return;
@@ -457,7 +537,7 @@ class Game {
     if (this.volcano) return;
     this.volcano = true;
     this.lavaSpeed = CFG.lava.riseSpeed;
-    this.world.lavaRow = Math.min(this.world.h, CFG.world.heartstoneRow + CFG.lava.startOffset);
+    this.world.lavaRow = Math.min(this.world.h, this.world.heartRow + CFG.lava.startOffset);
     Sfx.play('heart');
     setTimeout(() => Sfx.play('awaken'), 300);
     Sfx.startRumble();
@@ -470,7 +550,7 @@ class Game {
   /** Seconds left on the eruption clock. Zero once the mountain is awake. */
   fuseLeft() {
     if (this.volcano) return 0;
-    return Math.max(0, CFG.lava.fuse - this.runTime);
+    return Math.max(0, this.fuse - this.runTime);
   }
 
   /**
@@ -611,7 +691,7 @@ class Game {
     // A lantern down in the mine is good for exactly one visit. Locking first
     // means the "it's spent" toast fires once rather than on every step.
     if (cp.spent) { this.ui.toast(loc('toast.lanternSpent')); return; }
-    this.bankAt(cp);
+    this.visitLantern(cp);
   }
 
   updateCamera(dt) {

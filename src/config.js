@@ -17,7 +17,8 @@ const CFG = {
     width: 40,           // columns (walls are indestructible bedrock)
     surfaceRow: 6,       // first row of ground; rows above are open sky/camp
     checkpointEvery: 34, // rows between checkpoint stations
-    heartstoneRow: 150,  // depth of the Heartstone chamber
+    heartstoneRow: 150,  // depth of the Heartstone chamber in the FIRST mine
+                         // (later mines push it down — see `campaign`)
     bottomPad: 12,       // rows of mine below the chamber before bedrock
     caveScale: 7.5,      // noise frequency for caverns
     rockScale: 4.5,      // noise frequency for rock veins
@@ -107,6 +108,10 @@ const CFG = {
     maxFall: 15,         // terminal velocity, tiles/sec
     radius: 1,           // tile radius of destruction (1 = 3x3, diagonals in)
     blastRadius: 1.75,   // entity damage radius, in tiles
+    // The Big Bang upgrade adds this much to BOTH radii per level: one level
+    // turns the 3x3 into a 5x5. It clears a lot of the mine, including the
+    // ledges you were going to climb back out on.
+    radiusPerLevel: 1,
     enemyDamage: 6,
     playerDamage: 1,
     shake: 14,
@@ -136,8 +141,9 @@ const CFG = {
     ],
     density: 0.055,      // base chance a dirt tile hides a gem
     densityDepth: 0.00022,
-    heartstoneValue: 4000,
-    escapeBonus: 3000,   // paid on top for surfacing with the Heartstone
+    // Flat prize, paid only if the Heartstone reaches the surface. It is never
+    // spendable on the way up — a lantern will not take it as payment.
+    heartstoneValue: 7000,
   },
 
   spider: {
@@ -180,18 +186,34 @@ const CFG = {
     volcanoMultiplier: 0.55, // spawn interval scale once the volcano wakes
   },
 
+  // A CAMPAIGN is a chain of mines. Escaping with the Heartstone opens the
+  // next, deeper one: upgrades carry on, cash does not (what you hauled out is
+  // score). Walking out without it, or dying, ends the campaign — and the next
+  // one starts from mine 1 with base stats. Nothing carries between campaigns.
+  campaign: {
+    heartstoneStep: 40,  // rows deeper the Heartstone sits in each later mine
+    fusePerMine: 90,     // extra seconds on the eruption clock per later mine
+    // Enemy pressure by mine (last entry repeats). Scales both how often
+    // things spawn and how many may be alive at once. Mine 1 is played on base
+    // stats with nothing banked, so it is deliberately gentle.
+    threat: [0.5, 0.8, 1.0, 1.2, 1.4],
+  },
+
   checkpoint: {
     radius: 0.9,
-    // A lantern down in the mine burns out the moment it is used: one visit,
-    // one set of decisions. Walking back into the surface camp ends the run
-    // and banks the haul — that walk is the whole point of the game.
+    // A lantern down in the mine is a SHOP, never a bank: it takes payment out
+    // of the gems you carry, and it burns out the moment it is used — one
+    // visit, one set of decisions. The only way to keep gems is to carry them
+    // out through the surface camp.
     reopenDelay: 3,      // seconds of play before the camp can open again
     reopenDist: 3,       // ...and tiles the player must step away from it first
   },
 
   // Consumables a lantern sells. Both are all-or-nothing and deliberately
   // expensive: a cave lantern is single use, so this is one decision rather
-  // than a tap-fest, and the price has to compete with going deeper.
+  // than a tap-fest, and the price has to compete with going deeper. They come
+  // straight out of the carried gems — i.e. out of the score — so a miner can
+  // only afford one on a rich haul, and never often.
   supplies: {
     healCost: 900,       // restore to full health
     dynamiteCost: 850,   // refill the satchel to capacity
@@ -200,9 +222,10 @@ const CFG = {
   lava: {
     startOffset: 10,     // rows below the Heartstone where the lava begins
     // Every run is on a clock, Heartstone or not: the mountain wakes on its own
-    // once this much play time has passed, and the HUD counts it down. Banking
+    // once this much play time has passed, and the HUD counts it down. Surfacing
     // early is therefore always a live option, never a wasted trip.
     fuse: 600,           // seconds of play before the volcano erupts by itself
+                         // (first mine; later mines add campaign.fusePerMine)
     warnAt: [300, 60, 15], // seconds remaining that earn a toast (descending)
     // Climbing under gravity is slower than the old free-flight ascent, so the
     // escape was re-tuned to stay winnable rather than merely survivable.
@@ -222,6 +245,7 @@ const CFG = {
     { id: 'light',    max: 5, base: 80,  step: 1.75 },
     { id: 'dynamite', max: 9, base: 90,  step: 1.90 },  // 3 + 2/lvl, capped at 20
     { id: 'helmet',   max: 3, base: 55,  step: 2.00 },
+    { id: 'blast',    max: 1, base: 1000, step: 1 },    // 3x3 -> 5x5 dynamite
   ],
 
   upgradeEffect: {
@@ -236,7 +260,9 @@ const CFG = {
 
   audio: { master: 0.32 },
 
-  saveKey: 'deepcut.save.v1',
+  // v2: the vault and permanent upgrades are gone — a v1 save's gold must not
+  // leak into the new economy.
+  saveKey: 'deepcut.save.v2',
 };
 
 /* Tile ids. Anything >= DIRT that isn't LAVA/CHECKPOINT blocks movement. */

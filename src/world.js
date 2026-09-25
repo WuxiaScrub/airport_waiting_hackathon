@@ -6,12 +6,14 @@
  * ========================================================================== */
 
 class World {
-  constructor(seed, game) {
+  /** `heartRow` is where this mine's Heartstone sits — deeper in later mines. */
+  constructor(seed, game, heartRow) {
     this.game = game;
     this.seed = seed >>> 0;
     this.rng = new RNG(seed);
+    this.heartRow = heartRow || CFG.world.heartstoneRow;
     this.w = CFG.world.width;
-    this.h = CFG.world.heartstoneRow + CFG.world.bottomPad;
+    this.h = this.heartRow + CFG.world.bottomPad;
     this.surface = CFG.world.surfaceRow;
 
     const n = this.w * this.h;
@@ -191,7 +193,7 @@ class World {
   carveCheckpoints() {
     const cfg = CFG.world;
     const every = cfg.checkpointEvery;
-    for (let r = this.surface + every; r < cfg.heartstoneRow - 12; r += every) {
+    for (let r = this.surface + every; r < this.heartRow - 12; r += every) {
       for (let x = 1; x < this.w - 1; x++) {
         this.set(x, r, T.EMPTY);
         this.set(x, r + 1, T.EMPTY);
@@ -215,7 +217,7 @@ class World {
 
   /** The Heartstone sits in a rock-ringed cavern at the bottom of the mine. */
   carveHeartstoneChamber() {
-    const cy = CFG.world.heartstoneRow;
+    const cy = this.heartRow;
     const cx = this.rng.int(8, this.w - 9);
     const rx = 6.5, ry = 4.2;
 
@@ -269,7 +271,7 @@ class World {
     const type = this.t[i];
     // Bedrock is the edge of the world; a station is the one landmark a run
     // navigates by, so neither is blastable. Losing a lantern to a stray stick
-    // of dynamite would strand the loot you came back up to bank.
+    // of dynamite would strand a miner who came back up to shop.
     if (type === T.BEDROCK || type === T.CHECKPOINT) return;
 
     const g = this.game;
@@ -327,9 +329,8 @@ class World {
     this.checkNeighbours(x, y);
   }
 
-  /** Dynamite: flatten a 3x3. Bedrock and stations ride it out. */
-  explode(cx, cy) {
-    const r = CFG.dynamite.radius;
+  /** Dynamite: flatten a square of radius `r` (1 = 3x3). Bedrock and stations ride it out. */
+  explode(cx, cy, r) {
     for (let y = cy - r; y <= cy + r; y++)
       for (let x = cx - r; x <= cx + r; x++) {
         const t = this.get(x, y);

@@ -21,10 +21,10 @@ const STRINGS = {
     'lang.switch': 'LANGUAGE: ENGLISH',
 
     'meta.title': 'DEEPCUT',
-    'meta.desc': 'DEEPCUT — a mobile-first browser mining roguelite. Dig deep, bank your gems, wake the volcano.',
+    'meta.desc': 'DEEPCUT — a mobile-first browser mining roguelite. Dig deep, carry your gems out, wake the volcano.',
 
     /* HUD */
-    'hud.banked': 'BANKED',
+    'hud.score': 'SCORE',
     'hud.carrying': 'CARRYING',
     'hud.surface': 'SURFACE',
     'hud.surfaceCamp': 'SURFACE CAMP',
@@ -32,6 +32,7 @@ const STRINGS = {
     'hud.lavaBelow': 'LAVA {d} m BELOW',
     'hud.eruption': 'ERUPTION {t}',
     'hud.mine': 'MINE',
+    'hud.mineN': 'MINE {n}',
     'hud.jump': 'JUMP',
     'hud.dynamite': 'BOMB',
 
@@ -41,16 +42,17 @@ const STRINGS = {
     'aria.jump': 'Jump',
 
     /* Title screen */
-    'title.tagline': 'DIG · BANK · SURVIVE',
-    'title.vault': 'VAULT',
+    'title.tagline': 'DIG · HAUL · SURVIVE',
+    'title.furthestMine': 'FURTHEST MINE',
     'title.bestHaul': 'BEST HAUL',
     'title.deepest': 'DEEPEST',
     'title.start': 'START DIGGING',
     'title.wipe': 'ERASE SAVE',
 
-    /* Highscores — a score is the gold a single run banked */
+    /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': 'TOP HAULS',
-    'score.empty': 'NOTHING BANKED YET',
+    'score.empty': 'NOTHING HAULED OUT YET',
+    'score.mineDepth': 'MINE {n} · {d} m',
     'score.newBest': 'NEW PERSONAL BEST HAUL',
     'score.ranked': 'RANKED #{n} ALL TIME',
 
@@ -64,8 +66,10 @@ const STRINGS = {
     'help.grip.v': 'Falling past a wall? Hold the stick <b>into</b> it and the hook catches. <b>JUMP</b> from there, catch again — that is how a shaft is climbed.',
     'help.boom.k': 'DYNAMITE',
     'help.boom.v': 'Tap 🧨 to drop a stick <b>at your feet</b>, then run. It falls like you do. Clears a 3×3 and blasts rock.',
-    'help.bank.k': 'BANK IT',
-    'help.bank.v': 'Loot you carry is <b>lost if you die</b>. Lanterns bank it — but one down in the mine lights <b>once</b>.',
+    'help.bank.k': 'NO BANKS',
+    'help.bank.v': 'Every gem you carry is <b>lost if you die</b>. Lanterns are <b>shops, not banks</b>: they are paid from your gems, and a gem spent is score gone. Only the <b>surface camp</b> keeps what you carry.',
+    'help.heart.k': 'HEARTSTONE',
+    'help.heart.v': 'Carry it out for <b>+{h}</b> and a <b>deeper mine</b> opens. Your upgrades come with you; your gems do not. Walk out without it and the campaign ends.',
     'help.clock.k': 'THE CLOCK',
     'help.clock.v': 'The mountain erupts on its own after <b>{m} minutes</b>, Heartstone or not. Watch the HUD and be climbing before it hits zero.',
     'help.dark.k': 'DARK',
@@ -73,15 +77,10 @@ const STRINGS = {
 
     /* Shop */
     'shop.supplyLantern': 'SUPPLY LANTERN',
-    'shop.campOutfitter': 'CAMP OUTFITTER',
-    'shop.wealthSecured': 'WEALTH SECURED',
-    'shop.gearUp': 'GEAR UP FOR THE NEXT DESCENT',
     'shop.back': 'BACK TO THE MINE',
-    'shop.newMine': 'NEW MINE',
     'shop.max': 'MAX',
     'shop.depth': 'DEPTH',
-    'shop.nothingToBank': 'NOTHING TO BANK',
-    'shop.secured': '{v} SECURED',
+    'shop.paysFromCarry': 'PAID FROM THE GEMS YOU CARRY — EVERY GEM SPENT IS SCORE LOST',
     'shop.hatRepaired': 'HARD HAT REPAIRED',
     'shop.singleUse': 'THIS LANTERN BURNS OUT WHEN YOU LEAVE — ONE VISIT ONLY',
 
@@ -104,33 +103,49 @@ const STRINGS = {
     'up.helmet.desc': '+1 dent — shrugs off a falling dirt block, then re-forms',
     'up.jump.name': 'Spring Knees',
     'up.jump.desc': '+0.5 tiles of jump height',
+    'up.blast.name': 'Big Bang',
+    'up.blast.desc': 'Dynamite clears a 5×5 instead of a 3×3 — ledges you meant to climb included',
 
     /* Run summary */
     'sum.escaped': 'ESCAPED',
     'sum.died': 'YOU DIED',
     'sum.complete': 'RUN COMPLETE',
-    'sum.heartstoneYours': 'THE HEARTSTONE IS YOURS',
-    'sum.lootLost': '{v} IN UNBANKED LOOT LOST',
+    'sum.nextMine': 'MINE {n} AWAITS',
+    'sum.lootLost': '{v} IN CARRIED LOOT LOST',
+    'sum.nothingLost': 'NOTHING IN YOUR POCKETS',
+    'sum.escapedKept': 'SCORE FROM THE MINES YOU ESCAPED IS KEPT',
     'sum.hauledOut': 'HAULED OUT SAFE',
-    'sum.bankedThisRun': 'BANKED THIS RUN',
+    'sum.hauledThisMine': 'HAULED FROM THIS MINE',
+    'sum.score': 'SCORE',
+    'sum.mine': 'MINE',
     'sum.gems': 'GEMS',
-    'sum.spend': 'SPEND AT CAMP',
+    'sum.found': 'GEMS FOUND',
+    'sum.heartstones': 'HEARTSTONES',
+    'sum.spent': 'SPENT AT LANTERNS',
+    'sum.lost': 'LOST TO BATS & DEATH',
+    'sum.scoreSoFar': 'CAMPAIGN SCORE',
+    'sum.finalScore': 'FINAL SCORE',
+    'sum.descend': 'DESCEND INTO MINE {n}',
+    'sum.gearCarries': 'YOUR UPGRADES COME WITH YOU · YOUR GEMS DO NOT',
+    'sum.retire': 'END THE CAMPAIGN HERE',
+    'sum.newCampaign': 'NEW CAMPAIGN',
 
     /* Pause */
     'pause.title': 'PAUSED',
     'pause.sub': '{d} m DEEP · {v} CARRIED',
     'pause.resume': 'RESUME',
     'pause.sound': 'SOUND: {s}',
-    'pause.abandon': 'ABANDON RUN (LOSE CARRIED LOOT)',
+    'pause.abandon': 'ABANDON (LOSE CARRIED LOOT)',
     'common.on': 'ON',
     'common.off': 'OFF',
     'common.metres': '{n} m',
 
     /* Toasts & banners */
     'toast.digDown': 'DIG DOWN',
+    'toast.mineN': 'MINE {n} · DIG DOWN',
     'toast.noDynamite': 'NO DYNAMITE',
     'toast.cantPlace': 'CAN’T PLACE THERE',
-    'toast.notEnoughGold': 'NOT ENOUGH GOLD',
+    'toast.notEnoughGems': 'NOT ENOUGH GEMS',
     'toast.alreadyFull': 'ALREADY AT FULL HEALTH',
     'toast.satchelFull': 'SATCHEL IS FULL',
     'toast.lanternSpent': 'THIS LANTERN IS BURNT OUT',
@@ -142,10 +157,10 @@ const STRINGS = {
     'banner.climbNow': 'CLIMB. NOW.',
     'banner.timeUp': 'THE MOUNTAIN WAITED LONG ENOUGH',
     'banner.lostInDark': '{v} LOST IN THE DARK',
-    'banner.bounty': '+{v} HEARTSTONE BOUNTY',
+    'banner.heartstonePaid': '+{v} HEARTSTONE',
 
     /* Floating world text */
-    'fx.banked': '+{v} BANKED',
+    'fx.hauled': '+{v} HAULED OUT',
     'fx.gone': 'GONE',
     'fx.recovered': 'RECOVERED',
     'fx.clunk': 'CLUNK!',
@@ -156,10 +171,10 @@ const STRINGS = {
     'lang.switch': '语言：简体中文',
 
     'meta.title': 'DEEPCUT 深切矿脉',
-    'meta.desc': 'DEEPCUT 深切矿脉 —— 一款移动优先的浏览器挖矿 roguelite。向下深挖，存好宝石，唤醒火山。',
+    'meta.desc': 'DEEPCUT 深切矿脉 —— 一款移动优先的浏览器挖矿 roguelite。向下深挖，把宝石带出矿洞，唤醒火山。',
 
     /* HUD */
-    'hud.banked': '已存入',
+    'hud.score': '得分',
     'hud.carrying': '携带中',
     'hud.surface': '地面',
     'hud.surfaceCamp': '地面营地',
@@ -167,6 +182,7 @@ const STRINGS = {
     'hud.lavaBelow': '岩浆在下方 {d} 米',
     'hud.eruption': '爆发倒计时 {t}',
     'hud.mine': '挖掘',
+    'hud.mineN': '第 {n} 座矿',
     'hud.jump': '跳跃',
     'hud.dynamite': '炸药',
 
@@ -176,16 +192,17 @@ const STRINGS = {
     'aria.jump': '跳跃',
 
     /* Title screen */
-    'title.tagline': '挖掘 · 存入 · 求生',
-    'title.vault': '金库',
+    'title.tagline': '挖掘 · 带出 · 求生',
+    'title.furthestMine': '最远矿洞',
     'title.bestHaul': '最高收获',
     'title.deepest': '最深纪录',
     'title.start': '开始挖矿',
     'title.wipe': '清除存档',
 
-    /* Highscores — a score is the gold a single run banked */
+    /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': '收获排行榜',
-    'score.empty': '还没有存入过任何财富',
+    'score.empty': '还没有带出过任何宝石',
+    'score.mineDepth': '第 {n} 座矿 · {d} 米',
     'score.newBest': '个人最高收获纪录',
     'score.ranked': '历史排名第 {n}',
 
@@ -199,8 +216,10 @@ const STRINGS = {
     'help.grip.v': '从墙边坠落时，把摇杆<b>推向</b>墙面，抓钩就会咬住。再按<b>跳跃</b>，然后重新抓住 —— 竖井就是这样爬上去的。',
     'help.boom.k': '炸药',
     'help.boom.v': '点 🧨 把一根炸药丢在<b>脚下</b>，然后快跑。它和你一样会往下掉。炸出 3×3 范围，连岩石也炸得开。',
-    'help.bank.k': '存起来',
-    'help.bank.v': '身上携带的战利品<b>一死就没</b>。灯站可以帮你存入 —— 但矿洞里的灯站只能用<b>一次</b>。',
+    'help.bank.k': '没有银行',
+    'help.bank.v': '身上携带的宝石<b>一死就没</b>。灯站<b>只是商店，不能存钱</b>：购物用的是你身上的宝石，花掉一颗就少一分。只有回到<b>地面营地</b>，带着的宝石才算数。',
+    'help.heart.k': '心髓石',
+    'help.heart.v': '把它带出矿洞可得 <b>+{h}</b>，并解锁<b>更深的矿洞</b>。升级会跟着你，宝石不会。没拿到它就离开，本轮征程结束。',
     'help.clock.k': '倒计时',
     'help.clock.v': '不管有没有拿到心髓石，<b>{m} 分钟</b>后火山都会自己爆发。盯紧顶栏的倒计时，归零前就要开始往上爬。',
     'help.dark.k': '黑暗',
@@ -208,15 +227,10 @@ const STRINGS = {
 
     /* Shop */
     'shop.supplyLantern': '补给灯站',
-    'shop.campOutfitter': '营地装备商',
-    'shop.wealthSecured': '财富已入库',
-    'shop.gearUp': '为下一次下潜备好装备',
     'shop.back': '返回矿洞',
-    'shop.newMine': '新的矿洞',
     'shop.max': '满级',
     'shop.depth': '深度',
-    'shop.nothingToBank': '没有可存入的财富',
-    'shop.secured': '{v} 已入库',
+    'shop.paysFromCarry': '用你身上的宝石付款 —— 花掉的每一颗都是失去的分数',
     'shop.hatRepaired': '安全帽已修复',
     'shop.singleUse': '这盏灯在你离开后就会熄灭 —— 只能用一次',
 
@@ -239,33 +253,49 @@ const STRINGS = {
     'up.helmet.desc': '+1 次抗击打 —— 替你挡下一块坠落的泥土，随后自行复原',
     'up.jump.name': '弹簧护膝',
     'up.jump.desc': '跳跃高度 +0.5 格',
+    'up.blast.name': '大爆破',
+    'up.blast.desc': '炸药的范围从 3×3 扩大到 5×5 —— 连你打算爬回去的台阶也一起炸掉',
 
     /* Run summary */
     'sum.escaped': '成功逃生',
     'sum.died': '你死了',
     'sum.complete': '本次探矿结束',
-    'sum.heartstoneYours': '心髓石归你所有',
-    'sum.lootLost': '损失了 {v} 未存入的战利品',
+    'sum.nextMine': '第 {n} 座矿在等着你',
+    'sum.lootLost': '损失了身上携带的 {v}',
+    'sum.nothingLost': '身上没有携带任何东西',
+    'sum.escapedKept': '已逃出的矿洞得分会保留',
     'sum.hauledOut': '平安带回',
-    'sum.bankedThisRun': '本次存入',
+    'sum.hauledThisMine': '本矿带出',
+    'sum.score': '得分',
+    'sum.mine': '矿洞',
     'sum.gems': '宝石',
-    'sum.spend': '去营地消费',
+    'sum.found': '找到的宝石',
+    'sum.heartstones': '心髓石',
+    'sum.spent': '灯站消费',
+    'sum.lost': '被蝙蝠偷走或死亡损失',
+    'sum.scoreSoFar': '本轮征程得分',
+    'sum.finalScore': '最终得分',
+    'sum.descend': '进入第 {n} 座矿',
+    'sum.gearCarries': '升级会跟着你 · 宝石不会',
+    'sum.retire': '在此结束征程',
+    'sum.newCampaign': '新的征程',
 
     /* Pause */
     'pause.title': '已暂停',
     'pause.sub': '深 {d} 米 · 携带 {v}',
     'pause.resume': '继续游戏',
     'pause.sound': '音效：{s}',
-    'pause.abandon': '放弃本次探矿（丢失携带的战利品）',
+    'pause.abandon': '放弃（丢失携带的战利品）',
     'common.on': '开',
     'common.off': '关',
     'common.metres': '{n} 米',
 
     /* Toasts & banners */
     'toast.digDown': '向下挖',
+    'toast.mineN': '第 {n} 座矿 · 向下挖',
     'toast.noDynamite': '没有炸药了',
     'toast.cantPlace': '这里放不了',
-    'toast.notEnoughGold': '金币不足',
+    'toast.notEnoughGems': '宝石不够',
     'toast.alreadyFull': '生命值已满',
     'toast.satchelFull': '工具包已装满',
     'toast.lanternSpent': '这盏灯已经熄灭了',
@@ -277,10 +307,10 @@ const STRINGS = {
     'banner.climbNow': '立刻往上爬。',
     'banner.timeUp': '这座山已经等得够久了',
     'banner.lostInDark': '{v} 消失在黑暗中',
-    'banner.bounty': '+{v} 心髓石赏金',
+    'banner.heartstonePaid': '+{v} 心髓石',
 
     /* Floating world text */
-    'fx.banked': '+{v} 已存入',
+    'fx.hauled': '+{v} 已带出',
     'fx.gone': '没了',
     'fx.recovered': '已找回',
     'fx.clunk': '咚！',

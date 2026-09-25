@@ -361,7 +361,7 @@ class Bat extends Enemy {
   die(game) {
     // Killed in the act: the loot drops back into the mine.
     if (this.stolen) {
-      game.spawnGem(this.x, this.y, this.stolen.type, { speed: 3.2 });
+      game.dropStolenGem(this.x, this.y, this.stolen);
       game.fx.text(this.x, this.y - 0.5, loc('fx.recovered'), '#7ef0d0', { size: 11, life: 1.1 });
       this.stolen = null;
     }

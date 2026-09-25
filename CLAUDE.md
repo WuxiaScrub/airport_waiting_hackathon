@@ -8,15 +8,30 @@ The game must run entirely client-side and be deployable as a static site on Git
 
 Core Loop
 
-DESCEND → MINE → COLLECT → RISK GOING DEEPER → CHECKPOINT → SHOP → REPEAT
+DESCEND → MINE → COLLECT → RISK GOING DEEPER → CHECKPOINT (SHOP) → REPEAT → CARRY IT OUT
 
 The player starts at the surface and progressively digs deeper into a procedurally generated mine.
 
 * Deeper = more valuable gems and greater danger.
-* The player can voluntarily return upward and end the run, preserving their banked score.
+* The player can voluntarily return upward and end the run; whatever they carry
+  out through the surface camp is their score.
 * There should NOT be an easy/instant return-to-surface mechanic.
-* Gems collected since the last checkpoint are unbanked and can be lost before being secured.
-* Checkpoints bank the player’s collected wealth and provide access to the shop.
+* There is NO banking anywhere in the mine. Every gem the player carries is at
+  risk until it reaches the surface camp, and dying loses all of it.
+* Checkpoints are shops only. They are paid out of the carried gems, so every
+  purchase comes straight off the final score.
+
+Campaigns
+
+* A campaign is a chain of mines. Escaping with the Heartstone opens the next,
+  deeper mine: upgrades carry over, cash does not (what was carried out is
+  score, never spendable).
+* Walking out without the Heartstone, or dying, ends the campaign. Score from
+  mines already escaped is kept; the current mine's pockets are lost on death.
+* Nothing carries between campaigns — no vault, no permanent upgrades. Every
+  campaign starts at mine 1 with base stats and 0 gems.
+* Each later mine puts the Heartstone deeper (`CFG.campaign.heartstoneStep`)
+  and sends more enemies (`CFG.campaign.threat`). Mine 1 is kept gentle.
 
 Localization
 
@@ -87,6 +102,7 @@ Dynamite
 * Place on a nearby tile.
 * Short fuse followed by an explosion.
 * Destroys everything within a 1-tile radius, including diagonals (3×3 area).
+  The Big Bang upgrade widens this to 2 tiles (5×5).
 * Can be used for mining, escape, and combat.
 
 Gems
@@ -100,7 +116,7 @@ Start with exactly four gem types:
 
 Gem values should increase with depth.
 
-Clearly distinguish unbanked loot from banked wealth.
+Clearly distinguish carried (at-risk) loot from score already secured by escaping a mine.
 
 Enemies
 
@@ -137,7 +153,7 @@ Do not add more enemy types until the core game is polished.
 
 Player Progression
 
-Checkpoints contain a simple shop.
+Checkpoints contain a simple shop, paid from carried gems.
 
 Initial upgrades:
 
@@ -147,13 +163,13 @@ Initial upgrades:
 * Headlight/visibility range
 * Dynamite capacity
 * Hard hat — absorbs falling dirt, one charge per level, re-forms over time
+* Big Bang — one expensive level; dynamite clears 5×5 instead of 3×3
 
 Keep upgrades simple and data-driven.
 
-Dynamite is a consumable the shop SELLS, per stick. Reaching a checkpoint never
-refills the satchel for free — spending gems on charges is part of the risk
-budget. A run still starts with a full satchel, and the hard hat still re-forms
-for free.
+Dynamite is a consumable the shop SELLS. Reaching a checkpoint never refills
+the satchel for free — spending gems on charges is part of the risk budget. A
+mine still starts with a full satchel, and the hard hat still re-forms for free.
 
 Headlights
 
@@ -194,7 +210,10 @@ Immediately trigger a major escalation:
 * The player cannot teleport or instantly return to safety.
 * The escape uses the mine that the player created during the run.
 
-The Heartstone should be the game’s major climax.
+The Heartstone should be the game’s major climax. It is worth a flat
+`CFG.gems.heartstoneValue` (7,000), paid only if it reaches the surface camp,
+and it is never spendable at a lantern on the way up. Carrying it out opens
+the next mine of the campaign.
 
 Normal runs do not require an escape timer. The player can voluntarily cash out by returning upward, but the Heartstone creates the forced escape sequence.
 
