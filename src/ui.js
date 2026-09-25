@@ -216,7 +216,7 @@ class UI {
 
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'mine', 'jump', 'grip', 'boom', 'bank', 'heart', 'clock', 'dark'].map(k =>
+    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark'].map(k =>
       `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
 
     this._repaint = () => this.title(save);
