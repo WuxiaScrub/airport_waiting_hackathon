@@ -357,6 +357,49 @@ class UI {
     this.wireLang();
   }
 
+  /**
+   * "Leave the mine?" — raised by the exit guard when the Back button would
+   * throw a live run away. It covers whatever panel is already on screen (the
+   * shop, say) and puts it back untouched if the player stays, so a stray press
+   * costs nothing but a tap.
+   *
+   * Returns the "put it back" function, so the guard can also dismiss the
+   * prompt itself if the exit it asked about never actually happens.
+   */
+  confirmLeave(opts) {
+    const game = this.game;
+    const back = this._repaint;          // the panel underneath, if there is one
+    const restore = () => {
+      if (back) { this._repaint = back; back(); } else game.closePanel();
+    };
+
+    const draw = () => {
+      this._repaint = draw;
+      this.show(`
+        <h2>${loc('confirm.leaveTitle')}</h2>
+        <div class="sub">${loc('confirm.leaveBody')}</div>
+        <div class="stats">
+          <div class="stat"><div class="k">${loc('shop.depth')}</div>
+            <div class="v">${loc('common.metres', { n: game.depth() })}</div></div>
+          <div class="stat"><div class="k">${loc('hud.carrying')}</div>
+            <div class="v carry">${fmt(game.carryValue())}</div></div>
+        </div>
+        <button class="btn" id="stayBtn">${loc('confirm.stay')}</button>
+        <button class="btn ghost" id="leaveBtn">${loc('confirm.leave')}</button>
+        ${this.langButton()}
+      `);
+      this.on('#stayBtn', () => { restore(); opts.onStay(); });
+      this.on('#leaveBtn', () => opts.onLeave());
+      this.wireLang();
+    };
+
+    // Pause the mine if it was running; if a panel was already up the game is
+    // paused already and opening a second one would only re-lock the input.
+    if (game.state === 'play') game.openPanel(draw);
+    else draw();
+    return restore;
+  }
+
   pause(game) {
     this._repaint = () => this.pause(game);
     this.show(`

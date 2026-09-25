@@ -32,6 +32,15 @@ const CFG = {
     // who has run out of dynamite. Every station keeps this many soft patches.
     stationGaps: 3,      // soft (mineable) patches punched through each floor
     stationGapWidth: 2,  // max tiles wide a single patch can be
+
+    // Loose boulders scattered through the stretches BETWEEN stations, on top
+    // of the noise veins. Rock cannot be mined, so this is the knob that makes
+    // a descent read as tighter the further down it goes: more tiles to route
+    // around or spend a stick on, and a slower climb back out.
+    scatterRock: 0.03,       // chance a dirt tile is a lone boulder, at the top
+    scatterRockDepth: 0.0013,// added per row of depth
+    scatterRockMax: 0.30,    // ceiling — a row must never read as a wall
+    scatterRockClear: 3,     // rows either side of a station left boulder-free
   },
 
   player: {
