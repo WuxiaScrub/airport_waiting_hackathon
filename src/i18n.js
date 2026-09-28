@@ -135,6 +135,12 @@ const STRINGS = {
     'sum.retire': 'END THE CAMPAIGN HERE',
     'sum.newCampaign': 'NEW CAMPAIGN',
 
+    /* Leaving the page mid-run (refresh, Back, tab close) */
+    'confirm.leaveTitle': 'LEAVE THE MINE?',
+    'confirm.leaveBody': 'Reloading or leaving this page ends the campaign. Gems you are carrying are lost — only score from mines you have already escaped is kept.',
+    'confirm.stay': 'KEEP DIGGING',
+    'confirm.leave': 'LEAVE ANYWAY',
+
     /* Pause */
     'pause.title': 'PAUSED',
     'pause.sub': '{d} m DEEP · {v} CARRIED',
@@ -289,6 +295,12 @@ const STRINGS = {
     'sum.gearCarries': '升级带走 · 宝石留下算分',
     'sum.retire': '见好就收，结束本局',
     'sum.newCampaign': '再来一局',
+
+    /* Leaving the page mid-run (refresh, Back, tab close) */
+    'confirm.leaveTitle': '要离开矿洞吗？',
+    'confirm.leaveBody': '刷新或离开页面，这一局就结束了。身上的宝石全部丢失，只有已经逃出的关卡分数会保留。',
+    'confirm.stay': '继续挖',
+    'confirm.leave': '仍然离开',
 
     /* Pause */
     'pause.title': '暂停',
