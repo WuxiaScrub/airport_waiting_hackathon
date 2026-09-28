@@ -149,6 +149,8 @@ class Game {
     this.ui.syncTimer(this);
     this.input.reset();
     this.state = 'play';
+    // From here on a reload or a Back press would cost the player a run.
+    ExitGuard.sync();
     if (!quiet) {
       this.save.bestMine = Math.max(this.save.bestMine || 0, mine);
       this.persist();
@@ -160,6 +162,17 @@ class Game {
   nextMine() {
     this.campaign.mine++;
     this.startMine();
+  }
+
+  /**
+   * True while leaving the page would throw work away. A mine in progress
+   * lives only in memory — the save holds records, settings and the scores of
+   * mines already escaped, nothing else — so every live mine counts, carrying
+   * loot or not.
+   */
+  runAtRisk() {
+    if (this.state !== 'play' && this.state !== 'paused') return false;
+    return !!this.player && !this.player.dead;
   }
 
   /**
