@@ -8,6 +8,7 @@
     const canvas = document.getElementById('game');
     const game = new Game(canvas);
     window.game = game;              // handy for tuning from the console
+    ExitGuard.install(game);         // refresh / Back must not eat a live run
     Sfx.setEnabled(game.save.audio !== false);
     game.start();
   }
