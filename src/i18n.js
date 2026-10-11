@@ -110,6 +110,8 @@ const STRINGS = {
     'up.jump.desc': '+0.5 tiles of jump height',
     'up.blast.name': 'Big Bang',
     'up.blast.desc': 'Dynamite clears a 5×5 instead of a 3×3 — ledges you meant to climb included',
+    'up.pick.name': 'Masterwork Pick',
+    'up.pick.desc': 'Soft dirt breaks in one swing — no weakened block left hanging over you',
 
     /* Run summary */
     'sum.escaped': 'ESCAPED',
@@ -271,6 +273,8 @@ const STRINGS = {
     'up.jump.desc': '跳跃高度 +0.5 格',
     'up.blast.name': '大爆破',
     'up.blast.desc': '炸药范围从 3×3 扩大到 5×5 —— 小心把自己要踩的台阶也炸没了',
+    'up.pick.name': '大师级矿镐',
+    'up.pick.desc': '软土一镐即碎 —— 不会再留下悬在头顶的松土',
 
     /* Run summary */
     'sum.escaped': '成功脱身',

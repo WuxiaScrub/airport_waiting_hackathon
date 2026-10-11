@@ -66,7 +66,9 @@ Descend → mine → collect → risk going deeper → checkpoint (shop) → rep
   settling on the next solid tile below. Intact dirt is structural and never
   falls, so collapses are something you cause on purpose — including onto a
   spider, or onto your own head. A **hard hat** from the shop absorbs a falling
-  block outright and re-forms after a few seconds.
+  block outright and re-forms after a few seconds. The 10,000-gem
+  **Masterwork Pick** breaks soft dirt in a single swing, so nothing is left
+  weakened overhead.
 - **Rock** is immune to the pickaxe. Dynamite goes through it. Beyond the veins
   the noise lays down, loose boulders are scattered through every stretch
   between stations, and there are steadily more of them the deeper you go — the

@@ -122,8 +122,15 @@ class UI {
   /**
    * Redraw the open panel from scratch. Every panel registers how to rebuild
    * itself, so callers never have to sniff the DOM to work out which one it is.
+   * The scroll position survives the redraw: buying the row at the bottom of
+   * the shop must not throw the player back to the top of the list.
    */
-  repaint() { if (this.isOpen && this._repaint) this._repaint(); }
+  repaint() {
+    if (!this.isOpen || !this._repaint) return;
+    const y = this.el.panel.scrollTop;
+    this._repaint();
+    this.el.panel.scrollTop = y;
+  }
 
   /** Re-render everything language-dependent that is on screen right now. */
   onLanguageChange() {

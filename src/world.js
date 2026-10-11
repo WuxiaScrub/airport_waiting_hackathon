@@ -287,8 +287,9 @@ class World {
     if (type === T.ROCK || type === T.BEDROCK) return 'hard';
     if (!MINEABLE[type]) return null;
 
+    // Compare before subtracting: hp is unsigned, so overshooting would wrap.
+    if (this.hp[i] <= amount) { this.destroy(x, y); return 'broke'; }
     this.hp[i] -= amount;
-    if (this.hp[i] <= 0) { this.destroy(x, y); return 'broke'; }
     this.queueFall(x, y);
     return 'hit';
   }

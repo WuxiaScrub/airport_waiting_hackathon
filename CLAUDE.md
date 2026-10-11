@@ -75,7 +75,7 @@ Initial terrain types:
 
 Soft Dirt
 
-* Requires two pickaxe hits to completely destroy.
+* Requires two pickaxe hits to completely destroy (one with the Masterwork Pick).
 * First hit weakens the tile.
 * A weakened tile falls after a delay if unsupported. The delay is deliberately
   generous (see `CFG.mining.fallDelay`) so a collapse can be read and dodged.
@@ -165,6 +165,8 @@ Initial upgrades:
 * Dynamite capacity
 * Hard hat — absorbs falling dirt, one charge per level, re-forms over time
 * Big Bang — one expensive level; dynamite clears 5×5 instead of 3×3
+* Masterwork Pick — one very expensive level (10,000); soft dirt breaks in one
+  swing instead of two
 
 Keep upgrades simple and data-driven.
 

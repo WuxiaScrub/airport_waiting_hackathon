@@ -49,6 +49,7 @@ class Player {
     this.jumpVel = Player.jumpVelFor(upgrades.jump);
     this.hatMax = (upgrades.helmet || 0) * CFG.upgradeEffect.helmet;
     this.blast = Player.blastFor(upgrades.blast);
+    this.oneHitDirt = (upgrades.pick || 0) > 0;
     this.hat = this.hatMax;
     this.hatTimer = 0;
 
@@ -330,7 +331,10 @@ class Player {
       didSomething = true;
     }
 
-    const res = game.world.damage(tt.x, tt.y);
+    // The masterwork pick takes soft dirt in one swing; gems still take two.
+    const w = game.world;
+    const res = w.damage(tt.x, tt.y,
+      this.oneHitDirt && w.get(tt.x, tt.y) === T.DIRT ? CFG.mining.dirtHits : 1);
     if (res === 'broke') {
       Sfx.play('break');
       game.shake(3);

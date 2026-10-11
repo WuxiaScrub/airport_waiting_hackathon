@@ -420,6 +420,7 @@ class Game {
       if (id === 'jump') p.jumpVel = Player.jumpVelFor(lv.jump);
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
       if (id === 'blast') p.blast = Player.blastFor(lv.blast);
+      if (id === 'pick') p.oneHitDirt = true;
     }
     this.ui.syncWallet(this);
 

@@ -257,6 +257,7 @@ const CFG = {
     { id: 'dynamite', max: 9, base: 90,  step: 1.90 },  // 3 + 2/lvl, capped at 20
     { id: 'helmet',   max: 3, base: 55,  step: 2.00 },
     { id: 'blast',    max: 1, base: 1000, step: 1 },    // 3x3 -> 5x5 dynamite
+    { id: 'pick',     max: 1, base: 10000, step: 1 },   // soft dirt in one hit
   ],
 
   upgradeEffect: {
