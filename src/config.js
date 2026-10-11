@@ -20,6 +20,8 @@ const CFG = {
     heartstoneRow: 150,  // depth of the Heartstone chamber in the FIRST mine
                          // (later mines push it down — see `campaign`)
     bottomPad: 12,       // rows of mine below the chamber before bedrock
+    floorRock: 25,       // rows of bedrock drawn under the floor so the camera
+                         // keeps travelling past the bottom instead of stopping
     caveScale: 7.5,      // noise frequency for caverns
     rockScale: 4.5,      // noise frequency for rock veins
 

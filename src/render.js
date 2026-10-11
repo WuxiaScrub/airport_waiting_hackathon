@@ -218,7 +218,10 @@ class Renderer {
     const x0 = Math.max(0, Math.floor(-ox / ppt) - 1);
     const x1 = Math.min(w.w - 1, Math.ceil((cw - ox) / ppt) + 1);
     const y0 = Math.max(0, Math.floor(-oy / ppt) - 1);
-    const y1 = Math.min(w.h - 1, Math.ceil((ch - oy) / ppt) + 1);
+    const yEnd = Math.ceil((ch - oy) / ppt) + 1;
+    const y1 = Math.min(w.h - 1, yEnd);
+    // Rows past the map are solid bedrock — the floor goes on below the mine.
+    const yUnder = Math.min(w.h - 1 + CFG.world.floorRock, yEnd);
 
     /* ---- background + sky ---- */
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -238,6 +241,11 @@ class Renderer {
         ctx.fillRect(Math.floor(ox + x * ppt), Math.floor(oy + y * ppt), Math.ceil(ppt) + 1, Math.ceil(ppt) + 1);
       }
     }
+    if (yUnder >= w.h) {
+      ctx.fillStyle = MEM_COLOR[T.BEDROCK];
+      const top = Math.floor(oy + w.h * ppt);
+      ctx.fillRect(Math.floor(ox), top, Math.ceil(w.w * ppt), Math.ceil(oy + (yUnder + 1) * ppt) - top);
+    }
     ctx.globalAlpha = 1;
 
     /* ---- lit layer ---- */
@@ -245,6 +253,7 @@ class Renderer {
     lctx.clearRect(0, 0, cw, ch);
     lctx.globalCompositeOperation = 'source-over';
     this.drawTerrain(lctx, game, x0, y0, x1, y1, ox, oy, ppt);
+    this.drawUnderFloor(lctx, game, x0, x1, yUnder, ox, oy, ppt);
     this.drawActors(lctx, game, ox, oy, ppt);
     this.drawParticles(lctx, game, ox, oy, ppt);
     this.applyLightMask(lctx, game, ox, oy, ppt, cw, ch);
@@ -326,6 +335,19 @@ class Renderer {
           c.fillStyle = 'rgba(0,0,0,.35)';
           c.fillRect(px, py + ppt, S, Math.max(1, ppt * 0.18));
         }
+      }
+    }
+  }
+
+  /** Bedrock below the last row of the map, purely for the camera to look at. */
+  drawUnderFloor(c, game, x0, x1, yUnder, ox, oy, ppt) {
+    const w = game.world;
+    const A = this.atlas.bedrock;
+    const S = Math.ceil(ppt) + 1;
+    for (let y = Math.max(w.h, Math.floor(-oy / ppt) - 1); y <= yUnder; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const v = Math.floor(hash2(x, y, 4242) * A.length);
+        c.drawImage(A[v], Math.floor(ox + x * ppt), Math.floor(oy + y * ppt), S, S);
       }
     }
   }

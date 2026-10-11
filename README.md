@@ -43,8 +43,9 @@ GitHub Actions*.
 Three buttons, three verbs, no mode to be in: there is no tool to select first,
 so the button you press is the thing that happens.
 
-The joystick is *floating*: it appears wherever your thumb lands, so you never
-have to look down for it. The vertical axis **aims** rather than moves — gravity
+The joystick reads your push from wherever your thumb lands, so you never have
+to look down for it, but it stays drawn in its corner so the thumb never hides
+which way you are aiming. The vertical axis **aims** rather than moves — gravity
 owns up and down — so push down to dig the floor out from under yourself and up
 to chew at the ceiling.
 
