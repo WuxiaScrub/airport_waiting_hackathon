@@ -727,7 +727,9 @@ class Game {
     const w = this.world;
     if (w.w > halfW * 2) this.cam.x = clamp(this.cam.x, halfW, w.w - halfW);
     else this.cam.x = w.w / 2;
-    this.cam.y = clamp(this.cam.y, halfH - CFG.world.surfaceRow, w.h - halfH);
+    // No clamp at the bottom edge short of `floorRock`: the bedrock under the
+    // floor is drawn, so the view keeps following the miner down to the end.
+    this.cam.y = clamp(this.cam.y, halfH - CFG.world.surfaceRow, w.h + CFG.world.floorRock - halfH);
   }
 
   /** Is a point within `pad` tiles of the visible screen? */

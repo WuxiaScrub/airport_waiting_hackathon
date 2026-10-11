@@ -181,10 +181,9 @@ html, body {
   width: 52%; height: 62%;
   pointer-events: auto;
 }
-/* The stick is parked here whenever no thumb is on it, so the player can
-   always see where it is and which way they are pointing. A touch anywhere in
-   the zone re-anchors it under the thumb (JS sets left/top, which wins over
-   this parked `bottom`). */
+/* The stick is drawn here at all times, held or not, so the player can always
+   see which way they are pointing. A touch anywhere in the zone steers it from
+   wherever the thumb lands; the drawing itself never moves under the thumb. */
 #stickbase {
   position: absolute;
   width: 116px; height: 116px;
@@ -195,7 +194,7 @@ html, body {
   opacity: .4;
   transition: opacity .14s ease;
   left: calc(var(--safe-l) + 92px);
-  bottom: calc(var(--safe-b) + 100px);
+  bottom: calc(var(--safe-b) + 74px);
 }
 #stickbase.on { opacity: .95; }
 
@@ -483,7 +482,7 @@ body.lang-cjk .btn.ghost { font-size: 12.5px; }
 
 /* Short screens: lift the parked stick clear of the action cluster. */
 @media (max-height: 700px) {
-  #stickbase { bottom: calc(var(--safe-b) + 132px); }
+  #stickbase { bottom: calc(var(--safe-b) + 106px); }
 }
 
 /* Narrow phones: three control clusters have to share one thumb's width. */

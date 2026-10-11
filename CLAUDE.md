@@ -52,7 +52,8 @@ Design for smartphone touchscreens first.
 
 * Virtual joystick: horizontal axis moves, vertical axis AIMS the tool. Aim
   snaps to 8 directions — a held diagonal targets the corner tile. The stick is
-  always drawn on screen (parked when idle, under the thumb while held) with a
+  always drawn on screen in a fixed spot (never under the thumb, which would
+  hide it) with a
   knob for the push and a rim arrow for the direction being aimed at.
 * Three action buttons, one verb each. There is NO tool selector and no
   equipped-tool state — the button you press is the thing that happens.

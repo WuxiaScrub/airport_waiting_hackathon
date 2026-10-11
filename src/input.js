@@ -1,5 +1,5 @@
 /* ============================================================================
- * Input — a floating virtual joystick plus three verb buttons (mine, jump,
+ * Input — a virtual joystick plus three verb buttons (mine, jump,
  * dynamite) for touch, with keyboard as the desktop fallback. There is no tool
  * to select: the button you press is the thing that happens.
  *
@@ -55,18 +55,11 @@ class Input {
     this._jumpEdge = false;
     this._dynEdge = false;
     this.stickId = null;
-    this.park();
     this.syncStick();
     for (const b of [this.mineBtn, this.jumpBtn, this.dynBtn]) b.classList.remove('held');
   }
 
   /* ------------------------------------------------------------- joystick */
-
-  /** Drop the inline anchor so the stick falls back to its parked corner. */
-  park() {
-    this.base.style.left = '';
-    this.base.style.top = '';
-  }
 
   /**
    * Push the current heading into the on-screen stick: the knob shows how hard
@@ -97,9 +90,9 @@ class Input {
       const t = e.changedTouches ? e.changedTouches[0] : e;
       if (this.stickId !== null) return;
       this.stickId = t.identifier !== undefined ? t.identifier : 'mouse';
+      // The push is read from wherever the thumb lands, but the drawn stick
+      // stays put: under the thumb it would be hidden by the thumb itself.
       this.origin.x = t.clientX; this.origin.y = t.clientY;
-      this.base.style.left = t.clientX + 'px';
-      this.base.style.top = t.clientY + 'px';
       this.dir.x = 0; this.dir.y = 0;
       this.syncStick();
       Sfx.init();
@@ -127,7 +120,6 @@ class Input {
       if (e.changedTouches && !this.findTouch(e, true)) return;
       this.stickId = null;
       this.dir.x = 0; this.dir.y = 0;
-      this.park();
       this.syncStick();
     };
 
