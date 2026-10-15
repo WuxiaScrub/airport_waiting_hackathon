@@ -7,7 +7,7 @@ and the game must stay fully playable offline at every step.
 
 | Topic | Decision |
 |---|---|
-| Name | **Forever Mine: Gem Rush** (store title). Bundle / package ID `com.hdexpanse.forevermine` on both platforms. |
+| Name | **Forever Mine: Gem Rush** (store title). Chinese title **矿世奇财：宝石狂潮**. Bundle / package ID `com.hdexpanse.forevermine` on both platforms. |
 | Modes | **Endless** (today's campaign: Heartstone opens the next mine) and **Daily Mine**. |
 | Endless board | Global, ranked by campaign score; shows mines escaped. The prestige board. |
 | Daily mine | One single mine per UTC day. Same terrain seed for everyone; enemies stay random per attempt. Unlimited attempts; a player's **best** score of the day counts. Escaping with the Heartstone ends the daily (no next mine). |
@@ -188,7 +188,7 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 - Pause on app background; resume where you left off.
 - App icon and splash, generated in the game's own art style.
 - Keep the GitHub Pages build as a **dev/test preview** (no ads, sign-in
-  hidden), unless the owner wants it removed.
+  hidden). Confirmed by the owner.
 
 ## Phase 5 — Revive ads
 
@@ -242,7 +242,10 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 - **Privacy policy page**: data collected = anonymous ID, display name, scores,
   and advertising ID (via AdMob). Host it on GitHub Pages or hdexpanse.com.
 - **`app-ads.txt`** at `https://hdexpanse.com/app-ads.txt`. The developer
-  website on both store listings must be hdexpanse.com.
+  website on both store listings must be hdexpanse.com. The domain is **not
+  owned yet**: buy it, then point it at a free GitHub Pages site (a separate
+  `hdexpanse.com` repo) that serves the company page, the privacy policy and
+  `app-ads.txt` at the root.
 - **Store forms**: Google Play Data safety form and Apple App Privacy labels.
   Age rating questionnaires (cartoon violence only, so it should rate low).
 - **Store assets**: screenshots (en and zh), the short and long descriptions,
@@ -260,16 +263,14 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 | Phase 4 | Install Xcode and Android Studio. Apple Developer account and Google Play Console account. Register App ID `com.hdexpanse.forevermine` and reserve the name in App Store Connect. |
 | Phase 5 | In AdMob: set up the GDPR consent message and the ATT explainer (Privacy & messaging); link the app store listings once they exist. |
 | Phase 6 | **Apple**: create a Services ID and a Sign in with Apple key, then enter Team ID, Key ID and the key in Supabase → Auth → Apple. **Google**: in Google Cloud, create OAuth client IDs (Web, iOS, Android; the Android one needs the signing certificate SHA-1), then enter the Web client ID and secret in Supabase → Auth → Google. I'll write step-by-step instructions when we get there. |
-| Phase 7 | Host the privacy policy and `app-ads.txt` on hdexpanse.com (or confirm another domain you own). Fill in the store forms. |
+| Before Phase 4 | Buy **hdexpanse.com**. Apple's organization enrollment for HD Expanse LLC needs a public website on a domain the company owns, plus a D-U-N-S number (free, but it can take a couple of weeks). |
+| Phase 7 | Host the privacy policy and `app-ads.txt` on hdexpanse.com (GitHub Pages with a custom domain). Fill in the store forms. |
 
-## Open questions (defaults are used unless you say otherwise)
+## Settled questions
 
-1. **Chinese title**: default **永恒矿井：宝石冲刺**. Better: get a native
-   speaker's take; **矿是我的** keeps the pun.
-2. **Web build**: default is to keep GitHub Pages as a dev/test preview (no ads,
-   no account linking). Say if you'd rather take it down.
-3. **Do you own hdexpanse.com?** `app-ads.txt` must live on the developer
-   website listed in the stores.
+1. **Chinese title**: 矿世奇财：宝石狂潮.
+2. **Web build**: GitHub Pages stays as a dev/test preview.
+3. **Domain**: hdexpanse.com is to be bought; see the owner tasks.
 
 ## Order of work and checkpoints
 
