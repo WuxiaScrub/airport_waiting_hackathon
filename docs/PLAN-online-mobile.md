@@ -240,7 +240,7 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 ## Phase 7 — Store readiness
 
 - **Privacy policy page**: data collected = anonymous ID, display name, scores,
-  and advertising ID (via AdMob). Host it on GitHub Pages or hdexpanse.com.
+  and advertising ID (via AdMob). Host it on the `wuxiascrub.github.io` user site.
 - **`app-ads.txt`** at `https://wuxiascrub.github.io/app-ads.txt`, served by a
   GitHub *user site* repo named `wuxiascrub.github.io` (user sites serve from
   the domain root; project sites do not). The same site hosts the privacy
