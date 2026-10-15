@@ -1,8 +1,9 @@
 # Forever Mine: Gem Rush — online, daily mine, mobile app, revive ads
 
-Status: **Phases 0–1 done (migrations applied by the owner). Phase 2 done:
-anonymous sign-in, outbox, leaderboards and profile, tested in the browser
-against a mocked backend — first live check is on the owner's device.**
+Status: **Phases 0–3 done.** Migrations applied by the owner; the online
+client, boards, profile and daily mine are tested in the browser against a
+mocked backend (this container cannot reach Supabase) — the first live check
+is on the owner's device. Next: Phase 4 (Capacitor app).
 Each phase ends in something playable and testable, and the game must stay
 fully playable offline at every step.
 

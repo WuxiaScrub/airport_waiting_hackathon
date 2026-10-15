@@ -48,7 +48,10 @@ const STRINGS = {
     'title.furthestMine': 'FURTHEST MINE',
     'title.bestHaul': 'BEST HAUL',
     'title.deepest': 'DEEPEST',
-    'title.start': 'START DIGGING',
+    'title.endless': 'ENDLESS',
+    'title.daily': 'DAILY MINE',
+    'title.dailyInfo': '{d} · new mine in {h}h {m}m',
+    'title.dailyBest': 'Your best today: {v}',
     'title.wipe': 'ERASE SAVE',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
@@ -212,6 +215,14 @@ const STRINGS = {
     'sum.globalRank': 'Endless leaderboard: #{n}',
     'sum.uploadLater': 'Offline — this run will post when you reconnect',
     'sum.uploadRefused': 'This run could not be posted.',
+    'sum.dailyRank': "Today's daily: #{n}",
+    'sum.dailyConquered': "You carried today's Heartstone out!",
+    'sum.dailyRecord': 'NEW BEST TODAY',
+    'sum.dailyBest': 'BEST TODAY',
+    'sum.dailyAgain': 'TRY AGAIN',
+    'sum.menu': 'MAIN MENU',
+    'hud.daily': 'DAILY',
+    'toast.daily': 'DAILY MINE · {d}',
 
     /* Toasts & banners */
     'toast.digDown': 'DIG DOWN',
@@ -271,7 +282,10 @@ const STRINGS = {
     'title.furthestMine': '最远关卡',
     'title.bestHaul': '最佳成绩',
     'title.deepest': '最深到过',
-    'title.start': '开挖',
+    'title.endless': '无尽模式',
+    'title.daily': '每日矿井',
+    'title.dailyInfo': '{d} · {h} 小时 {m} 分后换新矿',
+    'title.dailyBest': '今日最佳：{v}',
     'title.wipe': '清除存档',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
@@ -435,6 +449,14 @@ const STRINGS = {
     'sum.globalRank': '无尽排行榜：第 {n} 名',
     'sum.uploadLater': '当前离线 —— 联网后自动上传这局成绩',
     'sum.uploadRefused': '这局成绩无法上传。',
+    'sum.dailyRank': '今日每日矿井：第 {n} 名',
+    'sum.dailyConquered': '你把今天的火山之心带出来了！',
+    'sum.dailyRecord': '刷新今日最佳！',
+    'sum.dailyBest': '今日最佳',
+    'sum.dailyAgain': '再挑战一次',
+    'sum.menu': '主菜单',
+    'hud.daily': '每日',
+    'toast.daily': '每日矿井 · {d}',
 
     /* Toasts & banners */
     'toast.digDown': '往下挖！',

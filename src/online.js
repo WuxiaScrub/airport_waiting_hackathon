@@ -226,6 +226,19 @@ function utcDate(offsetDays) {
   return new Date(Date.now() + (offsetDays || 0) * 86400000).toISOString().slice(0, 10);
 }
 
+/**
+ * The daily mine's world seed. Same date + same generator version = same mine
+ * for everyone (FNV-1a over a fixed string). Bumping CFG.online.genVersion
+ * deliberately changes every daily, so it must ship with any change to
+ * world generation — and with the matching app_config.gen_version.
+ */
+function dailySeed(date) {
+  const s = 'forevermine-daily|' + date + '|' + CFG.online.genVersion;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return h >>> 0;
+}
+
 /** '1.2.10' >= '1.2.9' */
 function versionAtLeast(v, min) {
   const a = String(v).split('.').map(Number), b = String(min).split('.').map(Number);
