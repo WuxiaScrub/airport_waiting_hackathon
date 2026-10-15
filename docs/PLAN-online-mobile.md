@@ -1,7 +1,9 @@
 # Forever Mine: Gem Rush — online, daily mine, mobile app, revive ads
 
-Status: **plan, not started**. Each phase ends in something playable and testable,
-and the game must stay fully playable offline at every step.
+Status: **Phase 0 done. Phase 1 written and tested locally — waiting for the
+migrations to be run on the Supabase project** (see `supabase/README.md`).
+Each phase ends in something playable and testable, and the game must stay
+fully playable offline at every step.
 
 ## Decisions already made
 
@@ -97,9 +99,8 @@ works offline.
 
 - RLS on for every table. Clients **cannot** insert, update or delete any table
   directly.
-- Readable by everyone: `profiles` (name only), `daily_medals`, `app_config`.
-- `runs`: a user can read only their own rows. Boards go through functions that
-  expose only name, score, mines, depth and medals.
+- Only `app_config` is readable directly. Every other read goes through
+  functions that expose names, scores, mines, depth and medals, never ids.
 - All writes go through `security definer` functions that check `auth.uid()`.
 
 ### Functions (RPC)
@@ -111,7 +112,7 @@ works offline.
 | `endless_top(n)` | Best run per user, top `n`, with names and medal counts. |
 | `daily_top(d date, n)` | Best run per user for that date, ties broken by earliest `created_at`. |
 | `my_ranks()` | The caller's endless rank and today's daily rank. |
-| `profile_stats(uid)` | Runs played, best endless score, most mines escaped, deepest depth, gold/silver/bronze counts, recent runs (own profile only). |
+| `my_profile()` | The caller's name, runs played, best endless score, most mines escaped, deepest depth, gold/silver/bronze counts and last 20 runs. |
 | `award_daily_medals(d date)` | Takes the top 3 of `daily_top(d)`, counting only runs with `created_at < d + 1 day + grace`. Idempotent. |
 | `delete_my_account()` | Deletes the caller's `auth.users` row, which cascades to everything. Required by the App Store. |
 
