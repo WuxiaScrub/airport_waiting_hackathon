@@ -71,6 +71,11 @@ Online Layer (Supabase)
   online. Uploads are idempotent (keyed by a client-made run id).
 * `CFG.online.genVersion` must be bumped whenever world generation changes, or
   the same daily seed would build different mines on different builds.
+* The project owner applies all Supabase changes by hand. Do not try to run
+  SQL or change settings on the Supabase project yourself: write the migration
+  file (tested against the local stand-in in `supabase/tests/`) and give the
+  owner short step-by-step instructions — which file to paste into the SQL
+  Editor, which dashboard toggle to flip, and a query to check it worked.
 
 Revive Ads
 

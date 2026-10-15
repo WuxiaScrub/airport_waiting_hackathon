@@ -280,6 +280,7 @@ const CFG = {
     gameVersion: '1.0.0',  // compared against app_config.min_game_version
     genVersion: 1,         // bump whenever world generation changes: the same
                            // daily seed must build the same mine for everyone
+    nameCooldownDays: 30,  // mirrors app_config.name_cooldown_days (display only)
   },
 
   // AdMob, used only inside the native app (rewarded revive). Public IDs.

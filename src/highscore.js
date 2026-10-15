@@ -6,20 +6,9 @@
  * caught them never count — the board rewards getting out. A campaign writes
  * one row and updates it as it escapes mine after mine.
  *
- * Only the personal board exists today, and it is stored in localStorage under
- * its own key so it survives a save wipe policy change. A GLOBAL board is meant
- * to drop straight in on top of it: register a backend with
- *
- *   Highscore.useBackend({
- *     name: 'my-board',
- *     submit(entry)  -> Promise<void>   // entry is the shape written below
- *     top(n)         -> Promise<entry[]>
- *   });
- *
- * ...and every finished run is handed to it alongside the local write, while
- * Highscore.globalTop(n) returns a promise the UI can render. Nothing else in
- * the game needs to know. There is deliberately no network code in this file:
- * the game is a static site, and a board that is down must never break a run.
+ * This is the PERSONAL board, kept on the device. The global boards live on
+ * the server (see src/online.js) and are fed separately by Game.submitOnline,
+ * so a board that is down can never touch this one.
  * ========================================================================== */
 
 const Highscore = {
@@ -27,7 +16,6 @@ const Highscore = {
   legacyKey: 'deepcut.scores.v1',   // the game's working title
   keep: 5,                 // rows the personal board holds
   entries: null,           // lazily loaded
-  backend: null,           // global board, if one was ever registered
 
   /* ------------------------------------------------------------- personal */
 
@@ -97,29 +85,9 @@ const Highscore = {
     const rank = list.indexOf(entry) + 1;
     if (list.length > this.keep) list.length = this.keep;
     this.persist();
-    this.push(entry);
 
     return { id: entry.id, rank: rank <= this.keep ? rank : 0, record: value > prevBest };
   },
 
   reset() { this.entries = []; this.persist(); },
-
-  /* --------------------------------------------------------------- global */
-
-  useBackend(b) { this.backend = b || null; },
-
-  /** Fire-and-forget. A board that is slow, down, or absent changes nothing. */
-  push(entry) {
-    const b = this.backend;
-    if (!b || typeof b.submit !== 'function') return;
-    try { Promise.resolve(b.submit(entry)).catch(() => {}); } catch (e) { /* ignore */ }
-  },
-
-  /** Promise of the global top N, or null when no backend is registered. */
-  globalTop(n) {
-    const b = this.backend;
-    if (!b || typeof b.top !== 'function') return null;
-    try { return Promise.resolve(b.top(n || this.keep)).catch(() => []); }
-    catch (e) { return null; }
-  },
 };

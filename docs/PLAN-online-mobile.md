@@ -1,7 +1,8 @@
 # Forever Mine: Gem Rush — online, daily mine, mobile app, revive ads
 
-Status: **Phase 0 done. Phase 1 written and tested locally — waiting for the
-migrations to be run on the Supabase project** (see `supabase/README.md`).
+Status: **Phases 0–1 done (migrations applied by the owner). Phase 2 done:
+anonymous sign-in, outbox, leaderboards and profile, tested in the browser
+against a mocked backend — first live check is on the owner's device.**
 Each phase ends in something playable and testable, and the game must stay
 fully playable offline at every step.
 

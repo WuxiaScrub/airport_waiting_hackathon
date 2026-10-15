@@ -86,13 +86,16 @@ class Game {
    * `score` is what is already safe — the hauls of mines escaped with the
    * Heartstone. The rest are the ledger the summary adds up for the player.
    * `scoreId` is the board row this campaign has written, so each later escape
-   * (and the final result) updates one row instead of adding another.
+   * (and the final result) updates one row instead of adding another. `runId`
+   * does the same for the online boards; `playMs` is mine time across the
+   * whole campaign.
    */
   newCampaign(quiet) {
     this.campaign = {
       mine: 1, upgrades: {}, score: 0,
       found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
       scoreId: 0, result: null,
+      runId: newRunId(), playMs: 0, online: null,
     };
     this.startMine(quiet);
   }
@@ -204,6 +207,9 @@ class Game {
     }, c.scoreId);
     if (c.result) c.scoreId = c.result.id;
 
+    c.playMs += Math.round(this.runTime * 1000);
+    this.submitOnline(kind);
+
     this.persist();
     Sfx.stopRumble();
     this.state = 'over';
@@ -211,6 +217,41 @@ class Game {
     this.ui.syncWallet(this);
     this.ui.syncTimer(this);
     this.ui.summary(this, kind);
+  }
+
+  /**
+   * Queue this campaign's latest state for the online boards. The same run id
+   * is re-sent after every mine, and the server only ever moves it forward.
+   * `campaign.online` tracks how the upload went so the summary can say so.
+   */
+  submitOnline(kind) {
+    const c = this.campaign;
+    if (!Online.enabled) return;
+    c.online = { state: 'sending' };
+    Online.submitRun({
+      client_run_id: c.runId,
+      mode: 'endless',
+      score: c.score,
+      mines_escaped: c.hearts,
+      max_depth: c.depth,
+      gems: c.gems,
+      heartstone: kind === 'win',
+      result: kind,
+      revived: false,
+      duration_ms: c.playMs,
+      game_version: CFG.online.gameVersion,
+      gen_version: CFG.online.genVersion,
+      played_at: new Date().toISOString(),
+    }).then(res => {
+      if (this.campaign !== c) return;            // a new campaign started meanwhile
+      if (!res.ok) { c.online = { state: res.queued ? 'queued' : 'refused' }; this.ui.syncOnline(this); return; }
+      return Online.myRanks().then(r => {
+        if (this.campaign !== c) return;
+        const row = r.ok && Array.isArray(r.data) ? r.data[0] : null;
+        c.online = { state: 'sent', rank: row && !r.cached ? row.endless_rank : null };
+        this.ui.syncOnline(this);
+      });
+    });
   }
 
   killPlayer() {

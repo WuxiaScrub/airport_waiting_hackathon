@@ -5,6 +5,7 @@
 (function () {
   function boot() {
     I18N.init();                     // before any panel or HUD label is drawn
+    Online.init();                   // optional; the game never waits on it
     const canvas = document.getElementById('game');
     const game = new Game(canvas);
     window.game = game;              // handy for tuning from the console
