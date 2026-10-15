@@ -52,9 +52,10 @@ class Game {
   load() {
     const blank = { best: 0, bestMine: 0, audio: true };
     try {
-      // A v1 save still knows the player's deepest dive and sound setting;
-      // its gold and upgrades belong to the old economy and are dropped.
-      const raw = localStorage.getItem(CFG.saveKey) || localStorage.getItem('deepcut.save.v1');
+      // An older save still knows the player's deepest dive and sound setting;
+      // any gold and upgrades belong to an old economy and are dropped.
+      let raw = localStorage.getItem(CFG.saveKey);
+      for (const k of CFG.legacySaveKeys) raw = raw || localStorage.getItem(k);
       if (!raw) return blank;
       const s = JSON.parse(raw);
       return {

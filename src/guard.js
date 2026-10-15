@@ -49,7 +49,7 @@ const ExitGuard = {
   sync() {
     if (this.armed || this.leaving || !this.atRisk()) return;
     try {
-      history.pushState({ deepcut: 'guard' }, '', location.href);
+      history.pushState({ forevermine: 'guard' }, '', location.href);
       this.armed = true;
     } catch (e) { /* file:// and friends — beforeunload still covers reloads */ }
   },

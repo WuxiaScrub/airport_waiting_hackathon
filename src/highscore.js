@@ -23,7 +23,8 @@
  * ========================================================================== */
 
 const Highscore = {
-  key: 'deepcut.scores.v1',
+  key: 'forevermine.scores.v1',
+  legacyKey: 'deepcut.scores.v1',   // the game's working title
   keep: 5,                 // rows the personal board holds
   entries: null,           // lazily loaded
   backend: null,           // global board, if one was ever registered
@@ -34,7 +35,7 @@ const Highscore = {
     if (this.entries) return this.entries;
     this.entries = [];
     try {
-      const raw = localStorage.getItem(this.key);
+      const raw = localStorage.getItem(this.key) || localStorage.getItem(this.legacyKey);
       const arr = raw ? JSON.parse(raw) : [];
       if (Array.isArray(arr)) {
         this.entries = arr

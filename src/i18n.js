@@ -1,5 +1,5 @@
 /* ============================================================================
- * i18n — every user-facing string in DEEPCUT lives in this file.
+ * i18n — every user-facing string in Forever Mine lives in this file.
  *
  * RULE FOR FUTURE WORK: never write a display string inline. Add a key to
  * STRINGS.en AND STRINGS.zh below, then read it with loc('some.key'). A key
@@ -20,8 +20,10 @@ const STRINGS = {
   en: {
     'lang.switch': 'LANGUAGE: ENGLISH',
 
-    'meta.title': 'DEEPCUT',
-    'meta.desc': 'DEEPCUT — a mobile-first browser mining roguelite. Dig deep, carry your gems out, wake the volcano.',
+    'meta.title': 'Forever Mine: Gem Rush',
+    'meta.desc': 'Forever Mine: Gem Rush — a mobile mining roguelite. Dig deep, carry your gems out, wake the volcano.',
+    'title.logo': 'FOREVER MINE',
+    'title.logoSub': 'GEM RUSH',
 
     /* HUD */
     'hud.score': 'SCORE',
@@ -181,8 +183,10 @@ const STRINGS = {
   zh: {
     'lang.switch': '语言：简体中文',
 
-    'meta.title': 'DEEPCUT 深掘',
-    'meta.desc': 'DEEPCUT 深掘 —— 专为手机打造的网页挖矿 Roguelite。一路往下挖，把宝石带出去，顺便……吵醒火山。',
+    'meta.title': '矿世奇财：宝石狂潮',
+    'meta.desc': '矿世奇财：宝石狂潮 —— 专为手机打造的挖矿 Roguelite。一路往下挖，把宝石带出去，顺便……吵醒火山。',
+    'title.logo': '矿世奇财',
+    'title.logoSub': '宝石狂潮',
 
     /* HUD */
     'hud.score': '得分',
@@ -341,13 +345,14 @@ const STRINGS = {
 
 const I18N = {
   lang: 'en',
-  key: 'deepcut.lang.v1',
+  key: 'forevermine.lang.v1',
+  legacyKey: 'deepcut.lang.v1',   // the game's working title — a fallback until the next choice is saved
   listeners: [],
 
   /** Saved choice wins; otherwise follow the browser. */
   init() {
     let saved = null;
-    try { saved = localStorage.getItem(this.key); } catch (e) { /* private mode */ }
+    try { saved = localStorage.getItem(this.key) || localStorage.getItem(this.legacyKey); } catch (e) { /* private mode */ }
     if (saved && STRINGS[saved]) this.lang = saved;
     else this.lang = (navigator.language || 'en').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
     this.apply();

@@ -271,9 +271,29 @@ const CFG = {
 
   audio: { master: 0.32 },
 
-  // v2: the vault and permanent upgrades are gone — a v1 save's gold must not
-  // leak into the new economy.
-  saveKey: 'deepcut.save.v2',
+  // The optional online layer (Supabase). Both values are public by design —
+  // the publishable key only reaches what the database's row-level security
+  // allows. NEVER put the service-role / secret key anywhere in this repo.
+  online: {
+    url: 'https://uyxpfuhedfqzvxmmjyti.supabase.co',
+    key: 'sb_publishable_acqASii6zBrNZ8vDSwbxgg_HfcQltjP',
+    gameVersion: '1.0.0',  // compared against app_config.min_game_version
+    genVersion: 1,         // bump whenever world generation changes: the same
+                           // daily seed must build the same mine for everyone
+  },
+
+  // AdMob, used only inside the native app (rewarded revive). Public IDs.
+  // Debug builds must use Google's test units instead — see the plan doc.
+  ads: {
+    android: { app: 'ca-app-pub-2298615637807323~3595318939', rewarded: 'ca-app-pub-2298615637807323/7422883305' },
+    ios:     { app: 'ca-app-pub-2298615637807323~7639514885', rewarded: 'ca-app-pub-2298615637807323/8544393285' },
+  },
+
+  // Records and settings only. Older keys from the game's working title
+  // (deepcut.save.v2 / v1) are read as a fallback until the next save; a v1 save's gold
+  // belongs to an old economy and is dropped on the way.
+  saveKey: 'forevermine.save.v1',
+  legacySaveKeys: ['deepcut.save.v2', 'deepcut.save.v1'],
 };
 
 /* Tile ids. Anything >= DIRT that isn't LAVA/CHECKPOINT blocks movement. */

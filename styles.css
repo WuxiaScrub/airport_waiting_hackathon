@@ -1,5 +1,5 @@
 /* ============================================================
-   DEEPCUT — UI shell. Canvas draws the mine; DOM draws the HUD.
+   Forever Mine — UI shell. Canvas draws the mine; DOM draws the HUD.
    ============================================================ */
 
 :root {
@@ -340,13 +340,17 @@ html, body {
   padding: 8px 10px; margin: -8px 0 14px;
 }
 .panel .logo {
-  font-size: clamp(38px, 13vw, 62px);
-  font-weight: 900; letter-spacing: .12em; line-height: 1;
+  font-size: clamp(30px, 10vw, 52px);
+  font-weight: 900; letter-spacing: .08em; line-height: 1;
   background: linear-gradient(180deg, #9ff4ff, #4f9ee8 55%, #3b5fd0);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
   margin-bottom: 2px;
+}
+.panel .logo-sub {
+  text-align: center; font-size: clamp(13px, 4vw, 18px); font-weight: 900;
+  letter-spacing: .42em; color: var(--gold); margin: 4px 0 8px;
 }
 .panel .tagline {
   text-align: center; font-size: 11px; font-weight: 700;

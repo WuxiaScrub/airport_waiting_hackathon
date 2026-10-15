@@ -221,7 +221,8 @@ class UI {
 
     this._repaint = () => this.title(save);
     this.show(`
-      <div class="logo">DEEPCUT</div>
+      <div class="logo">${loc('title.logo')}</div>
+      <div class="logo-sub">${loc('title.logoSub')}</div>
       <div class="tagline">${loc('title.tagline')}</div>
       <div class="stats">
         <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
