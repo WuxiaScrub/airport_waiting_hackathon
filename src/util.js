@@ -97,3 +97,10 @@ function fmtTime(s) {
   const r = s % 60;
   return m + ':' + (r < 10 ? '0' : '') + r;
 }
+
+/** Escape text for innerHTML. Anything a PLAYER typed (names) must go through
+ *  this; strings authored in i18n.js are trusted and may carry markup. */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}

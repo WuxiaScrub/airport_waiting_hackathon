@@ -1,5 +1,5 @@
 /* ============================================================================
- * i18n — every user-facing string in DEEPCUT lives in this file.
+ * i18n — every user-facing string in Forever Mine lives in this file.
  *
  * RULE FOR FUTURE WORK: never write a display string inline. Add a key to
  * STRINGS.en AND STRINGS.zh below, then read it with loc('some.key'). A key
@@ -20,8 +20,10 @@ const STRINGS = {
   en: {
     'lang.switch': 'LANGUAGE: ENGLISH',
 
-    'meta.title': 'DEEPCUT',
-    'meta.desc': 'DEEPCUT — a mobile-first browser mining roguelite. Dig deep, carry your gems out, wake the volcano.',
+    'meta.title': 'Forever Mine: Gem Rush',
+    'meta.desc': 'Forever Mine: Gem Rush — a mobile mining roguelite. Dig deep, carry your gems out, wake the volcano.',
+    'title.logo': 'FOREVER MINE',
+    'title.logoSub': 'GEM RUSH',
 
     /* HUD */
     'hud.score': 'SCORE',
@@ -46,11 +48,14 @@ const STRINGS = {
     'title.furthestMine': 'FURTHEST MINE',
     'title.bestHaul': 'BEST HAUL',
     'title.deepest': 'DEEPEST',
-    'title.start': 'START DIGGING',
+    'title.endless': 'ENDLESS',
+    'title.daily': 'DAILY MINE',
+    'title.dailyInfo': '{d} · new mine in {h}h {m}m',
+    'title.dailyBest': 'Your best today: {v}',
     'title.wipe': 'ERASE SAVE',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
-    'score.title': 'TOP HAULS',
+    'score.title': 'MY TOP HAULS',
     'score.empty': 'NOTHING HAULED OUT YET',
     'score.mineDepth': 'MINE {n} · {d} m',
     'score.newBest': 'NEW PERSONAL BEST HAUL',
@@ -150,6 +155,74 @@ const STRINGS = {
     'common.on': 'ON',
     'common.off': 'OFF',
     'common.metres': '{n} m',
+    'common.back': 'BACK',
+
+    /* Online: leaderboards, profile, uploads */
+    'title.boards': 'LEADERBOARDS',
+    'title.profile': 'PROFILE',
+    'online.update': 'A new version is out — update the game to post scores.',
+    'name.anon': 'Miner#{tag}',
+    'board.title': 'LEADERBOARDS',
+    'board.endless': 'ENDLESS',
+    'board.today': 'TODAY',
+    'board.yesterday': 'YESTERDAY',
+    'board.endlessSub': 'Best campaign per miner, all time',
+    'board.dailySub': 'Daily mine · {d} (UTC)',
+    'board.loading': 'Loading…',
+    'board.offline': 'You are offline. Connect to see the boards.',
+    'board.error': 'Could not reach the boards. Try again in a moment.',
+    'board.cached': 'OFFLINE — SHOWING THE LAST RESULTS SEEN',
+    'board.empty': 'No scores yet. Be the first.',
+    'board.emptyDaily': 'No one has hauled anything out of this mine yet.',
+    'board.you': 'YOU',
+    'board.mine': '{n} mine',
+    'board.mines': '{n} mines',
+    'prof.title': 'PROFILE',
+    'prof.pending': '{n} run(s) waiting to upload',
+    'prof.edit': 'CHANGE',
+    'prof.pick': 'PICK A NAME',
+    'prof.noName': 'Pick a name to show on the leaderboards.',
+    'prof.placeholder': 'Your miner name',
+    'prof.rules': '2–15 letters, numbers, spaces, _ or -. After that, one change every 30 days.',
+    'prof.save': 'SAVE',
+    'prof.cancel': 'CANCEL',
+    'prof.bestEndless': 'BEST ENDLESS',
+    'prof.mostMines': 'MOST MINES',
+    'prof.deepest': 'DEEPEST',
+    'prof.runs': 'RUNS',
+    'prof.runsValue': '{n} ({d} daily)',
+    'prof.recent': 'RECENT RUNS',
+    'prof.noRuns': 'No runs uploaded yet.',
+    'prof.delete': 'DELETE ACCOUNT',
+    'prof.deleteBody': 'This permanently deletes your name, medals and run history from the leaderboards, and erases the records on this device. It cannot be undone.',
+    'prof.deleteYes': 'DELETE FOREVER',
+    'prof.deleted': 'Account deleted',
+    'name.err.name_length': 'Names are 2 to 15 characters.',
+    'name.err.name_chars': 'Letters, numbers, spaces, _ and - only — no emoji or symbols.',
+    'name.err.name_banned': 'That name is not allowed.',
+    'name.err.name_taken': 'That name is taken.',
+    'name.err.name_cooldown': 'You can change your name again on {date}.',
+    'name.err.offline': 'You are offline.',
+    'name.err.unknown': 'Something went wrong. Try again.',
+    'run.endless': 'Endless',
+    'run.daily': 'Daily',
+    'run.res.win': 'ESCAPED',
+    'run.res.cashout': 'CARRIED OUT',
+    'run.res.death': 'DIED',
+    'run.res.abandon': 'ABANDONED',
+    'sum.uploading': 'Posting to the leaderboards…',
+    'sum.uploaded': 'Posted to the leaderboards',
+    'sum.globalRank': 'Endless leaderboard: #{n}',
+    'sum.uploadLater': 'Offline — this run will post when you reconnect',
+    'sum.uploadRefused': 'This run could not be posted.',
+    'sum.dailyRank': "Today's daily: #{n}",
+    'sum.dailyConquered': "You carried today's Heartstone out!",
+    'sum.dailyRecord': 'NEW BEST TODAY',
+    'sum.dailyBest': 'BEST TODAY',
+    'sum.dailyAgain': 'TRY AGAIN',
+    'sum.menu': 'MAIN MENU',
+    'hud.daily': 'DAILY',
+    'toast.daily': 'DAILY MINE · {d}',
 
     /* Toasts & banners */
     'toast.digDown': 'DIG DOWN',
@@ -181,8 +254,10 @@ const STRINGS = {
   zh: {
     'lang.switch': '语言：简体中文',
 
-    'meta.title': 'DEEPCUT 深掘',
-    'meta.desc': 'DEEPCUT 深掘 —— 专为手机打造的网页挖矿 Roguelite。一路往下挖，把宝石带出去，顺便……吵醒火山。',
+    'meta.title': '矿世奇财：宝石狂潮',
+    'meta.desc': '矿世奇财：宝石狂潮 —— 专为手机打造的挖矿 Roguelite。一路往下挖，把宝石带出去，顺便……吵醒火山。',
+    'title.logo': '矿世奇财',
+    'title.logoSub': '宝石狂潮',
 
     /* HUD */
     'hud.score': '得分',
@@ -207,11 +282,14 @@ const STRINGS = {
     'title.furthestMine': '最远关卡',
     'title.bestHaul': '最佳成绩',
     'title.deepest': '最深到过',
-    'title.start': '开挖',
+    'title.endless': '无尽模式',
+    'title.daily': '每日矿井',
+    'title.dailyInfo': '{d} · {h} 小时 {m} 分后换新矿',
+    'title.dailyBest': '今日最佳：{v}',
     'title.wipe': '清除存档',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
-    'score.title': '排行榜',
+    'score.title': '我的最佳战绩',
     'score.empty': '还没成功带出过宝石',
     'score.mineDepth': '第 {n} 关 · {d} 米',
     'score.newBest': '刷新个人最佳！',
@@ -311,6 +389,74 @@ const STRINGS = {
     'common.on': '开',
     'common.off': '关',
     'common.metres': '{n} 米',
+    'common.back': '返回',
+
+    /* Online: leaderboards, profile, uploads */
+    'title.boards': '排行榜',
+    'title.profile': '个人资料',
+    'online.update': '有新版本啦 —— 更新游戏后才能上传成绩。',
+    'name.anon': '矿工#{tag}',
+    'board.title': '排行榜',
+    'board.endless': '无尽',
+    'board.today': '今日',
+    'board.yesterday': '昨日',
+    'board.endlessSub': '每位矿工的历史最佳战绩',
+    'board.dailySub': '每日矿井 · {d}（UTC）',
+    'board.loading': '加载中……',
+    'board.offline': '当前离线，联网后才能查看排行榜。',
+    'board.error': '暂时连不上排行榜，请稍后再试。',
+    'board.cached': '离线中 —— 显示的是上次看到的结果',
+    'board.empty': '还没有人上榜，快来抢第一！',
+    'board.emptyDaily': '还没有人从这座矿里带出过宝石。',
+    'board.you': '你',
+    'board.mine': '{n} 关',
+    'board.mines': '{n} 关',
+    'prof.title': '个人资料',
+    'prof.pending': '{n} 局成绩等待上传',
+    'prof.edit': '修改',
+    'prof.pick': '起个名字',
+    'prof.noName': '起个名字，就能在排行榜上留名。',
+    'prof.placeholder': '你的矿工名',
+    'prof.rules': '2–15 个字符，可用文字、数字、空格、_ 或 -。起名之后每 30 天可改一次。',
+    'prof.save': '保存',
+    'prof.cancel': '取消',
+    'prof.bestEndless': '无尽最佳',
+    'prof.mostMines': '最多关卡',
+    'prof.deepest': '最深到过',
+    'prof.runs': '总局数',
+    'prof.runsValue': '{n}（每日 {d}）',
+    'prof.recent': '最近战绩',
+    'prof.noRuns': '还没有上传过成绩。',
+    'prof.delete': '删除账号',
+    'prof.deleteBody': '这会永久删除你的名字、奖牌和排行榜上的所有战绩，并清除这台设备上的记录。删除后无法恢复。',
+    'prof.deleteYes': '永久删除',
+    'prof.deleted': '账号已删除',
+    'name.err.name_length': '名字需要 2 到 15 个字符。',
+    'name.err.name_chars': '只能用文字、数字、空格、_ 和 -，不能用表情或符号。',
+    'name.err.name_banned': '这个名字不能用。',
+    'name.err.name_taken': '这个名字已经有人用了。',
+    'name.err.name_cooldown': '{date} 之后才能再改名。',
+    'name.err.offline': '当前离线。',
+    'name.err.unknown': '出了点问题，请再试一次。',
+    'run.endless': '无尽',
+    'run.daily': '每日',
+    'run.res.win': '逃出',
+    'run.res.cashout': '带出',
+    'run.res.death': '阵亡',
+    'run.res.abandon': '放弃',
+    'sum.uploading': '正在上传到排行榜……',
+    'sum.uploaded': '已上传到排行榜',
+    'sum.globalRank': '无尽排行榜：第 {n} 名',
+    'sum.uploadLater': '当前离线 —— 联网后自动上传这局成绩',
+    'sum.uploadRefused': '这局成绩无法上传。',
+    'sum.dailyRank': '今日每日矿井：第 {n} 名',
+    'sum.dailyConquered': '你把今天的火山之心带出来了！',
+    'sum.dailyRecord': '刷新今日最佳！',
+    'sum.dailyBest': '今日最佳',
+    'sum.dailyAgain': '再挑战一次',
+    'sum.menu': '主菜单',
+    'hud.daily': '每日',
+    'toast.daily': '每日矿井 · {d}',
 
     /* Toasts & banners */
     'toast.digDown': '往下挖！',
@@ -341,13 +487,14 @@ const STRINGS = {
 
 const I18N = {
   lang: 'en',
-  key: 'deepcut.lang.v1',
+  key: 'forevermine.lang.v1',
+  legacyKey: 'deepcut.lang.v1',   // the game's working title — a fallback until the next choice is saved
   listeners: [],
 
   /** Saved choice wins; otherwise follow the browser. */
   init() {
     let saved = null;
-    try { saved = localStorage.getItem(this.key); } catch (e) { /* private mode */ }
+    try { saved = localStorage.getItem(this.key) || localStorage.getItem(this.legacyKey); } catch (e) { /* private mode */ }
     if (saved && STRINGS[saved]) this.lang = saved;
     else this.lang = (navigator.language || 'en').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en';
     this.apply();

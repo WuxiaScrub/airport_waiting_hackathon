@@ -1,5 +1,5 @@
 /* ============================================================
-   DEEPCUT — UI shell. Canvas draws the mine; DOM draws the HUD.
+   Forever Mine — UI shell. Canvas draws the mine; DOM draws the HUD.
    ============================================================ */
 
 :root {
@@ -302,6 +302,9 @@ html, body {
   position: absolute; inset: 0;
   z-index: 40;
   display: grid; place-items: center;
+  /* minmax(0, …): a long unbreakable line (a player's name) must shrink and
+     ellipsize instead of widening the panel past the screen. */
+  grid-template-columns: minmax(0, 1fr);
   padding: calc(var(--safe-t) + 14px) 14px calc(var(--safe-b) + 14px);
   background: rgba(4,3,9,.82);
   backdrop-filter: blur(7px);
@@ -340,13 +343,17 @@ html, body {
   padding: 8px 10px; margin: -8px 0 14px;
 }
 .panel .logo {
-  font-size: clamp(38px, 13vw, 62px);
-  font-weight: 900; letter-spacing: .12em; line-height: 1;
+  font-size: clamp(30px, 10vw, 52px);
+  font-weight: 900; letter-spacing: .08em; line-height: 1;
   background: linear-gradient(180deg, #9ff4ff, #4f9ee8 55%, #3b5fd0);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
   margin-bottom: 2px;
+}
+.panel .logo-sub {
+  text-align: center; font-size: clamp(13px, 4vw, 18px); font-weight: 900;
+  letter-spacing: .42em; color: var(--gold); margin: 4px 0 8px;
 }
 .panel .tagline {
   text-align: center; font-size: 11px; font-weight: 700;
@@ -438,12 +445,90 @@ html, body {
   box-shadow: none; color: var(--dim); font-size: 12px; padding: 12px;
 }
 .btn.ghost:active { transform: none; }
+.title-stats { margin-top: 18px; }
+.btn.daily {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: linear-gradient(180deg, #f0a53c, #c96a1f); box-shadow: 0 5px 0 #6d3510;
+}
+.btn.daily:active { box-shadow: 0 2px 0 #6d3510; }
+.btn.daily .daily-k { font-size: 15px; }
+.btn.daily .daily-v { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; color: rgba(255,255,255,.85); }
+.btn.daily .daily-v.best { color: #fff3c4; }
 .btn.hot { background: linear-gradient(180deg, #e0623c, #b3391f); box-shadow: 0 5px 0 #6d1f0e; }
 
 .help { font-size: 10.5px; line-height: 1.65; color: var(--dim); font-weight: 600; }
 .help b { color: var(--ink); font-weight: 800; }
 .help .row { display: flex; gap: 8px; margin-bottom: 3px; }
 .help .row span:first-child { flex-shrink: 0; min-width: 78px; color: var(--gold); font-weight: 800; }
+
+/* ------------------------------------------------- online panels */
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn-row .btn { margin-top: 9px; }
+.btn.small { width: auto; display: inline-block; margin: 0; padding: 7px 12px; font-size: 11px; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.tab {
+  padding: 9px 4px; border-radius: 10px;
+  border: 1px solid var(--panel-edge); background: transparent;
+  color: var(--dim); font-size: 11px; font-weight: 800; letter-spacing: .08em;
+  cursor: pointer;
+}
+.tab.on { background: #2a2140; color: var(--gold); border-color: rgba(255, 201, 94, .4); }
+
+.board { min-height: 120px; }
+.board-row { align-items: center; padding: 5px; }
+.board-row .rk { min-width: 22px; text-align: center; }
+.board-row .nm {
+  flex: 1; min-width: 0; font-size: 12.5px; font-weight: 800; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.board-row .vv { flex: 0 0 auto; min-width: 58px; text-align: right; }
+.board-row .dd { flex: 0 0 auto; min-width: 46px; text-align: right; }
+.board-row .hs { color: #ff7a3c; }
+.board-row.pinned { margin-top: 6px; border-top: 1px dashed rgba(255,255,255,.14); border-radius: 0 0 7px 7px; }
+.board-stale { font-size: 10px; font-weight: 700; color: var(--gold); margin-bottom: 6px; }
+.score-row .dd.wide { flex: 1; }
+
+.medal {
+  display: inline-block; width: 11px; height: 11px; border-radius: 50%;
+  vertical-align: -1px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25);
+}
+.medal.gold   { background: #ffcf4a; }
+.medal.silver { background: #cfd8e6; }
+.medal.bronze { background: #d98a4e; }
+.medals { margin-left: 6px; font-size: 10px; font-weight: 900; color: var(--dim); }
+.medals .medal {
+  width: auto; height: auto; padding: 0 5px; border-radius: 6px; margin-left: 3px;
+  color: #241a10; line-height: 14px; font-size: 9.5px; vertical-align: 1px;
+}
+
+.medal-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.medal-big {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 0; border-radius: 12px; background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums;
+}
+.medal-big span { width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+.medal-big.gold span   { background: #ffcf4a; }
+.medal-big.silver span { background: #cfd8e6; }
+.medal-big.bronze span { background: #d98a4e; }
+
+.name-show { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.name-show .nm { font-size: 20px; font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name-edit input {
+  width: 100%; box-sizing: border-box; padding: 12px 13px;
+  border-radius: 12px; border: 1px solid var(--panel-edge);
+  background: #0e0b17; color: var(--ink);
+  font: inherit; font-size: 16px; font-weight: 800;   /* 16px stops iOS zooming in */
+  user-select: text; -webkit-user-select: text;
+}
+.name-edit input:focus { outline: none; border-color: var(--gold); }
+.name-rules { font-size: 10.5px; color: var(--dim); font-weight: 600; margin-top: 6px; }
+.name-err { font-size: 11.5px; color: #ff7d7d; font-weight: 800; margin-top: 6px; }
+.note.danger { color: #ff9d8a; background: rgba(224, 98, 60, .1); border-color: rgba(224, 98, 60, .35); }
+.online-line { font-size: 11px; font-weight: 800; color: var(--carry); text-align: center; margin: -6px 0 12px; }
 
 /* The end-of-campaign ledger: labels left, signed amounts right, total ruled off. */
 .ledger { margin-bottom: 16px; font-size: 12px; }

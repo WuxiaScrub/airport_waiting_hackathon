@@ -50,17 +50,20 @@ class Game {
    * run can never buy the next one an easy start.
    */
   load() {
-    const blank = { best: 0, bestMine: 0, audio: true };
+    const blank = { best: 0, bestMine: 0, audio: true, daily: null };
     try {
-      // A v1 save still knows the player's deepest dive and sound setting;
-      // its gold and upgrades belong to the old economy and are dropped.
-      const raw = localStorage.getItem(CFG.saveKey) || localStorage.getItem('deepcut.save.v1');
+      // An older save still knows the player's deepest dive and sound setting;
+      // any gold and upgrades belong to an old economy and are dropped.
+      let raw = localStorage.getItem(CFG.saveKey);
+      for (const k of CFG.legacySaveKeys) raw = raw || localStorage.getItem(k);
       if (!raw) return blank;
       const s = JSON.parse(raw);
       return {
         best: s.best || 0,
         bestMine: s.bestMine || 0,
         audio: s.audio !== false,
+        // Today's best daily haul on this device: { date, best }.
+        daily: s.daily && typeof s.daily.date === 'string' ? { date: s.daily.date, best: s.daily.best || 0 } : null,
       };
     } catch (e) { return blank; }
   }
@@ -70,7 +73,7 @@ class Game {
   }
 
   wipeSave() {
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, daily: null };
     this.persist();
     Highscore.reset();
     this.ui.title(this.save);
@@ -85,13 +88,23 @@ class Game {
    * `score` is what is already safe — the hauls of mines escaped with the
    * Heartstone. The rest are the ledger the summary adds up for the player.
    * `scoreId` is the board row this campaign has written, so each later escape
-   * (and the final result) updates one row instead of adding another.
+   * (and the final result) updates one row instead of adding another. `runId`
+   * does the same for the online boards; `playMs` is mine time across the
+   * whole campaign.
+   *
+   * `mode` 'daily' makes this a DAILY attempt: a single mine whose terrain is
+   * built from today's UTC date, so every player digs the same one. It is
+   * still mine 1 on base stats; escaping it ends the attempt. `daily` holds
+   * the date it started on — a run that crosses midnight counts for that day.
    */
-  newCampaign(quiet) {
+  newCampaign(quiet, mode) {
+    const daily = mode === 'daily' ? utcDate(0) : null;
     this.campaign = {
       mine: 1, upgrades: {}, score: 0,
       found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
       scoreId: 0, result: null,
+      runId: newRunId(), playMs: 0, online: null,
+      daily, dailyRecord: false,
     };
     this.startMine(quiet);
   }
@@ -114,7 +127,8 @@ class Game {
     const heartRow = CFG.world.heartstoneRow + (mine - 1) * CFG.campaign.heartstoneStep;
     this.fuse = CFG.lava.fuse + (mine - 1) * CFG.campaign.fusePerMine;
 
-    this.world = new World((Math.random() * 0xffffffff) >>> 0, this, heartRow);
+    const seed = this.campaign.daily ? dailySeed(this.campaign.daily) : (Math.random() * 0xffffffff) >>> 0;
+    this.world = new World(seed, this, heartRow);
     this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.campaign.upgrades);
     this.enemies.length = 0;
     this.gems.length = 0;
@@ -154,8 +168,17 @@ class Game {
     if (!quiet) {
       this.save.bestMine = Math.max(this.save.bestMine || 0, mine);
       this.persist();
-      this.ui.toast(mine > 1 ? loc('toast.mineN', { n: mine }) : loc('toast.digDown'), 1800);
+      this.ui.toast(this.campaign.daily ? loc('toast.daily', { d: this.campaign.daily })
+        : mine > 1 ? loc('toast.mineN', { n: mine }) : loc('toast.digDown'), 1800);
     }
+  }
+
+  /** Back to the title, with a fresh idle mine behind it. */
+  toTitle() {
+    this.newCampaign(true);
+    this.state = 'title';
+    ExitGuard.sync();
+    this.ui.title(this.save);
   }
 
   /** Straight into the next mine: same gear, empty pockets. */
@@ -192,16 +215,27 @@ class Game {
     this.save.best = Math.max(this.save.best || 0, this.runStats.depth);
     c.depth = Math.max(c.depth, this.runStats.depth);
 
-    // The board is written on every escape as well as at the end, so a player
-    // who closes the tab between mines still has the mines they escaped.
-    c.result = Highscore.submit({
-      value: c.score,
-      depth: c.depth,
-      gems: c.gems,
-      mine: c.mine,
-      kind,
-    }, c.scoreId);
-    if (c.result) c.scoreId = c.result.id;
+    if (c.daily) {
+      // A daily attempt never touches the endless haul board; it keeps its own
+      // best-of-the-day instead.
+      const d = this.save.daily && this.save.daily.date === c.daily ? this.save.daily : { date: c.daily, best: 0 };
+      c.dailyRecord = c.score > d.best;
+      this.save.daily = { date: c.daily, best: Math.max(d.best, c.score) };
+    } else {
+      // The board is written on every escape as well as at the end, so a player
+      // who closes the tab between mines still has the mines they escaped.
+      c.result = Highscore.submit({
+        value: c.score,
+        depth: c.depth,
+        gems: c.gems,
+        mine: c.mine,
+        kind,
+      }, c.scoreId);
+      if (c.result) c.scoreId = c.result.id;
+    }
+
+    c.playMs += Math.round(this.runTime * 1000);
+    this.submitOnline(kind);
 
     this.persist();
     Sfx.stopRumble();
@@ -210,6 +244,44 @@ class Game {
     this.ui.syncWallet(this);
     this.ui.syncTimer(this);
     this.ui.summary(this, kind);
+  }
+
+  /**
+   * Queue this campaign's latest state for the online boards. The same run id
+   * is re-sent after every mine, and the server only ever moves it forward.
+   * `campaign.online` tracks how the upload went so the summary can say so.
+   */
+  submitOnline(kind) {
+    const c = this.campaign;
+    if (!Online.enabled) return;
+    c.online = { state: 'sending' };
+    Online.submitRun({
+      client_run_id: c.runId,
+      mode: c.daily ? 'daily' : 'endless',
+      daily_date: c.daily,
+      score: c.score,
+      mines_escaped: c.hearts,
+      max_depth: c.depth,
+      gems: c.gems,
+      heartstone: kind === 'win',
+      result: kind,
+      revived: false,
+      duration_ms: c.playMs,
+      game_version: CFG.online.gameVersion,
+      gen_version: CFG.online.genVersion,
+      played_at: new Date().toISOString(),
+    }).then(res => {
+      if (this.campaign !== c) return;            // a new campaign started meanwhile
+      if (!res.ok) { c.online = { state: res.queued ? 'queued' : 'refused' }; this.ui.syncOnline(this); return; }
+      return Online.myRanks().then(r => {
+        if (this.campaign !== c) return;
+        const row = r.ok && Array.isArray(r.data) ? r.data[0] : null;
+        // The daily rank only means something while it is still that day.
+        const rank = !row || r.cached ? null : c.daily ? (c.daily === utcDate(0) ? row.daily_rank : null) : row.endless_rank;
+        c.online = { state: 'sent', rank };
+        this.ui.syncOnline(this);
+      });
+    });
   }
 
   killPlayer() {

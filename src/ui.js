@@ -89,7 +89,8 @@ class UI {
   syncDepth(depth, world, player) {
     let label = depth <= 0 ? loc('hud.surfaceCamp') : loc('hud.deep', { d: depth });
     const mine = this.game.campaign.mine;
-    if (mine > 1) label = loc('hud.mineN', { n: mine }) + '  ·  ' + label;
+    if (this.game.campaign.daily) label = loc('hud.daily') + '  ·  ' + label;
+    else if (mine > 1) label = loc('hud.mineN', { n: mine }) + '  ·  ' + label;
     if (this.game.volcano) {
       const gap = Math.max(0, Math.round(world.lavaRow - player.y));
       label += '  ·  ' + loc('hud.lavaBelow', { d: gap });
@@ -193,11 +194,8 @@ class UI {
   wireLang() { this.on('#langBtn', () => I18N.cycle()); }
 
   /**
-   * The personal haul board. `highlightId` marks the row a run just set.
-   *
-   * A global board slots in here unchanged: register a backend with
-   * Highscore.useBackend() and render Highscore.globalTop() into a second list
-   * beside this one — see src/highscore.js.
+   * The personal haul board. `highlightId` marks the row a run just set. The
+   * global boards have their own panel — see leaderboards() below.
    */
   scoreBoard(highlightId) {
     const list = Highscore.list();
@@ -221,22 +219,296 @@ class UI {
 
     this._repaint = () => this.title(save);
     this.show(`
-      <div class="logo">DEEPCUT</div>
+      <div class="logo">${loc('title.logo')}</div>
+      <div class="logo-sub">${loc('title.logoSub')}</div>
       <div class="tagline">${loc('title.tagline')}</div>
-      <div class="stats">
+      ${this.dailyCard(save)}
+      <button class="btn" id="startBtn">${loc('title.endless')}</button>
+      ${this.onlineButtons()}
+      <div class="stats title-stats">
         <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
         <div class="stat"><div class="k">${loc('title.furthestMine')}</div><div class="v carry">${save.bestMine || 0}</div></div>
         <div class="stat wide"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
       </div>
       ${this.scoreBoard()}
       <div class="help">${rows}</div>
-      <button class="btn" id="startBtn">${loc('title.start')}</button>
       ${this.langButton()}
       ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
     `);
     this.on('#startBtn', () => this.game.newCampaign());
+    this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
     this.on('#wipeBtn', () => this.game.wipeSave());
+    this.wireOnlineButtons();
     this.wireLang();
+  }
+
+  /** Today's daily mine: the date, your best on it, and when the next one opens. */
+  dailyCard(save) {
+    const today = utcDate(0);
+    const best = save.daily && save.daily.date === today ? save.daily.best : 0;
+    const left = Math.max(0, Date.parse(utcDate(1) + 'T00:00:00Z') - Date.now()) / 1000;
+    const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60);
+    return `
+      <button class="btn daily" id="dailyBtn">
+        <span class="daily-k">${loc('title.daily')}</span>
+        <span class="daily-v">${loc('title.dailyInfo', { d: today, h, m })}</span>
+        ${best ? `<span class="daily-v best">${loc('title.dailyBest', { v: fmt(best) })}</span>` : ''}
+      </button>`;
+  }
+
+  /* ---------------------------------------------------------------- online */
+
+  /** LEADERBOARDS / PROFILE, plus the update notice. Nothing when offline-only. */
+  onlineButtons() {
+    if (!Online.enabled) return '';
+    return `${Online.updateRequired ? `<div class="note">${loc('online.update')}</div>` : ''}
+      <div class="btn-row">
+        <button class="btn ghost" id="boardsBtn">${loc('title.boards')}</button>
+        <button class="btn ghost" id="profileBtn">${loc('title.profile')}</button>
+      </div>`;
+  }
+
+  wireOnlineButtons() {
+    // From a daily's summary, open on today's board; everywhere else, endless.
+    const tab = this.game.state === 'over' && this.game.campaign.daily ? 'today' : 'endless';
+    this.on('#boardsBtn', () => this.openOnline(() => this.leaderboards(tab)));
+    this.on('#profileBtn', () => this.openOnline(() => this.profile()));
+  }
+
+  /** Remember the panel underneath so BACK returns to it, then open `draw`. */
+  openOnline(draw) {
+    this._back = this._repaint || (() => this.title(this.game.save));
+    draw();
+  }
+
+  backButton() { return `<button class="btn" id="backBtn">${loc('common.back')}</button>`; }
+  wireBack() { this.on('#backBtn', () => { const b = this._back; this._back = null; b(); }); }
+
+  /** A name on a board: the player's pick, or Miner#1234 until they pick one. */
+  playerName(name, tag) { return name ? esc(name) : loc('name.anon', { tag: esc(tag) }); }
+
+  medalTally(r) {
+    const m = ['gold', 'silver', 'bronze'].filter(k => r[k] > 0)
+      .map(k => `<span class="medal ${k}">${r[k]}</span>`).join('');
+    return m ? `<span class="medals">${m}</span>` : '';
+  }
+
+  /** Loading / offline / error line shared by the online panels. */
+  onlineStatus(res, emptyKey, isEmpty) {
+    if (!res) return `<div class="score-empty">${loc('board.loading')}</div>`;
+    if (!res.ok) return `<div class="score-empty">${loc(res.offline ? 'board.offline' : 'board.error')}</div>`;
+    const stale = res.cached ? `<div class="board-stale">${loc('board.cached')}</div>` : '';
+    return isEmpty ? stale + `<div class="score-empty">${loc(emptyKey)}</div>` : stale;
+  }
+
+  /**
+   * The global boards: Endless (all time), Today's daily, Yesterday's daily
+   * with its podium. Draws at once with a loading line, then again when the
+   * data lands — but only if the player is still looking at this panel.
+   */
+  leaderboards(tab) {
+    const st = { tab, res: null, ranks: null };
+    const draw = () => {
+      this._repaint = draw;
+      const rows = st.res && st.res.ok && Array.isArray(st.res.data) ? st.res.data : [];
+      const daily = tab !== 'endless';
+      const list = rows.map(r => `
+        <div class="score-row board-row${r.me ? ' you' : ''}">
+          <span class="rk">${r.medal ? `<span class="medal ${r.medal}"></span>` : r.rank}</span>
+          <span class="nm">${this.playerName(r.name, r.tag)}${this.medalTally(r)}</span>
+          <span class="vv">${fmt(r.score)}</span>
+          <span class="dd">${daily
+            ? loc('common.metres', { n: r.max_depth }) + (r.heartstone ? ' <span class="hs">◆</span>' : '')
+            : loc(r.mines_escaped === 1 ? 'board.mine' : 'board.mines', { n: r.mines_escaped })}</span>
+        </div>`).join('');
+
+      // Your own standing when you are off the bottom of the list.
+      const rk = st.ranks && st.ranks.ok && Array.isArray(st.ranks.data) ? st.ranks.data[0] : null;
+      const myRank = rk && (tab === 'endless' ? rk.endless_rank : tab === 'today' ? rk.daily_rank : null);
+      const myBest = rk && (tab === 'endless' ? rk.endless_best : rk.daily_best);
+      const pinned = myRank && !rows.some(r => r.me) ? `
+        <div class="score-row board-row you pinned">
+          <span class="rk">${myRank}</span><span class="nm">${loc('board.you')}</span>
+          <span class="vv">${fmt(myBest)}</span><span class="dd"></span>
+        </div>` : '';
+
+      const tabBtn = (k) => `<button class="tab${k === tab ? ' on' : ''}" data-tab="${k}">${loc('board.' + k)}</button>`;
+      this.show(`
+        <h2>${loc('board.title')}</h2>
+        <div class="sub">${loc(daily ? 'board.dailySub' : 'board.endlessSub', { d: tab === 'today' ? utcDate(0) : utcDate(-1) })}</div>
+        <div class="tabs">${tabBtn('endless')}${tabBtn('today')}${tabBtn('yesterday')}</div>
+        <div class="scores board">
+          ${this.onlineStatus(st.res, daily ? 'board.emptyDaily' : 'board.empty', !rows.length)}
+          ${list}${pinned}
+        </div>
+        ${this.backButton()}
+        ${this.langButton()}
+      `);
+      this.onAll('[data-tab]', (el) => { Sfx.play('ui'); if (el.dataset.tab !== tab) this.leaderboards(el.dataset.tab); });
+      this.wireBack();
+      this.wireLang();
+    };
+    draw();
+
+    const req = tab === 'endless' ? Online.endlessTop(50) : Online.dailyTop(utcDate(tab === 'today' ? 0 : -1), 50);
+    Promise.all([req, Online.myRanks()]).then(([res, ranks]) => {
+      st.res = res; st.ranks = ranks;
+      if (this._repaint === draw && this.isOpen) draw();
+    });
+  }
+
+  /**
+   * The player's profile: name (editable), medals, bests and recent runs, and
+   * account deletion behind a second confirmation.
+   */
+  profile() {
+    const st = { res: null, editing: false, draft: '', err: '', busy: false, confirmDelete: false };
+    const p = () => (st.res && st.res.ok && st.res.data) || null;
+
+    const load = () => Online.myProfile().then(res => {
+      st.res = res;
+      if (this._repaint === draw && this.isOpen) draw();
+    });
+
+    const save = () => {
+      const v = st.draft.trim();
+      if (st.busy || !v) return;
+      st.busy = true; st.err = ''; draw();
+      Online.setName(v).then(res => {
+        st.busy = false;
+        if (res.ok) { st.editing = false; load(); }
+        else st.err = this.nameError(res.error, p());
+        if (this._repaint === draw && this.isOpen) draw();
+      });
+    };
+
+    const remove = () => {
+      if (st.busy) return;
+      st.busy = true; draw();
+      Online.deleteAccount().then(res => {
+        st.busy = false;
+        if (res.ok) { this._back = null; this.game.wipeSave(); this.toast(loc('prof.deleted'), 2200); return; }
+        st.err = loc(res.offline ? 'name.err.offline' : 'board.error');
+        st.confirmDelete = false;
+        if (this._repaint === draw && this.isOpen) draw();
+      });
+    };
+
+    const draw = () => {
+      this._repaint = draw;
+      const d = p();
+      const pending = Online.pending();
+      let body;
+      if (!d) {
+        body = this.onlineStatus(st.res, 'board.error', true);
+      } else {
+        const nameBlock = st.editing ? `
+          <div class="name-edit">
+            <input id="nameInput" maxlength="15" autocomplete="off" autocapitalize="off" spellcheck="false"
+                   placeholder="${loc('prof.placeholder')}" value="${esc(st.draft)}" ${st.busy ? 'disabled' : ''} />
+            <div class="name-rules">${loc('prof.rules')}</div>
+            ${st.err ? `<div class="name-err">${st.err}</div>` : ''}
+            <div class="btn-row">
+              <button class="btn" id="saveName" ${st.busy ? 'disabled' : ''}>${loc('prof.save')}</button>
+              <button class="btn ghost" id="cancelName">${loc('prof.cancel')}</button>
+            </div>
+          </div>` : `
+          <div class="name-show">
+            <span class="nm">${this.playerName(d.name, d.tag)}</span>
+            <button class="btn ghost small" id="editName">${loc(d.name ? 'prof.edit' : 'prof.pick')}</button>
+          </div>
+          ${d.name ? '' : `<div class="name-rules">${loc('prof.noName')}</div>`}`;
+
+        const recent = (d.recent || []).slice(0, 10).map(r => `
+          <div class="score-row">
+            <span class="dd wide">${loc(r.mode === 'daily' ? 'run.daily' : 'run.endless')} · ${this.shortDate(r.created_at)}</span>
+            <span class="vv">${fmt(r.score)}</span>
+            <span class="dd">${loc('run.res.' + r.result)}</span>
+          </div>`).join('');
+
+        const stat = (k, v, cls) => `<div class="stat"><div class="k">${loc(k)}</div><div class="v ${cls || ''}">${v}</div></div>`;
+        body = `
+          ${this.onlineStatus(st.res, '', false)}
+          ${nameBlock}
+          <div class="medal-row">
+            <div class="medal-big gold"><span></span>${d.gold}</div>
+            <div class="medal-big silver"><span></span>${d.silver}</div>
+            <div class="medal-big bronze"><span></span>${d.bronze}</div>
+          </div>
+          <div class="stats">
+            ${stat('prof.bestEndless', fmt(d.best_endless || 0), 'gold')}
+            ${stat('prof.mostMines', d.most_mines || 0, 'carry')}
+            ${stat('prof.deepest', loc('common.metres', { n: d.deepest || 0 }))}
+            ${stat('prof.runs', loc('prof.runsValue', { n: d.runs, d: d.dailies }))}
+          </div>
+          <div class="scores">
+            <div class="score-head">${loc('prof.recent')}</div>
+            ${recent || `<div class="score-empty">${loc('prof.noRuns')}</div>`}
+          </div>
+          ${st.confirmDelete ? `
+            <div class="note danger">${loc('prof.deleteBody')}</div>
+            <button class="btn hot" id="deleteYes" ${st.busy ? 'disabled' : ''}>${loc('prof.deleteYes')}</button>
+            <button class="btn ghost" id="deleteNo">${loc('prof.cancel')}</button>`
+          : `<button class="btn ghost" id="deleteBtn">${loc('prof.delete')}</button>`}`;
+        if (!st.editing && st.err) body = `<div class="name-err">${st.err}</div>` + body;
+      }
+
+      this.show(`
+        <h2>${loc('prof.title')}</h2>
+        ${pending ? `<div class="sub">${loc('prof.pending', { n: pending })}</div>` : ''}
+        ${body}
+        ${this.backButton()}
+        ${this.langButton()}
+      `);
+      const input = this.el.panelInner.querySelector('#nameInput');
+      if (input) {
+        input.addEventListener('input', () => { st.draft = input.value; });
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); e.stopPropagation(); });
+        if (!st.busy) input.focus();
+      }
+      this.on('#editName', () => { st.editing = true; st.err = ''; st.draft = (p() && p().name) || ''; draw(); });
+      this.on('#cancelName', () => { st.editing = false; st.err = ''; draw(); });
+      this.on('#saveName', save);
+      this.on('#deleteBtn', () => { st.confirmDelete = true; st.err = ''; draw(); });
+      this.on('#deleteNo', () => { st.confirmDelete = false; draw(); });
+      this.on('#deleteYes', remove);
+      this.wireBack();
+      this.wireLang();
+    };
+    draw();
+    load();
+  }
+
+  /** Words for a set_display_name refusal. */
+  nameError(code, prof) {
+    if (code === 'name_cooldown' && prof && prof.name_changed_at) {
+      const next = new Date(Date.parse(prof.name_changed_at) + CFG.online.nameCooldownDays * 86400000);
+      return loc('name.err.name_cooldown', { date: this.shortDate(next) });
+    }
+    const known = ['name_length', 'name_chars', 'name_banned', 'name_taken', 'offline'];
+    return loc('name.err.' + (known.indexOf(code) >= 0 ? code : code === 'network' ? 'offline' : 'unknown'));
+  }
+
+  shortDate(d) {
+    try {
+      return new Date(d).toLocaleDateString(I18N.lang === 'zh' ? 'zh-CN' : 'en', { month: 'short', day: 'numeric' });
+    } catch (e) { return ''; }
+  }
+
+  /** The summary's one-line upload status, refreshed as the upload goes. */
+  onlineLine(game) {
+    const o = game.campaign.online;
+    if (!o) return '';
+    const key = o.state === 'sent' ? (o.rank ? (game.campaign.daily ? 'sum.dailyRank' : 'sum.globalRank') : 'sum.uploaded')
+      : o.state === 'queued' ? 'sum.uploadLater'
+      : o.state === 'refused' ? (Online.updateRequired ? 'online.update' : 'sum.uploadRefused')
+      : 'sum.uploading';
+    return loc(key, { n: o.rank });
+  }
+
+  syncOnline(game) {
+    const el = this.el.panelInner.querySelector('#onlineLine');
+    if (el) el.textContent = this.onlineLine(game);
   }
 
   /**
@@ -332,13 +604,18 @@ class UI {
     const s = game.runStats;
     const isWin = kind === 'win';
     const isDeath = kind === 'death' || kind === 'abandon';
+    const daily = !!c.daily;
+    const nextMine = isWin && !daily;      // a daily is one mine: escaping it ends the attempt
     const title = isWin ? loc('sum.escaped') : isDeath ? loc('sum.died') : loc('sum.complete');
-    const sub = isWin ? loc('sum.nextMine', { n: c.mine + 1 })
+    const sub = daily && isWin ? loc('sum.dailyConquered')
+      : isWin ? loc('sum.nextMine', { n: c.mine + 1 })
       : isDeath ? (s.lost > 0 ? loc('sum.lootLost', { v: fmt(s.lost) }) : loc('sum.nothingLost'))
       : loc('sum.hauledOut');
 
     const r = c.result || null;
-    const note = isDeath && c.mine > 1 && c.score > 0 ? loc('sum.escapedKept')
+    const dayBest = daily && game.save.daily && game.save.daily.date === c.daily ? game.save.daily.best : 0;
+    const note = daily ? (c.dailyRecord ? loc('sum.dailyRecord') : '')
+      : isDeath && c.mine > 1 && c.score > 0 ? loc('sum.escapedKept')
       : r && r.record ? loc('score.newBest')
       : r && r.rank ? loc('score.ranked', { n: r.rank })
       : '';
@@ -352,7 +629,7 @@ class UI {
         ${c.hearts ? line('sum.heartstones', '+' + fmt(heartsValue)) : ''}
         ${line('sum.spent', '−' + fmt(c.spent))}
         ${lost ? line('sum.lost', '−' + fmt(lost)) : ''}
-        ${line(isWin ? 'sum.scoreSoFar' : 'sum.finalScore', fmt(c.score), 'total')}
+        ${line(nextMine ? 'sum.scoreSoFar' : 'sum.finalScore', fmt(c.score), 'total')}
       </div>`;
 
     this._repaint = () => this.summary(game, kind);
@@ -361,23 +638,33 @@ class UI {
       <div class="sub">${sub}</div>
       ${note ? `<div class="note">${note}</div>` : ''}
       <div class="stats">
-        <div class="stat"><div class="k">${loc(isWin ? 'sum.hauledThisMine' : 'sum.score')}</div><div class="v gold">${fmt(isWin ? s.hauled : c.score)}</div></div>
-        <div class="stat"><div class="k">${loc('sum.mine')}</div><div class="v">${c.mine}</div></div>
+        <div class="stat"><div class="k">${loc(nextMine ? 'sum.hauledThisMine' : 'sum.score')}</div><div class="v gold">${fmt(nextMine ? s.hauled : c.score)}</div></div>
+        ${daily
+          ? `<div class="stat"><div class="k">${loc('sum.dailyBest')}</div><div class="v carry">${fmt(dayBest)}</div></div>`
+          : `<div class="stat"><div class="k">${loc('sum.mine')}</div><div class="v">${c.mine}</div></div>`}
         <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: c.depth })}</div></div>
         <div class="stat"><div class="k">${loc('sum.gems')}</div><div class="v carry">${c.gems}</div></div>
       </div>
       ${ledger}
-      ${isWin ? '' : this.scoreBoard(r ? r.id : 0)}
-      ${isWin
+      ${Online.enabled ? `<div class="online-line" id="onlineLine">${this.onlineLine(game)}</div>` : ''}
+      ${isWin || daily ? '' : this.scoreBoard(r ? r.id : 0)}
+      ${daily
+        ? `<button class="btn" id="dailyAgainBtn">${loc('sum.dailyAgain')}</button>
+           <button class="btn ghost" id="menuBtn">${loc('sum.menu')}</button>`
+        : isWin
         ? `<div class="note">${loc('sum.gearCarries')}</div>
            <button class="btn" id="nextBtn">${loc('sum.descend', { n: c.mine + 1 })}</button>
            <button class="btn ghost" id="retireBtn">${loc('sum.retire')}</button>`
         : `<button class="btn" id="againBtn">${loc('sum.newCampaign')}</button>`}
+      ${this.onlineButtons()}
       ${this.langButton()}
     `);
     this.on('#nextBtn', () => game.nextMine());
     this.on('#retireBtn', () => this.summary(game, 'cashout'));
     this.on('#againBtn', () => game.newCampaign());
+    this.on('#dailyAgainBtn', () => game.newCampaign(false, 'daily'));
+    this.on('#menuBtn', () => game.toTitle());
+    this.wireOnlineButtons();
     this.wireLang();
   }
 

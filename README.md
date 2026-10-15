@@ -1,8 +1,11 @@
-# DEEPCUT
+# Forever Mine: Gem Rush · 矿世奇财：宝石狂潮
 
-A mobile-first 2D mining roguelite that runs entirely in the browser. No build
-step, no dependencies, no backend, no art assets — every sprite, particle and
-sound effect is generated in code at runtime.
+A mobile 2D mining roguelite by HD Expanse LLC. The game runs entirely on the
+device with no build step and no art assets — every sprite, particle and sound
+effect is generated in code at runtime. An optional online layer (Supabase)
+adds leaderboards, the daily mine and run history; see
+[`docs/PLAN-online-mobile.md`](docs/PLAN-online-mobile.md) and
+[`supabase/README.md`](supabase/README.md).
 
 **Dig down. Carry out what you find. Don't wake the volcano.** (Wake the volcano.)
 
@@ -150,7 +153,8 @@ count, so the board rewards getting out rather than diving. The summary adds it
 up: gems found, plus Heartstones, minus lantern spending and losses. The top five hauls show on the
 title screen and again on the run summary, with the row you just set picked out.
 
-Only a personal board exists today, kept in `localStorage`. `src/highscore.js`
+The personal board is kept in `localStorage`; the global boards are being added
+on top of it (see the plan doc). `src/highscore.js`
 is written so a **global board drops in without touching anything else**:
 
 ```js

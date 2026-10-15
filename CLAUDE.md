@@ -2,9 +2,19 @@ CLAUDE.md
 
 Game Overview
 
-Build a mobile-first 2D browser mining roguelite inspired by classic grid-based mining games, but with an original presentation and identity.
+**Forever Mine: Gem Rush** (Chinese: **矿世奇财：宝石狂潮**), published by HD
+Expanse LLC as a mobile app (bundle / package ID `com.hdexpanse.forevermine`).
+A 2D mining roguelite inspired by classic grid-based mining games, with an
+original presentation and identity.
 
-The game must run entirely client-side and be deployable as a static site on GitHub Pages. Prioritize a polished, playable core loop over complexity.
+The game itself runs entirely on the device. A thin, optional online layer
+(Supabase) adds accounts, leaderboards, the daily mine's medals and run
+history, and the native app adds a rewarded-ad revive — but the game must stay
+fully playable offline, and nothing online may ever block or break a run.
+Prioritize a polished, playable core loop over complexity.
+
+The full roadmap for the online layer, the daily mine, the native app and ads
+is `docs/PLAN-online-mobile.md`. Keep it current as phases land.
 
 Core Loop
 
@@ -32,6 +42,50 @@ Campaigns
   campaign starts at mine 1 with base stats and 0 gems.
 * Each later mine puts the Heartstone deeper (`CFG.campaign.heartstoneStep`)
   and sends more enemies (`CFG.campaign.threat`). Mine 1 is kept gentle.
+
+Game Modes
+
+* Endless — the campaign above. Ranked on the global endless board by campaign
+  score, with mines escaped shown beside it. This is the prestige board.
+* Daily Mine — one single mine per UTC day. Its TERRAIN comes from a seed
+  derived from the date (and `CFG.online.genVersion`), so everyone digs the same
+  mine; enemies stay random per attempt so they can't be memorised. Mine-1
+  settings and base stats. Unlimited attempts; a player's best score of the day
+  counts. Escaping with the Heartstone ends the daily — there is no next mine.
+* The daily rolls over at 00:00 UTC. Gold, silver and bronze go to the day's
+  top three once a short grace window has passed (so offline runs can sync).
+  Medal counts show on the profile and beside names on every board.
+
+Online Layer (Supabase)
+
+* The schema lives in `supabase/migrations/`, one numbered SQL file per change,
+  applied in order. Never edit a migration that has been applied — add a new one.
+* Clients never write tables directly. Row-level security is on everywhere and
+  every write goes through a `security definer` function that checks
+  `auth.uid()` and sanity-checks its input.
+* The publishable key and project URL live in `CFG.online` and are public. The
+  service-role / secret key must never appear in the repo or the client.
+* Players start anonymous and may link Sign in with Apple / Google later.
+  Display names are unique, at most 15 characters, Unicode, profanity-filtered.
+* Offline first: finished runs queue locally and upload when the device is back
+  online. Uploads are idempotent (keyed by a client-made run id).
+* `CFG.online.genVersion` must be bumped whenever world generation changes, or
+  the same daily seed would build different mines on different builds.
+* The project owner applies all Supabase changes by hand. Do not try to run
+  SQL or change settings on the Supabase project yourself: write the migration
+  file (tested against the local stand-in in `supabase/tests/`) and give the
+  owner short step-by-step instructions — which file to paste into the SQL
+  Editor, which dashboard toggle to flip, and a query to check it worked.
+
+Revive Ads
+
+* Native app only, AdMob rewarded units only (IDs in `CFG.ads`). No
+  interstitials, no banners. Debug builds use Google's test ad units.
+* One revive per run: once per campaign in Endless, once per daily attempt.
+* The revive is granted only on the ad's reward callback, with the game paused
+  and the eruption clock frozen while the ad plays.
+* A revive must be survivable: full health, brief invulnerability, lava pushed
+  back, nearby spiders knocked away. The pockets are kept.
 
 Localization
 
@@ -282,13 +336,13 @@ Do not delay gameplay development waiting for audio assets.
 
 Technical Requirements
 
-* Client-side only.
-* No backend.
-* No database.
-* No authentication.
-* No multiplayer.
-* Static deployment to GitHub Pages.
-* Mobile browser is the primary target.
+* The game runs client-side. The only backend is Supabase (auth, leaderboards,
+  history, medals); no other servers.
+* No multiplayer beyond asynchronous leaderboards.
+* Ships as a native iOS / Android app via Capacitor wrapping the same
+  JS/Canvas code. GitHub Pages stays as a dev/test preview with no ads.
+* The game code itself still has no bundler: plain `<script>` tags. Third-party
+  code is vendored at a pinned version.
 * Optimize for modern smartphones.
 * Avoid unnecessary dependencies.
 * Keep architecture simple and maintainable.
