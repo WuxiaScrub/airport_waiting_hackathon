@@ -5,11 +5,15 @@
 (function () {
   function boot() {
     I18N.init();                     // before any panel or HUD label is drawn
+    Native.detect();                 // before Online: the login lives in native storage
     Online.init();                   // optional; the game never waits on it
     const canvas = document.getElementById('game');
     const game = new Game(canvas);
     window.game = game;              // handy for tuning from the console
-    ExitGuard.install(game);         // refresh / Back must not eat a live run
+    // Refresh / Back must not eat a live run. In the app there is no page to
+    // reload or history to pop — the hardware back button is Native's job.
+    if (Native.app) Native.install(game);
+    else ExitGuard.install(game);
     Sfx.setEnabled(game.save.audio !== false);
     game.start();
   }
