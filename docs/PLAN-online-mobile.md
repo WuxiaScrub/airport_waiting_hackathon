@@ -241,11 +241,12 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 
 - **Privacy policy page**: data collected = anonymous ID, display name, scores,
   and advertising ID (via AdMob). Host it on GitHub Pages or hdexpanse.com.
-- **`app-ads.txt`** at `https://hdexpanse.com/app-ads.txt`. The developer
-  website on both store listings must be hdexpanse.com. The domain is **not
-  owned yet**: buy it, then point it at a free GitHub Pages site (a separate
-  `hdexpanse.com` repo) that serves the company page, the privacy policy and
-  `app-ads.txt` at the root.
+- **`app-ads.txt`** at `https://wuxiascrub.github.io/app-ads.txt`, served by a
+  GitHub *user site* repo named `wuxiascrub.github.io` (user sites serve from
+  the domain root; project sites do not). The same site hosts the privacy
+  policy and a one-page HD Expanse page. Both store listings use
+  `https://wuxiascrub.github.io` as the developer website. A custom domain can
+  replace it later.
 - **Store forms**: Google Play Data safety form and Apple App Privacy labels.
   Age rating questionnaires (cartoon violence only, so it should rate low).
 - **Store assets**: screenshots (en and zh), the short and long descriptions,
@@ -263,14 +264,13 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 | Phase 4 | Install Xcode and Android Studio. Apple Developer account and Google Play Console account. Register App ID `com.hdexpanse.forevermine` and reserve the name in App Store Connect. |
 | Phase 5 | In AdMob: set up the GDPR consent message and the ATT explainer (Privacy & messaging); link the app store listings once they exist. |
 | Phase 6 | **Apple**: create a Services ID and a Sign in with Apple key, then enter Team ID, Key ID and the key in Supabase → Auth → Apple. **Google**: in Google Cloud, create OAuth client IDs (Web, iOS, Android; the Android one needs the signing certificate SHA-1), then enter the Web client ID and secret in Supabase → Auth → Google. I'll write step-by-step instructions when we get there. |
-| Before Phase 4 | Buy **hdexpanse.com**. Apple's organization enrollment for HD Expanse LLC needs a public website on a domain the company owns, plus a D-U-N-S number (free, but it can take a couple of weeks). |
-| Phase 7 | Host the privacy policy and `app-ads.txt` on hdexpanse.com (GitHub Pages with a custom domain). Fill in the store forms. |
+| Phase 7 | Create the `wuxiascrub.github.io` repo (I fill it: privacy policy, `app-ads.txt`, company page) and enable Pages on it. Fill in the store forms. |
 
 ## Settled questions
 
 1. **Chinese title**: 矿世奇财：宝石狂潮.
 2. **Web build**: GitHub Pages stays as a dev/test preview.
-3. **Domain**: hdexpanse.com is to be bought; see the owner tasks.
+3. **Domain**: no custom domain for now. `app-ads.txt` and the privacy policy live on the `wuxiascrub.github.io` user site. Apple organization enrollment and D-U-N-S are already done.
 
 ## Order of work and checkpoints
 
