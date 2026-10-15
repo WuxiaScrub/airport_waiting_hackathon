@@ -1,0 +1,26 @@
+{
+  "appId": "com.hdexpanse.forevermine",
+  "appName": "Forever Mine",
+  "webDir": "www",
+  "backgroundColor": "#0a0710",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0a0710"
+  },
+  "android": {
+    "backgroundColor": "#0a0710"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#0a0710",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK",
+      "backgroundColor": "#00000000"
+    }
+  }
+}

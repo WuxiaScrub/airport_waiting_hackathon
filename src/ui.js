@@ -688,7 +688,7 @@ class UI {
       this._repaint = draw;
       this.show(`
         <h2>${loc('confirm.leaveTitle')}</h2>
-        <div class="sub">${loc('confirm.leaveBody')}</div>
+        <div class="sub">${loc(opts.bodyKey || 'confirm.leaveBody')}</div>
         <div class="stats">
           <div class="stat"><div class="k">${loc('shop.depth')}</div>
             <div class="v">${loc('score.mineDepth', { n: game.campaign.mine, d: game.depth() })}</div></div>

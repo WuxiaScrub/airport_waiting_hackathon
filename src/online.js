@@ -41,6 +41,8 @@ const Online = {
           autoRefreshToken: true,
           detectSessionInUrl: false,
           storageKey: 'forevermine.auth.v1',
+          // Native Preferences inside the app; localStorage in the browser.
+          ...(Native.authStorage() ? { storage: Native.authStorage() } : {}),
         },
         global: { fetch: (url, opts) => this.fetchWithTimeout(url, opts) },
       });

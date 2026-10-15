@@ -10,10 +10,12 @@
   --danger:     #ff5d5d;
   --panel-bg:   #14101f;
   --panel-edge: #33294d;
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-t: env(safe-area-inset-top, 0px);
-  --safe-l: env(safe-area-inset-left, 0px);
-  --safe-r: env(safe-area-inset-right, 0px);
+  /* The Android app shell publishes the insets as --safe-area-inset-* (older
+     Android WebViews ignore env()); iOS and browsers use env(). */
+  --safe-b: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-t: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-l: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-r: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

@@ -143,6 +143,7 @@ const STRINGS = {
     /* Leaving the page mid-run (refresh, Back, tab close) */
     'confirm.leaveTitle': 'LEAVE THE MINE?',
     'confirm.leaveBody': 'Reloading or leaving this page ends the campaign. Gems you are carrying are lost — only score from mines you have already escaped is kept.',
+    'confirm.leaveBodyApp': 'Leaving now ends the campaign. Gems you are carrying are lost — only score from mines you have already escaped is kept.',
     'confirm.stay': 'KEEP DIGGING',
     'confirm.leave': 'LEAVE ANYWAY',
 
@@ -377,6 +378,7 @@ const STRINGS = {
     /* Leaving the page mid-run (refresh, Back, tab close) */
     'confirm.leaveTitle': '要离开矿洞吗？',
     'confirm.leaveBody': '刷新或离开页面，这一局就结束了。身上的宝石全部丢失，只有已经逃出的关卡分数会保留。',
+    'confirm.leaveBodyApp': '现在离开，这一局就结束了。身上的宝石全部丢失，只有已经逃出的关卡分数会保留。',
     'confirm.stay': '继续挖',
     'confirm.leave': '仍然离开',
 

@@ -341,6 +341,10 @@ Technical Requirements
 * No multiplayer beyond asynchronous leaderboards.
 * Ships as a native iOS / Android app via Capacitor wrapping the same
   JS/Canvas code. GitHub Pages stays as a dev/test preview with no ads.
+  `npm run build` copies the game into `www/`; `ios/` and `android/` are
+  committed native projects whose copy of the game is generated, so never edit
+  it. Everything app-only goes through `src/native.js`, which is a no-op in the
+  browser. Build steps are in `docs/BUILD-mobile.md`.
 * The game code itself still has no bundler: plain `<script>` tags. Third-party
   code is vendored at a pinned version.
 * Optimize for modern smartphones.

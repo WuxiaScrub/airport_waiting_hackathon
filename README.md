@@ -27,8 +27,11 @@ Opening `index.html` directly from the filesystem also works: the scripts are
 plain `<script>` tags rather than ES modules, precisely so `file://` is a valid
 way to test.
 
-**On GitHub Pages** — `.github/workflows/pages.yml` publishes the repository
-root on every push to `main`. Enable it once under *Settings → Pages → Source →
+**As an app** — see [`docs/BUILD-mobile.md`](docs/BUILD-mobile.md) (Capacitor;
+`npm install && npm run ios` or `npm run android`).
+
+**On GitHub Pages** — `.github/workflows/pages.yml` publishes `www/` (the game
+files only) on every push to `main`. Enable it once under *Settings → Pages → Source →
 GitHub Actions*.
 
 ## Controls
