@@ -18,8 +18,11 @@
 const Ads = {
   ready: false,            // SDK up and allowed to request ads
   loaded: false,           // a rewarded ad is loaded and can be shown now
+  status: 'off',           // last thing that happened, shown on the pause panel in test builds
   _loading: null,
   _pending: null,          // { rewarded, resolve } while an ad is on screen
+  _retry: 0,
+  _retryDelay: 15000,
 
   // Google's public test units — safe to tap, never earn money.
   testUnits: {
@@ -34,42 +37,77 @@ const Ads = {
     return CFG.ads.test ? this.testUnits[p] : (CFG.ads[p] && CFG.ads[p].rewarded);
   },
 
+  /** Record what happened, for the console and the test-build status line. */
+  note(status) {
+    this.status = status;
+    console.log('[ads] ' + status);
+  },
+
   async init() {
     if (!Native.app || !this.plugin || !this.unitId()) return;
     const ad = this.plugin;
+    const msg = (e) => (e && (e.message || e.errorMessage)) || String(e);
+    this.note('starting');
+
     try {
       await ad.initialize({ initializeForTesting: CFG.ads.test });
+    } catch (e) {
+      this.note('init failed: ' + msg(e));
+      return;
+    }
 
-      // EU/UK consent (Google UMP), using the message set up in AdMob →
-      // Privacy & messaging. Elsewhere this returns without showing anything.
-      let consent = await ad.requestConsentInfo();
+    // EU/UK consent (Google UMP), using the message set up in AdMob →
+    // Privacy & messaging. A failure here is NOT fatal: it is what happens
+    // when no message has been published yet, and outside the EU/UK there is
+    // nothing to consent to anyway. Only an explicit "no" stops ads.
+    let consent = null;
+    try {
+      consent = await ad.requestConsentInfo();
       if (consent.isConsentFormAvailable && consent.status === 'REQUIRED') {
         consent = await ad.showConsentForm();
       }
+    } catch (e) {
+      console.warn('[ads] consent check failed (is the EU message published in AdMob?):', msg(e));
+    }
 
-      // iOS App Tracking Transparency. Asked once; Android answers 'authorized'.
+    // iOS App Tracking Transparency. Asked once; Android answers 'authorized'.
+    try {
       const att = await ad.trackingAuthorizationStatus();
       if (att.status === 'notDetermined') await ad.requestTrackingAuthorization();
-
-      if (consent.canRequestAds === false) return;   // the player said no to ads
-      this.ready = true;
     } catch (e) {
-      console.warn('[ads] init failed:', e && e.message);
+      console.warn('[ads] tracking prompt failed:', msg(e));
+    }
+
+    if (consent && consent.canRequestAds === false) {
+      this.note('off (no consent)');
       return;
     }
 
     ad.addListener('onRewardedVideoAdReward', () => { if (this._pending) this._pending.rewarded = true; });
     ad.addListener('onRewardedVideoAdDismissed', () => this.settle());
     ad.addListener('onRewardedVideoAdFailedToShow', () => this.settle());
+    this.ready = true;
     this.preload();
   },
 
   /** Load the next ad in the background. Cheap to call often. */
   preload() {
     if (!this.ready || this.loaded || this._loading) return;
+    clearTimeout(this._retry);
+    this.note('loading');
     this._loading = Promise.resolve(this.plugin.prepareRewardVideoAd({ adId: this.unitId(), isTesting: CFG.ads.test }))
-      .then(() => { this.loaded = true; })
-      .catch((e) => { console.warn('[ads] load failed:', e && e.message); })
+      .then(() => {
+        this.loaded = true;
+        this._retryDelay = 15000;
+        this.note('ready');
+      })
+      .catch((e) => {
+        // No fill, no network, SDK still warming up: try again later, backing
+        // off, so an ad is usually on hand by the time the miner dies.
+        this.note('load failed: ' + ((e && e.message) || e) + ' (retrying)');
+        this._retry = setTimeout(() => this.preload(), this._retryDelay);
+        this._retryDelay = Math.min(this._retryDelay * 2, 5 * 60 * 1000);
+      })
       .finally(() => { this._loading = null; });
   },
 
@@ -80,6 +118,7 @@ const Ads = {
   show() {
     if (!this.available()) return Promise.resolve(false);
     this.loaded = false;                    // an ad is good for one showing
+    this.note('showing');
     return new Promise((resolve) => {
       this._pending = { rewarded: false, resolve };
       Promise.resolve(this.plugin.showRewardVideoAd()).catch(() => this.settle());
