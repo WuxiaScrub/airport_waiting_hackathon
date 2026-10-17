@@ -23,7 +23,7 @@ const Native = {
     if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return;
     this.app = true;
     this.platform = cap.getPlatform();
-    for (const name of ['App', 'Preferences', 'StatusBar', 'SplashScreen']) {
+    for (const name of ['App', 'Preferences', 'StatusBar', 'SplashScreen', 'AdMob']) {
       this.plugins[name] = cap.registerPlugin(name);
     }
     document.documentElement.classList.add('native', 'native-' + this.platform);
@@ -62,6 +62,9 @@ const Native = {
 
     const stay = btn('#stayBtn');                 // the leave prompt is already up
     if (stay) { stay.click(); return; }
+    const noRevive = btn('#reviveNo');            // back on the revive offer = no thanks
+    if (noRevive) { noRevive.click(); return; }
+    if (game.player && game.player.dead) return;  // mid-death or mid-ad: wait for it
     const back = btn('#backBtn');                 // leaderboards / profile
     if (back) { back.click(); return; }
 
@@ -75,6 +78,16 @@ const Native = {
     }
     if (game.state === 'over') { game.toTitle(); return; }
     this.call('App', 'exitApp');
+  },
+
+  /**
+   * Open a web page outside the game. In the app, navigating the main frame
+   * to an outside address makes Capacitor hand it to the system browser; in a
+   * browser tab, a new tab keeps the game where it was.
+   */
+  openUrl(url) {
+    if (this.app) window.location.href = url;
+    else window.open(url, '_blank', 'noopener');
   },
 
   /**

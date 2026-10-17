@@ -21,6 +21,11 @@
             </intent-filter>
         </activity>
 
+        <!-- AdMob app ID (rewarded revive). Public; see CFG.ads in src/config.js. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id"/>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

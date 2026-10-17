@@ -46,7 +46,8 @@ or the app will still run the old copy.
    3. Open the **App** project (not the target) → **Info → Localizations →
       +** → *Chinese, Simplified*. Tick `InfoPlist.strings` when asked.
    4. In the Chinese copy put `"CFBundleDisplayName" = "矿世奇财";` and in
-      the English copy put `"CFBundleDisplayName" = "Forever Mine";`
+      the English copy put `"CFBundleDisplayName" = "Forever Mine";`. Also
+      add the Chinese tracking-prompt line from *Revive ads* below.
    5. Commit the changes Xcode makes under `ios/`.
 
 To publish: *Product → Archive*, then *Distribute App → App Store Connect* for
@@ -77,6 +78,42 @@ it means you can't update the app.
 | Login storage | localStorage | native Preferences, which the OS doesn't clear |
 | Orientation | any | portrait only (iPad: portrait, full screen) |
 | Status bar | n/a | hidden; HUD respects the notch and home bar |
+
+## Revive ads (AdMob)
+
+The revive is in `src/ads.js`; its tuning is in `CFG.revive` and the ad IDs
+are in `CFG.ads` (`src/config.js`). The native app IDs are already in
+`AndroidManifest.xml` / `strings.xml` and `ios/App/App/Info.plist`.
+
+**Test ads vs real ads:** `CFG.ads.test` is `true`. Every build you run
+yourself shows Google's **test** ads, labelled "Test Ad". Never tap a live ad
+of your own: AdMob can ban the account for it. For the build you upload to the
+stores only:
+
+1. Set `test: false` in `CFG.ads`.
+2. `npm run sync`, then archive / bundle.
+3. Set it back to `true` and commit that.
+
+**What players see:**
+- On first launch: Google's consent form (EU/UK only), then Apple's tracking
+  prompt (iOS only). If they refuse ads altogether, the revive is never
+  offered.
+- On death, if an ad is loaded and this run hasn't revived yet: **SECOND
+  WIND?** with a 6-second countdown. Watching the whole ad revives them where
+  they fell. Skipping the ad, NO THANKS, Android back, or the countdown running
+  out all mean an ordinary death.
+
+**One-time setup in the AdMob console** (*Privacy & messaging*):
+- **European regulations → Create message.** Pick the app, choose your
+  languages (English and Chinese), and publish. Without it, the EU consent
+  form has nothing to show and EU players get no ads.
+- **IDFA explainer** for iOS: optional, but it raises opt-in rates.
+- Once the store listings exist, link them under *Apps → App settings*, so
+  AdMob can verify `app-ads.txt` on your GitHub user site.
+
+**Chinese tracking prompt (iOS):** use the same `InfoPlist.strings` step as
+the Chinese app name, and add to the Chinese copy:
+`"NSUserTrackingUsageDescription" = "让你选择观看的复活广告更贴合你的兴趣。不管选哪个，游戏体验都一样。";`
 
 ## Icons and splash
 

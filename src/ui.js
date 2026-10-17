@@ -234,10 +234,12 @@ class UI {
       <div class="help">${rows}</div>
       ${this.langButton()}
       ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
+      ${this.privacyLink()}
     `);
     this.on('#startBtn', () => this.game.newCampaign());
     this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
     this.on('#wipeBtn', () => this.game.wipeSave());
+    this.wirePrivacy();
     this.wireOnlineButtons();
     this.wireLang();
   }
@@ -280,6 +282,10 @@ class UI {
     this._back = this._repaint || (() => this.title(this.game.save));
     draw();
   }
+
+  /** Apple requires the privacy policy to be reachable from inside the app. */
+  privacyLink() { return `<button class="link-btn" id="privacyBtn">${loc('common.privacy')}</button>`; }
+  wirePrivacy() { this.on('#privacyBtn', () => Native.openUrl(CFG.links.privacy)); }
 
   backButton() { return `<button class="btn" id="backBtn">${loc('common.back')}</button>`; }
   wireBack() { this.on('#backBtn', () => { const b = this._back; this._back = null; b(); }); }
@@ -459,6 +465,7 @@ class UI {
         ${body}
         ${this.backButton()}
         ${this.langButton()}
+        ${this.privacyLink()}
       `);
       const input = this.el.panelInner.querySelector('#nameInput');
       if (input) {
@@ -471,6 +478,7 @@ class UI {
       this.on('#saveName', save);
       this.on('#deleteBtn', () => { st.confirmDelete = true; st.err = ''; draw(); });
       this.on('#deleteNo', () => { st.confirmDelete = false; draw(); });
+      this.wirePrivacy();
       this.on('#deleteYes', remove);
       this.wireBack();
       this.wireLang();
@@ -709,6 +717,56 @@ class UI {
     if (game.state === 'play') game.openPanel(draw);
     else draw();
     return restore;
+  }
+
+  /**
+   * The one-time revive offer. It declines itself when the countdown runs
+   * out, so a player who looks away is never left on a frozen screen.
+   * `opts.onWatch` / `opts.onDecline` are called at most once between them.
+   */
+  revive(game, opts) {
+    let left = CFG.revive.offer;
+    let state = 'offer';                 // offer | ad | done
+    const carry = game.carryValue();
+
+    const finish = (fn) => {
+      if (state === 'done') return;
+      clearInterval(timer);
+      state = 'done';
+      fn();
+    };
+    const timer = setInterval(() => {
+      if (state !== 'offer') return;
+      left -= 1;
+      const el = this.el.panelInner.querySelector('#reviveCount');
+      if (el) el.textContent = Math.max(0, left);
+      if (left <= 0) finish(opts.onDecline);
+    }, 1000);
+
+    const draw = () => {
+      this._repaint = draw;
+      this.show(`
+        <h2>${loc('revive.title')}</h2>
+        <div class="sub">${carry > 0 ? loc('revive.subCarry', { v: fmt(carry) }) : loc('revive.sub')}</div>
+        ${state === 'ad'
+          ? `<div class="note">${loc('revive.loading')}</div>`
+          : `<div class="revive-count" id="reviveCount">${Math.max(0, left)}</div>
+             <button class="btn daily" id="reviveYes"><span class="daily-k">${loc('revive.watch')}</span>
+               <span class="daily-v">${loc('revive.once')}</span></button>
+             <button class="btn ghost" id="reviveNo">${loc('revive.decline')}</button>`}
+        ${this.langButton()}
+      `);
+      this.on('#reviveYes', () => {
+        if (state !== 'offer') return;
+        state = 'ad';
+        clearInterval(timer);
+        draw();
+        opts.onWatch();
+      });
+      this.on('#reviveNo', () => finish(opts.onDecline));
+      this.wireLang();
+    };
+    draw();
   }
 
   pause(game) {

@@ -14,6 +14,7 @@
     // reload or history to pop — the hardware back button is Native's job.
     if (Native.app) Native.install(game);
     else ExitGuard.install(game);
+    Ads.init();                      // app only: consent, then preload the revive ad
     Sfx.setEnabled(game.save.audio !== false);
     game.start();
   }

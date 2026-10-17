@@ -371,6 +371,27 @@ class World {
 
   /* ----------------------------------------------------------------- lava */
 
+  /**
+   * The revive: drain the lava back down to `toRow`. The lava had already
+   * burned the ground away, so draining to open air would just drop the
+   * miner back in — instead it cools into soft dirt below `floorRow` (the
+   * miner's feet), and only the rows the miner stands in are left clear.
+   * The crust is ordinary dirt: it can be dug, and it will need to be.
+   */
+  lowerLava(toRow, floorRow) {
+    if (toRow <= this.lavaRow) return;
+    const to = Math.min(this.h - 1, Math.ceil(toRow) - 1);
+    for (let y = Math.max(0, Math.floor(this.lavaRow)); y <= to; y++) {
+      for (let x = 1; x < this.w - 1; x++) {
+        const i = this.idx(x, y);
+        if (this.t[i] !== T.LAVA) continue;
+        if (y > floorRow) this.set(x, y, T.DIRT, CFG.mining.dirtHits);
+        else { this.t[i] = T.EMPTY; this.hp[i] = 0; }
+      }
+    }
+    this.lavaRow = toRow;
+  }
+
   /** Uniformly floods the mine from below. Nothing but bedrock survives. */
   riseLava(toRow) {
     const from = Math.min(this.h - 1, Math.ceil(this.lavaRow));

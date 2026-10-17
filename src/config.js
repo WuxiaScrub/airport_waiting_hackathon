@@ -271,6 +271,16 @@ const CFG = {
 
   audio: { master: 0.32 },
 
+  // The rewarded-ad revive: once per run, and it has to be survivable.
+  revive: {
+    delay: 0.9,          // seconds of death animation before the offer
+    offer: 6,            // seconds the offer stays up before it declines itself
+    invuln: 3,           // seconds of invulnerability after getting back up
+    lavaPush: 7,         // rows of clear air the lava is pushed below the miner
+    clearRadius: 4,      // tiles: spiders knocked away, falling dirt removed
+    stun: 2.5,           // seconds knocked-away spiders stay dazed
+  },
+
   // The optional online layer (Supabase). Both values are public by design —
   // the publishable key only reaches what the database's row-level security
   // allows. NEVER put the service-role / secret key anywhere in this repo.
@@ -283,9 +293,17 @@ const CFG = {
     nameCooldownDays: 30,  // mirrors app_config.name_cooldown_days (display only)
   },
 
+  // Pages the game links to. Hosted on the developer's GitHub user site.
+  links: {
+    privacy: 'https://wuxiascrub.github.io/forevermine/privacy.html',
+  },
+
   // AdMob, used only inside the native app (rewarded revive). Public IDs.
-  // Debug builds must use Google's test units instead — see the plan doc.
   ads: {
+    // true = Google's test ads. Keep it true for every build you run yourself
+    // (tapping your own live ads can get the AdMob account banned); set it
+    // to false only for the build you upload to the stores.
+    test: true,
     android: { app: 'ca-app-pub-2298615637807323~3595318939', rewarded: 'ca-app-pub-2298615637807323/7422883305' },
     ios:     { app: 'ca-app-pub-2298615637807323~7639514885', rewarded: 'ca-app-pub-2298615637807323/8544393285' },
   },
