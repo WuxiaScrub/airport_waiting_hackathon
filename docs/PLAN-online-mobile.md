@@ -1,10 +1,11 @@
 # Forever Mine: Gem Rush — online, daily mine, mobile app, revive ads
 
-Status: **Phases 0–4 done.** Migrations applied by the owner; the online
+Status: **Phases 0–5 done.** Migrations applied by the owner; the online
 client, boards, profile and daily mine are tested in the browser against a
 mocked backend (this container cannot reach Supabase). The Capacitor projects
-are generated and configured but have not been compiled yet; the first build
-is on the owner's Mac (`docs/BUILD-mobile.md`). Next: Phase 5 (revive ads).
+and the AdMob revive are configured and tested against mocked plugins but have
+not been compiled yet; the first device build is on the owner's Mac
+(`docs/BUILD-mobile.md`). Next: Phase 6 (Sign in with Apple / Google).
 Each phase ends in something playable and testable, and the game must stay
 fully playable offline at every step.
 

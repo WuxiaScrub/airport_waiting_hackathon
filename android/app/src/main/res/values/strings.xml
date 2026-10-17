@@ -4,4 +4,5 @@
     <string name="title_activity_main">Forever Mine</string>
     <string name="package_name">com.hdexpanse.forevermine</string>
     <string name="custom_url_scheme">com.hdexpanse.forevermine</string>
+    <string name="admob_app_id" translatable="false">ca-app-pub-2298615637807323~3595318939</string>
 </resources>

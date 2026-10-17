@@ -105,6 +105,7 @@ class Game {
       scoreId: 0, result: null,
       runId: newRunId(), playMs: 0, online: null,
       daily, dailyRecord: false,
+      revived: false,          // the one ad revive this run gets
     };
     this.startMine(quiet);
   }
@@ -148,6 +149,7 @@ class Game {
     this.runTime = 0;
     this.nextWarn = 0;
     this.resetRunStats();
+    if (!this.campaign.revived) Ads.preload();
 
     // Standing on the home lantern at spawn shouldn't instantly open the shop.
     this.lockCheckpoint(Math.floor(this.player.x), Math.floor(this.player.y));
@@ -265,7 +267,7 @@ class Game {
       gems: c.gems,
       heartstone: kind === 'win',
       result: kind,
-      revived: false,
+      revived: c.revived,
       duration_ms: c.playMs,
       game_version: CFG.online.gameVersion,
       gen_version: CFG.online.genVersion,
@@ -291,9 +293,67 @@ class Game {
     Sfx.play('death');
     this.shake(18);
     this.fx.burst(this.player.x, this.player.y, 26, ['#ff5d5d', '#ffd08a', '#3d6fb4'], { speed: 8, life: 0.9, size: 0.2 });
-    this.ui.banner(loc('sum.died'),
-      this.carryValue() > 0 ? loc('banner.lostInDark', { v: fmt(this.carryValue()) }) : '');
-    setTimeout(() => { if (this.state === 'play') this.endRun('death'); }, 1500);
+    // One ad revive per run, and only if an ad is actually on hand: the
+    // offer must never be a button that leads nowhere.
+    const c = this.campaign;
+    const canRevive = !c.revived && Ads.available();
+    if (!canRevive) {
+      this.ui.banner(loc('sum.died'),
+        this.carryValue() > 0 ? loc('banner.lostInDark', { v: fmt(this.carryValue()) }) : '');
+    }
+    setTimeout(() => {
+      if (this.state !== 'play' || this.campaign !== c || !this.player.dead) return;
+      if (canRevive && Ads.available()) this.offerRevive();
+      else this.endRun('death');
+    }, canRevive ? CFG.revive.delay * 1000 : 1500);
+  }
+
+  /**
+   * "Second wind?" The game is paused (so the eruption clock is frozen) for
+   * the whole offer and the ad. Anything but an earned reward is a death.
+   */
+  offerRevive() {
+    const c = this.campaign;
+    const die = () => { if (this.campaign === c && this.state !== 'over') this.endRun('death'); };
+    this.openPanel(() => this.ui.revive(this, {
+      onDecline: die,
+      onWatch: () => Ads.show().then((earned) => {
+        if (this.campaign !== c) return;
+        if (earned) this.revivePlayer(); else die();
+      }),
+    }));
+  }
+
+  /** Back on your feet, right here — with a real chance to get away. */
+  revivePlayer() {
+    const p = this.player, R = CFG.revive;
+    this.campaign.revived = true;
+    p.dead = false;
+    p.health = p.maxHealth;
+    p.invuln = R.invuln;
+    p.vx = 0; p.vy = 0;
+    this.deathAnim = 0;
+
+    // Lava ignores i-frames, so it has to be physically pushed back.
+    if (this.volcano) this.world.lowerLava(p.y + R.lavaPush, Math.floor(p.y));
+
+    for (const e of this.enemies) {
+      const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
+      if (!(e instanceof Spider) || d > R.clearRadius) continue;
+      e.vx = (dx / d) * 10; e.vy = (dy / d) * 10 - 2;
+      e.state = 'rest'; e.timer = R.stun;
+    }
+    for (let i = this.blocks.length - 1; i >= 0; i--) {
+      const b = this.blocks[i];
+      if (Math.hypot(b.x - p.x, b.y - p.y) <= R.clearRadius) this.blocks.splice(i, 1);
+    }
+
+    this.closePanel();
+    this.ui.syncHealth(p);
+    this.ui.toast(loc('revive.done'), 1800);
+    this.shake(8);
+    this.fx.burst(p.x, p.y, 28, ['#ffc95e', '#fff0c0', '#7ef0d0'], { speed: 7, life: 0.9, size: 0.18, glow: true });
+    Sfx.play('bank');
   }
 
   /* --------------------------------------------------------------- economy */

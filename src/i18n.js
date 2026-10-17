@@ -223,6 +223,14 @@ const STRINGS = {
     'sum.dailyAgain': 'TRY AGAIN',
     'sum.menu': 'MAIN MENU',
     'hud.daily': 'DAILY',
+    'revive.title': 'SECOND WIND?',
+    'revive.sub': 'Watch a short ad to get back up right where you fell.',
+    'revive.subCarry': 'Watch a short ad to get back up right where you fell — and keep the {v} in your pockets.',
+    'revive.watch': 'WATCH AD · REVIVE',
+    'revive.once': 'One revive per run',
+    'revive.decline': 'NO THANKS',
+    'revive.loading': 'Playing the ad…',
+    'revive.done': 'BACK ON YOUR FEET',
     'toast.daily': 'DAILY MINE · {d}',
 
     /* Toasts & banners */
@@ -458,6 +466,14 @@ const STRINGS = {
     'sum.dailyAgain': '再挑战一次',
     'sum.menu': '主菜单',
     'hud.daily': '每日',
+    'revive.title': '再来一口气？',
+    'revive.sub': '看一段短广告，就能在倒下的地方原地复活。',
+    'revive.subCarry': '看一段短广告，就能在倒下的地方原地复活 —— 身上的 {v} 也都还在。',
+    'revive.watch': '看广告 · 复活',
+    'revive.once': '每局只能复活一次',
+    'revive.decline': '不用了',
+    'revive.loading': '广告播放中……',
+    'revive.done': '满血复活！',
     'toast.daily': '每日矿井 · {d}',
 
     /* Toasts & banners */
