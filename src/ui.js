@@ -774,6 +774,7 @@ class UI {
     this.show(`
       <h2>${loc('pause.title')}</h2>
       <div class="sub">${loc('pause.sub', { d: game.depth(), v: fmt(game.carryValue()) })}</div>
+      ${Native.app && CFG.ads.test ? `<div class="note">${loc('pause.adsStatus', { s: esc(Ads.status) })}</div>` : ''}
       <button class="btn" id="resumeBtn">${loc('pause.resume')}</button>
       <button class="btn ghost" id="audioBtn">${loc('pause.sound', { s: loc(Sfx.enabled ? 'common.on' : 'common.off') })}</button>
       ${this.langButton()}

@@ -122,12 +122,24 @@ the mine strata, with the volcano's glow underneath. Regenerate every native
 size after changing them:
 
 ```
-npx capacitor-assets generate --ios --android \
+npx @capacitor/assets@3.0.5 generate --ios --android \
   --iconBackgroundColor '#0a0710' --iconBackgroundColorDark '#0a0710' \
   --splashBackgroundColor '#0a0710' --splashBackgroundColorDark '#0a0710'
 ```
 
+(The generator isn't a project dependency, because it drags in image
+libraries with open security advisories; `npx` fetches it only when you run
+it.)
+
 ## Troubleshooting
+
+* **`npm install` reports "3 moderate severity vulnerabilities":** they're
+  inside the Capacitor command-line tool, in an old `uuid` copy pulled in by
+  its Xcode-project helper. That code only runs on your Mac while syncing, on
+  our own files, and the flaw needs inputs the tool never passes. The game the
+  app ships has none (`npm audit --omit=dev` reports 0). **Don't run
+  `npm audit fix --force`:** it downgrades the CLI to 8.4.3, which no longer
+  matches the 8.5.2 runtime.
 
 * **The app shows an old version of the game:** you forgot `npm run sync`.
 * **The leaderboards say offline:** the phone has no network, or the Supabase
