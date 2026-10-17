@@ -16,6 +16,8 @@
   <canvas id="game"></canvas>
 
   <!-- ============ HUD ============ -->
+  <!-- A soft dark band behind the top bar, so the readouts hold up over lava. -->
+  <div id="hudScrim"></div>
   <div id="hud">
     <div class="hud-left">
       <div id="hearts" class="hearts"></div>
@@ -26,14 +28,24 @@
       <div id="timer" class="timer hidden"></div>
     </div>
     <div class="hud-right">
-      <div class="wallet">
-        <span class="lbl" data-i18n="hud.score">SCORE</span>
-        <span id="score" class="val v-score">0</span>
+      <!-- CARRYING is the at-risk number, so it leads and is the larger one;
+           SCORE is what earlier mines already secured. -->
+      <div class="wallets">
+        <div class="wallet w-carry">
+          <svg class="gem" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l4.5 4L6 11 1.5 5z" fill="currentColor"/></svg>
+          <span class="lbl" data-i18n="hud.carrying">CARRYING</span>
+          <span id="unbanked" class="val v-carry">0</span>
+        </div>
+        <div class="wallet w-score">
+          <svg class="gem" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l4.5 4L6 11 1.5 5z" fill="currentColor"/></svg>
+          <span class="lbl" data-i18n="hud.score">SCORE</span>
+          <span id="score" class="val v-score">0</span>
+        </div>
       </div>
-      <div class="wallet">
-        <span class="lbl" data-i18n="hud.carrying">CARRYING</span>
-        <span id="unbanked" class="val v-carry">0</span>
-      </div>
+      <!-- The only way into the pause menu on a phone without a Back key. -->
+      <button id="pauseBtn" class="pause-btn hidden" data-i18n-aria="aria.pause" aria-label="Pause">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/></svg>
+      </button>
     </div>
   </div>
 
