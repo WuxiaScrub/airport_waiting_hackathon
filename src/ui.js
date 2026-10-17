@@ -5,6 +5,22 @@
  * Every string here goes through loc() — see src/i18n.js.
  * ========================================================================== */
 
+/**
+ * Shop icons, drawn here rather than shipped as art: 24×24, self-coloured,
+ * keyed by upgrade id (plus the two supplies).
+ */
+const SHOP_ICONS = {
+  supplyDynamite: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="9" width="11" height="12.5" rx="2.2" fill="#c94b3c"/><rect x="6.5" y="12.5" width="11" height="2.6" fill="#f0e2c2"/><path d="M12 9V6.4c0-2 2.2-2.1 3.2-3.4" stroke="#e0c88a" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="16" cy="2.6" r="1.9" fill="#ffcf5c"/></svg>',
+  supplyHeal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="3" fill="#e9e3f5"/><rect x="9" y="2.5" width="6" height="3.5" rx="1" fill="none" stroke="#e9e3f5" stroke-width="1.6"/><path d="M12 8.5v8M8 12.5h8" stroke="#ff5d5d" stroke-width="3" stroke-linecap="round"/></svg>',
+  health: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 3.3 12.2A5 5 0 0 1 12 6a5 5 0 0 1 8.7 6.2z" fill="#ff5d5d"/><path d="M12 10.5v6M9 13.5h6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+  speed: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h5v8.5l6 2.2c1 .4 1.5 1.2 1.5 2.3V19H9z" fill="#c9905a"/><rect x="9" y="17.5" width="12.5" height="2.5" rx="1" fill="#6b4a2c"/><path d="M2.5 9h4.5M1.5 13h5.5M2.5 17h4.5" stroke="#7ef0d0" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  jump: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 17.5 9H14v3h-4V9H6.5z" fill="#7ef0d0"/><path d="M7 14.5h10M7 14.5l10 3M17 17.5l-10 3M7 20.5h10" stroke="#b9a8ff" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>',
+  light: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 0 1 17 0z" fill="#6a53c9"/><circle cx="12" cy="12" r="3.6" fill="#ffe7a3"/><path d="M12 15.6V22M8.5 15l-2.8 5.3M15.5 15l2.8 5.3" stroke="#ffc95e" stroke-width="1.7" stroke-linecap="round" opacity=".85"/></svg>',
+  dynamite: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7c0-2.6 1.8-4 4-4s4 1.4 4 4" stroke="#8a6040" stroke-width="2" fill="none"/><rect x="3.5" y="7" width="17" height="14" rx="3.5" fill="#a5723f"/><rect x="3.5" y="7" width="17" height="5" rx="2.5" fill="#c9905a"/><rect x="10.5" y="10.5" width="3" height="3.5" rx="1" fill="#ffc95e"/></svg>',
+  helmet: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 17.5h20V20H2zM5 17.5V13a7 7 0 0 1 14 0v4.5z" fill="#ffc95e"/><path d="M10.5 6.2h3v6h-3z" fill="#e0a63c"/></svg>',
+  blast: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5l2.4 5.6 5.5-2.6-2.3 5.6 5.4 2-5.4 2 2.3 5.6-5.5-2.6L12 22.7l-2.4-5.6-5.5 2.6 2.3-5.6-5.4-2 5.4-2-2.3-5.6 5.5 2.6z" fill="#ff7a3c"/><circle cx="12" cy="12" r="4.2" fill="#ffd08a"/></svg>',
+};
+
 class UI {
   constructor(game) {
     this.game = game;
@@ -22,6 +38,7 @@ class UI {
       hurt: document.getElementById('hurt'),
       panel: document.getElementById('panel'),
       panelInner: document.getElementById('panelInner'),
+      pauseBtn: document.getElementById('pauseBtn'),
     };
     this._heartCount = -1;
     this._hatCount = -1;
@@ -29,6 +46,13 @@ class UI {
     this._repaint = null;      // redraws the open panel after a language change
 
     I18N.onChange(() => this.onLanguageChange());
+
+    this.el.pauseBtn.addEventListener('click', () => {
+      Sfx.init(); Sfx.play('ui');
+      // Drop focus, or the next Space (jump) would press it again on desktop.
+      this.el.pauseBtn.blur();
+      if (game.state === 'play') game.togglePause();
+    });
   }
 
   /* --------------------------------------------------------------- syncing */
@@ -120,11 +144,31 @@ class UI {
     el.classList.toggle('warn', left <= w[w.length - 1]);
   }
 
+  /** The pause button is only there while a mine is live and in hand. */
+  syncPause(game) {
+    const on = game.state === 'play' && !!game.player && !game.player.dead;
+    if (this._pauseOn === on) return;
+    this._pauseOn = on;
+    this.el.pauseBtn.classList.toggle('hidden', !on);
+  }
+
   /**
    * Redraw the open panel from scratch. Every panel registers how to rebuild
    * itself, so callers never have to sniff the DOM to work out which one it is.
    */
-  repaint() { if (this.isOpen && this._repaint) this._repaint(); }
+  repaint() {
+    if (!this.isOpen || !this._repaint) return;
+    // A redraw is the same panel with fresh numbers (a purchase, a language
+    // switch), so it keeps the player's place instead of jumping to the top.
+    const keep = this.scrollers().map(el => el.scrollTop);
+    this._repaint();
+    this.scrollers().forEach((el, i) => { if (keep[i] !== undefined) el.scrollTop = keep[i]; });
+  }
+
+  /** Everything in the open panel that scrolls: the panel, plus any inner list. */
+  scrollers() {
+    return [this.el.panel, ...this.el.panelInner.querySelectorAll('.shop-scroll')];
+  }
 
   /** Re-render everything language-dependent that is on screen right now. */
   onLanguageChange() {
@@ -171,7 +215,8 @@ class UI {
 
   /* ---------------------------------------------------------------- panels */
 
-  show(html) {
+  show(html, cls) {
+    this.el.panelInner.className = 'panel-inner' + (cls ? ' ' + cls : '');
     this.el.panelInner.innerHTML = html;
     this.el.panel.classList.remove('hidden');
     this.el.panel.scrollTop = 0;
@@ -189,8 +234,12 @@ class UI {
       el.addEventListener('click', (e) => { Sfx.init(); fn(el, e); }));
   }
 
-  /** The language button every panel carries, plus its handler. */
-  langButton() { return `<button class="btn ghost" id="langBtn">${loc('lang.switch')}</button>`; }
+  /** The language chip every panel carries in its corner, plus its handler. */
+  langButton() {
+    return `<button class="lang-chip" id="langBtn" aria-label="${loc('lang.switch')}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>
+      ${loc('lang.short')}</button>`;
+  }
   wireLang() { this.on('#langBtn', () => I18N.cycle()); }
 
   /**
@@ -214,33 +263,52 @@ class UI {
 
   title(save) {
     const best = save.best || 0;
-    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark'].map(k =>
-      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
-
     this._repaint = () => this.title(save);
     this.show(`
+      ${this.langButton()}
       <div class="logo">${loc('title.logo')}</div>
       <div class="logo-sub">${loc('title.logoSub')}</div>
       <div class="tagline">${loc('title.tagline')}</div>
       ${this.dailyCard(save)}
       <button class="btn" id="startBtn">${loc('title.endless')}</button>
       ${this.onlineButtons()}
-      <div class="stats title-stats">
+      <button class="btn ghost" id="helpBtn">${loc('help.title')}</button>
+      <div class="stats three title-stats">
         <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
         <div class="stat"><div class="k">${loc('title.furthestMine')}</div><div class="v carry">${save.bestMine || 0}</div></div>
-        <div class="stat wide"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
+        <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
       </div>
       ${this.scoreBoard()}
-      <div class="help">${rows}</div>
-      ${this.langButton()}
       ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
       ${this.privacyLink()}
     `);
     this.on('#startBtn', () => this.game.newCampaign());
     this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
+    this.on('#helpBtn', () => this.help());
     this.on('#wipeBtn', () => this.game.wipeSave());
     this.wirePrivacy();
     this.wireOnlineButtons();
+    this.wireLang();
+  }
+
+  /** How to play: one row per rule. Opens by itself on a first launch. */
+  help() {
+    const save = this.game.save;
+    const first = !save.seenHelp;
+    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark'].map(k =>
+      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
+
+    this._repaint = () => this.help();
+    this.show(`
+      ${this.langButton()}
+      <h2>${loc('help.title')}</h2>
+      <div class="help" style="margin-top: 12px">${rows}</div>
+      <button class="btn" id="helpDone">${loc(first ? 'help.gotIt' : 'common.back')}</button>
+    `);
+    this.on('#helpDone', () => {
+      if (first) { save.seenHelp = true; this.game.persist(); }
+      this.title(save);
+    });
     this.wireLang();
   }
 
@@ -603,61 +671,68 @@ class UI {
     // the carried gems — which is to say, out of the score.
     const S = CFG.supplies;
     const cash = game.purse();
-    const dynSection = inRun ? `
-      <div class="shop-item">
-        <div class="info">
-          <div class="nm">${loc('supply.dynamite.name')}</div>
-          <div class="ds">${loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax })}</div>
-        </div>
-        <button class="buy" data-dyn="1"
-          ${p.dynamite >= p.dynMax || cash < S.dynamiteCost ? 'disabled' : ''}
-        >${fmt(S.dynamiteCost)}</button>
-      </div>` : '';
 
-    const healSection = inRun ? `
+    // One buy button, four states: MAX, FULL, too dear (red price), or buyable.
+    const gem = '<svg class="gem" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l4.5 4L6 11 1.5 5z" fill="currentColor"/></svg>';
+    const buy = (attr, cost, state) => {
+      const label = state === 'max' ? loc('shop.max') : state === 'full' ? loc('shop.full') : gem + fmt(cost);
+      return `<button class="buy ${state || ''}" ${attr} ${state ? 'disabled' : ''}>${label}</button>`;
+    };
+    const row = (icon, name, desc, extra, button) => `
       <div class="shop-item">
-        <div class="info">
-          <div class="nm">${loc('supply.heal.name')}</div>
-          <div class="ds">${loc('supply.heal.desc', { cur: p.health, max: p.maxHealth })}</div>
-        </div>
-        <button class="buy" data-heal="1"
-          ${p.health >= p.maxHealth || cash < S.healCost ? 'disabled' : ''}
-        >${fmt(S.healCost)}</button>
-      </div>` : '';
+        <div class="ico">${SHOP_ICONS[icon] || ''}</div>
+        <div class="info">${name}<div class="ds">${desc}</div>${extra}</div>
+        ${button}
+      </div>`;
+
+    const supplies = !inRun ? '' : [
+      row('supplyDynamite', `<div class="nm">${loc('supply.dynamite.name')}</div>`,
+        loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax }), '',
+        buy('data-dyn="1"', S.dynamiteCost,
+          p.dynamite >= p.dynMax ? 'full' : cash < S.dynamiteCost ? 'poor' : '')),
+      row('supplyHeal', `<div class="nm">${loc('supply.heal.name')}</div>`,
+        loc('supply.heal.desc', { cur: p.health, max: p.maxHealth }), '',
+        buy('data-heal="1"', S.healCost,
+          p.health >= p.maxHealth ? 'full' : cash < S.healCost ? 'poor' : '')),
+    ].join('');
 
     const items = CFG.upgrades.map(u => {
       const lvl = game.campaign.upgrades[u.id] || 0;
       const maxed = lvl >= u.max;
       const cost = game.upgradeCost(u, lvl);
-      const afford = cash >= cost;
       const pips = Array.from({ length: u.max }, (_, i) =>
         `<div class="pip ${i < lvl ? 'on' : ''}"></div>`).join('');
-      return `
-        <div class="shop-item">
-          <div class="info">
-            <div class="nm">${loc('up.' + u.id + '.name')}</div>
-            <div class="ds">${loc('up.' + u.id + '.desc', game.upgradeDescParams(u, lvl))}</div>
-            <div class="pips">${pips}</div>
-          </div>
-          <button class="buy ${maxed ? 'max' : ''}" data-up="${u.id}"
-            ${maxed || !afford ? 'disabled' : ''}>${maxed ? loc('shop.max') : fmt(cost)}</button>
-        </div>`;
+      return row(u.id,
+        `<div class="nm-row"><span class="nm">${loc('up.' + u.id + '.name')}</span>` +
+          (u.max > 1 ? `<span class="lv">${loc('shop.level', { n: lvl, max: u.max })}</span>` : '') + '</div>',
+        loc('up.' + u.id + '.desc', game.upgradeDescParams(u, lvl)),
+        `<div class="pips">${pips}</div>`,
+        buy(`data-up="${u.id}"`, cost, maxed ? 'max' : cash < cost ? 'poor' : ''));
     }).join('');
 
+    // Header and the way out stay put; only the list between them scrolls.
     this._repaint = () => this.shop(game, o);
     this.show(`
-      <h2>${res(o.title, 'shop.supplyLantern')}</h2>
-      <div class="sub">${res(o.sub, 'shop.paysFromCarry')}</div>
-      ${o.note ? `<div class="note">${res(o.note)}</div>` : ''}
-      <div class="stats">
-        <div class="stat"><div class="k">${loc('hud.carrying')}</div><div class="v carry">${fmt(cash)}</div></div>
-        <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('score.mineDepth', { n: game.campaign.mine, d: game.depth() })}</div></div>
-      </div>
-      <div class="shop-list">${dynSection}${healSection}${items}</div>
-      <button class="btn" id="closeShop">${res(o.closeLabel, 'shop.back')}</button>
-      ${o.extra ? res(o.extra) : ''}
       ${this.langButton()}
-    `);
+      <div class="shop-head">
+        <h2>${res(o.title, 'shop.supplyLantern')}</h2>
+        <div class="sub">${res(o.sub, 'shop.paysFromCarry')}</div>
+        ${o.note ? `<div class="note">${res(o.note)}</div>` : ''}
+        <div class="stats">
+          <div class="stat"><div class="k">${loc('hud.carrying')}</div><div class="v carry">${fmt(cash)}</div></div>
+          <div class="stat"><div class="k">${loc('shop.depth')}</div><div class="v">${loc('score.mineDepth', { n: game.campaign.mine, d: game.depth() })}</div></div>
+        </div>
+      </div>
+      <div class="shop-scroll">
+        ${supplies ? `<div class="shop-section">${loc('shop.supplies')}</div><div class="shop-list">${supplies}</div>` : ''}
+        <div class="shop-section">${loc('shop.upgrades')}</div>
+        <div class="shop-list">${items}</div>
+      </div>
+      <div class="shop-foot">
+        <button class="btn" id="closeShop">${res(o.closeLabel, 'shop.back')}</button>
+        ${o.extra ? res(o.extra) : ''}
+      </div>
+    `, 'shop');
     this.onAll('[data-dyn]', () => game.buyDynamite());
     this.onAll('[data-heal]', () => game.buyHeal());
     this.onAll('[data-up]', (el) => game.buyUpgrade(el.dataset.up));
@@ -680,7 +755,7 @@ class UI {
     const isDeath = kind === 'death' || kind === 'abandon';
     const daily = !!c.daily;
     const nextMine = isWin && !daily;      // a daily is one mine: escaping it ends the attempt
-    const title = isWin ? loc('sum.escaped') : isDeath ? loc('sum.died') : loc('sum.complete');
+    const title = isWin ? loc('sum.escaped') : kind === 'abandon' ? loc('sum.quit') : isDeath ? loc('sum.died') : loc('sum.complete');
     const sub = daily && isWin ? loc('sum.dailyConquered')
       : isWin ? loc('sum.nextMine', { n: c.mine + 1 })
       : isDeath ? (s.lost > 0 ? loc('sum.lootLost', { v: fmt(s.lost) }) : loc('sum.nothingLost'))
@@ -729,7 +804,8 @@ class UI {
         ? `<div class="note">${loc('sum.gearCarries')}</div>
            <button class="btn" id="nextBtn">${loc('sum.descend', { n: c.mine + 1 })}</button>
            <button class="btn ghost" id="retireBtn">${loc('sum.retire')}</button>`
-        : `<button class="btn" id="againBtn">${loc('sum.newCampaign')}</button>`}
+        : `<button class="btn" id="againBtn">${loc('sum.newCampaign')}</button>
+           <button class="btn ghost" id="menuBtn">${loc('sum.menu')}</button>`}
       ${this.onlineButtons()}
       ${this.langButton()}
     `);
@@ -836,19 +912,51 @@ class UI {
   }
 
   pause(game) {
+    const onOff = (v) => loc(v ? 'common.on' : 'common.off');
     this._repaint = () => this.pause(game);
     this.show(`
+      ${this.langButton()}
       <h2>${loc('pause.title')}</h2>
       <div class="sub">${loc('pause.sub', { d: game.depth(), v: fmt(game.carryValue()) })}</div>
       ${Native.app && CFG.ads.test ? `<div class="note">${loc('pause.adsStatus', { s: esc(Ads.status) })}</div>` : ''}
       <button class="btn" id="resumeBtn">${loc('pause.resume')}</button>
-      <button class="btn ghost" id="audioBtn">${loc('pause.sound', { s: loc(Sfx.enabled ? 'common.on' : 'common.off') })}</button>
-      ${this.langButton()}
-      <button class="btn ghost" id="abandonBtn">${loc('pause.abandon')}</button>
+      <div class="btn-row">
+        <button class="btn ghost" id="audioBtn">${loc('pause.sound', { s: onOff(Sfx.enabled) })}</button>
+        <button class="btn ghost" id="shakeBtn">${loc('pause.shake', { s: onOff(game.save.shake !== false) })}</button>
+      </div>
+      <button class="btn ghost" id="quitBtn">${loc('pause.quit')}</button>
     `);
     this.on('#resumeBtn', () => game.closePanel());
     this.on('#audioBtn', () => { game.toggleAudio(); this.pause(game); });
-    this.on('#abandonBtn', () => game.endRun('abandon'));
+    this.on('#shakeBtn', () => { game.toggleShake(); this.pause(game); });
+    this.on('#quitBtn', () => this.confirmQuit(game));
+    this.wireLang();
+  }
+
+  /**
+   * "Quit this run?" — a second tap between the pause menu and losing every
+   * gem in the pockets. Staying puts the pause menu back.
+   */
+  confirmQuit(game) {
+    const c = game.campaign;
+    const body = loc(c.daily ? 'confirm.quitDaily' : 'confirm.quitBody') +
+      (!c.daily && c.score > 0 ? ' ' + loc('confirm.quitKept') : '');
+    this._repaint = () => this.confirmQuit(game);
+    this.show(`
+      ${this.langButton()}
+      <h2>${loc('confirm.quitTitle')}</h2>
+      <div class="sub">${body}</div>
+      <div class="stats">
+        <div class="stat"><div class="k">${loc('shop.depth')}</div>
+          <div class="v">${loc('score.mineDepth', { n: c.mine, d: game.depth() })}</div></div>
+        <div class="stat"><div class="k">${loc('hud.carrying')}</div>
+          <div class="v carry">${fmt(game.carryValue())}</div></div>
+      </div>
+      <button class="btn" id="stayBtn">${loc('confirm.stay')}</button>
+      <button class="btn ghost" id="quitGo">${loc('confirm.quitGo')}</button>
+    `);
+    this.on('#stayBtn', () => this.pause(game));
+    this.on('#quitGo', () => game.endRun('abandon'));
     this.wireLang();
   }
 }

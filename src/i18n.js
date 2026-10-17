@@ -19,6 +19,7 @@ const STRINGS = {
   /* ------------------------------------------------------------- English */
   en: {
     'lang.switch': 'LANGUAGE: ENGLISH',
+    'lang.short': 'EN',
 
     'meta.title': 'Forever Mine: Gem Rush',
     'meta.desc': 'Forever Mine: Gem Rush — a mobile mining roguelite. Dig deep, carry your gems out, wake the volcano.',
@@ -42,6 +43,7 @@ const STRINGS = {
     'aria.mine': 'Mine',
     'aria.dynamite': 'Place dynamite',
     'aria.jump': 'Jump',
+    'aria.pause': 'Pause',
 
     /* Title screen */
     'title.tagline': 'DIG · HAUL · SURVIVE',
@@ -53,6 +55,8 @@ const STRINGS = {
     'title.dailyInfo': '{d} · new mine in {h}h {m}m',
     'title.dailyBest': 'Your best today: {v}',
     'title.wipe': 'ERASE SAVE',
+    'help.title': 'HOW TO PLAY',
+    'help.gotIt': 'GOT IT',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': 'MY TOP HAULS',
@@ -89,10 +93,14 @@ const STRINGS = {
     'shop.supplyLantern': 'SUPPLY LANTERN',
     'shop.back': 'BACK TO THE MINE',
     'shop.max': 'MAX',
+    'shop.full': 'FULL',
+    'shop.level': 'Lv {n}/{max}',
+    'shop.supplies': 'SUPPLIES',
+    'shop.upgrades': 'UPGRADES',
     'shop.depth': 'DEPTH',
-    'shop.paysFromCarry': 'PAID FROM THE GEMS YOU CARRY — EVERY GEM SPENT IS SCORE LOST',
-    'shop.hatRepaired': 'HARD HAT REPAIRED',
-    'shop.singleUse': 'THIS LANTERN BURNS OUT WHEN YOU LEAVE — ONE VISIT ONLY',
+    'shop.paysFromCarry': 'Paid from the gems you carry — every gem spent is score lost.',
+    'shop.hatRepaired': 'Hard hat repaired',
+    'shop.singleUse': 'This lantern burns out when you leave — one visit only.',
 
     /* Supplies (bought, never handed out — and only by the full load) */
     'supply.dynamite.name': 'Dynamite Reload',
@@ -119,12 +127,13 @@ const STRINGS = {
     /* Run summary */
     'sum.escaped': 'ESCAPED',
     'sum.died': 'YOU DIED',
+    'sum.quit': 'RUN ABANDONED',
     'sum.complete': 'RUN COMPLETE',
-    'sum.nextMine': 'MINE {n} AWAITS',
-    'sum.lootLost': '{v} IN CARRIED LOOT LOST',
-    'sum.nothingLost': 'NOTHING IN YOUR POCKETS',
-    'sum.escapedKept': 'SCORE FROM THE MINES YOU ESCAPED IS KEPT',
-    'sum.hauledOut': 'HAULED OUT SAFE',
+    'sum.nextMine': 'Mine {n} awaits',
+    'sum.lootLost': '{v} in carried loot lost',
+    'sum.nothingLost': 'Nothing in your pockets',
+    'sum.escapedKept': 'Score from the mines you escaped is kept.',
+    'sum.hauledOut': 'Hauled out safe',
     'sum.hauledThisMine': 'HAULED FROM THIS MINE',
     'sum.score': 'SCORE',
     'sum.mine': 'MINE',
@@ -136,7 +145,7 @@ const STRINGS = {
     'sum.scoreSoFar': 'CAMPAIGN SCORE',
     'sum.finalScore': 'FINAL SCORE',
     'sum.descend': 'DESCEND INTO MINE {n}',
-    'sum.gearCarries': 'YOUR UPGRADES COME WITH YOU · YOUR GEMS DO NOT',
+    'sum.gearCarries': 'Your upgrades come with you · your gems do not',
     'sum.retire': 'END THE CAMPAIGN HERE',
     'sum.newCampaign': 'NEW CAMPAIGN',
 
@@ -146,13 +155,19 @@ const STRINGS = {
     'confirm.leaveBodyApp': 'Leaving now ends the campaign. Gems you are carrying are lost — only score from mines you have already escaped is kept.',
     'confirm.stay': 'KEEP DIGGING',
     'confirm.leave': 'LEAVE ANYWAY',
+    'confirm.quitTitle': 'QUIT THIS RUN?',
+    'confirm.quitBody': 'Quitting ends the run, and the gems you are carrying are lost.',
+    'confirm.quitDaily': 'Quitting ends this attempt, and the gems you are carrying are lost. You can try today’s mine again.',
+    'confirm.quitKept': 'Score from the mines you already escaped is kept.',
+    'confirm.quitGo': 'QUIT',
 
     /* Pause */
     'pause.title': 'PAUSED',
-    'pause.sub': '{d} m DEEP · {v} CARRIED',
+    'pause.sub': '{d} m deep · {v} carried',
     'pause.resume': 'RESUME',
     'pause.sound': 'SOUND: {s}',
-    'pause.abandon': 'ABANDON (LOSE CARRIED LOOT)',
+    'pause.shake': 'SHAKE: {s}',
+    'pause.quit': 'QUIT RUN',
     'common.on': 'ON',
     'common.off': 'OFF',
     'common.metres': '{n} m',
@@ -173,7 +188,7 @@ const STRINGS = {
     'board.loading': 'Loading…',
     'board.offline': 'You are offline. Connect to see the boards.',
     'board.error': 'Could not reach the boards. Try again in a moment.',
-    'board.cached': 'OFFLINE — SHOWING THE LAST RESULTS SEEN',
+    'board.cached': 'Offline — showing the last results seen',
     'board.empty': 'No scores yet. Be the first.',
     'board.emptyDaily': 'No one has hauled anything out of this mine yet.',
     'board.you': 'YOU',
@@ -277,6 +292,7 @@ const STRINGS = {
   /* --------------------------------------------------- Simplified Chinese */
   zh: {
     'lang.switch': '语言：简体中文',
+    'lang.short': '中文',
 
     'meta.title': '矿世奇财：宝石狂潮',
     'meta.desc': '矿世奇财：宝石狂潮 —— 专为手机打造的挖矿 Roguelite。一路往下挖，把宝石带出去，顺便……吵醒火山。',
@@ -300,6 +316,7 @@ const STRINGS = {
     'aria.mine': '挖掘',
     'aria.dynamite': '放炸药',
     'aria.jump': '跳跃',
+    'aria.pause': '暂停',
 
     /* Title screen */
     'title.tagline': '挖得深 · 带得走 · 活下来',
@@ -311,6 +328,8 @@ const STRINGS = {
     'title.dailyInfo': '{d} · {h} 小时 {m} 分后换新矿',
     'title.dailyBest': '今日最佳：{v}',
     'title.wipe': '清除存档',
+    'help.title': '玩法说明',
+    'help.gotIt': '知道了',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': '我的最佳战绩',
@@ -347,6 +366,10 @@ const STRINGS = {
     'shop.supplyLantern': '补给站',
     'shop.back': '回到矿里',
     'shop.max': '已满级',
+    'shop.full': '已满',
+    'shop.level': '{n}/{max} 级',
+    'shop.supplies': '补给',
+    'shop.upgrades': '升级',
     'shop.depth': '深度',
     'shop.paysFromCarry': '用身上的宝石付款 —— 花出去的每一颗，都会从最终得分里扣掉',
     'shop.hatRepaired': '安全帽修好了',
@@ -377,6 +400,7 @@ const STRINGS = {
     /* Run summary */
     'sum.escaped': '成功脱身',
     'sum.died': '你倒下了',
+    'sum.quit': '已放弃本局',
     'sum.complete': '本次探险结束',
     'sum.nextMine': '第 {n} 关在等你',
     'sum.lootLost': '身上 {v} 的宝石全丢了',
@@ -404,13 +428,19 @@ const STRINGS = {
     'confirm.leaveBodyApp': '现在离开，这一局就结束了。身上的宝石全部丢失，只有已经逃出的关卡分数会保留。',
     'confirm.stay': '继续挖',
     'confirm.leave': '仍然离开',
+    'confirm.quitTitle': '要退出本局吗？',
+    'confirm.quitBody': '退出会结束这一局，身上的宝石全部丢失。',
+    'confirm.quitDaily': '退出会结束这次挑战，身上的宝石全部丢失。今天的矿井还可以再挑战。',
+    'confirm.quitKept': '之前逃出关卡的得分会保留。',
+    'confirm.quitGo': '退出',
 
     /* Pause */
     'pause.title': '暂停',
     'pause.sub': '深度 {d} 米 · 身上 {v}',
     'pause.resume': '继续',
     'pause.sound': '音效：{s}',
-    'pause.abandon': '放弃（身上宝石全部丢失）',
+    'pause.shake': '震动：{s}',
+    'pause.quit': '退出本局',
     'common.on': '开',
     'common.off': '关',
     'common.metres': '{n} 米',

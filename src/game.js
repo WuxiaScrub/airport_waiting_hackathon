@@ -40,6 +40,8 @@ class Game {
     });
 
     this.ui.title(this.save);
+    // A first launch opens on the rules; GOT IT drops back to the title.
+    if (!this.save.seenHelp) this.ui.help();
   }
 
   /* ------------------------------------------------------------ persistence */
@@ -50,7 +52,9 @@ class Game {
    * run can never buy the next one an easy start.
    */
   load() {
-    const blank = { best: 0, bestMine: 0, audio: true, daily: null };
+    // Screen shake starts off for players whose device asks for less motion.
+    const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const blank = { best: 0, bestMine: 0, audio: true, shake: !calm, seenHelp: false, daily: null };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -62,6 +66,10 @@ class Game {
         best: s.best || 0,
         bestMine: s.bestMine || 0,
         audio: s.audio !== false,
+        shake: s.shake !== undefined ? s.shake !== false : !calm,
+        // A save from before the help panel existed belongs to someone who
+        // read the rules on the old title screen.
+        seenHelp: s.seenHelp !== undefined ? !!s.seenHelp : true,
         // Today's best daily haul on this device: { date, best }.
         daily: s.daily && typeof s.daily.date === 'string' ? { date: s.daily.date, best: s.daily.best || 0 } : null,
       };
@@ -73,7 +81,8 @@ class Game {
   }
 
   wipeSave() {
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, daily: null };
+    // Records go; settings stay.
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null };
     this.persist();
     Highscore.reset();
     this.ui.title(this.save);
@@ -620,6 +629,12 @@ class Game {
     this.ui.toast(loc('toast.sound', { s: loc(this.save.audio ? 'common.on' : 'common.off') }));
   }
 
+  toggleShake() {
+    this.save.shake = this.save.shake === false;
+    if (!this.save.shake) this.shakeAmt = 0;
+    this.persist();
+  }
+
   /* -------------------------------------------------------------- spawning */
 
   spawnGem(x, y, type, opt) { this.gems.push(new GemPickup(x, y, type, opt)); }
@@ -630,7 +645,10 @@ class Game {
   spawnHeartstone(x, y) { this.gems.push(new GemPickup(x, y, 0, { heart: true, speed: 1.2 })); }
   spawnFallingBlock(x, y) { this.blocks.push(new FallingBlock(x, y)); }
 
-  shake(amount) { this.shakeAmt = Math.min(26, this.shakeAmt + amount); }
+  shake(amount) {
+    if (this.save.shake === false) return;
+    this.shakeAmt = Math.min(26, this.shakeAmt + amount);
+  }
 
   addLight(x, y, r, life) { this.tempLights.push({ x, y, r, life, max: life }); }
 
@@ -754,6 +772,7 @@ class Game {
     this.shakeY = (Math.random() - 0.5) * s;
 
     this.ui.syncTimer(this);
+    this.ui.syncPause(this);
 
     // Paused / title / summary still animate the mine behind the panel.
     if (this.state !== 'play') {
@@ -944,7 +963,10 @@ class Game {
     while (this.acc >= fixed && steps < 5) { this.step(fixed); this.acc -= fixed; steps++; }
     if (steps === 5) this.acc = 0;
 
-    if (this.world) this.renderer.draw(this);
+    // Behind an open panel the mine is dimmed and blurred, and the blur is
+    // re-run on every new frame — so redraw it at a quarter rate there.
+    this.frameNo = (this.frameNo || 0) + 1;
+    if (this.world && (!this.ui.isOpen || this.frameNo % 4 === 0)) this.renderer.draw(this);
     requestAnimationFrame(this.frame.bind(this));
   }
 
