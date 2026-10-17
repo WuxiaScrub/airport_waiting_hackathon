@@ -115,6 +115,64 @@ stores only:
 the Chinese app name, and add to the Chinese copy:
 `"NSUserTrackingUsageDescription" = "让你选择观看的复活广告更贴合你的兴趣。不管选哪个，游戏体验都一样。";`
 
+## Save your progress (Sign in with Apple / Google)
+
+**Profile → Save your progress** links the player's anonymous account to
+**Sign in with Apple on iOS** or **Sign in with Google on Android**
+(`src/account.js`). On a new phone, the same button finds the old profile and
+offers to **Switch** to it. Name, medals and run history come along.
+
+The button only appears once the setup below is done: Android needs a Google
+client ID in `CFG.signin.googleWebClientId`, and iOS needs the Xcode
+capability.
+
+### 1. Supabase (dashboard, ~2 min)
+1. **Authentication → Sign In / Providers**: turn on **Allow manual linking**.
+   Without it, linking fails and the player sees "Sign-in did not work".
+2. **Providers → Apple**: Enable. **Client IDs:** `com.hdexpanse.forevermine`.
+   Leave the secret-key fields empty; they're only for web sign-in. Save.
+3. **Providers → Google**: Enable. Paste the **Web** client ID and client
+   secret from step 3 below. Save.
+
+### 2. iOS: Xcode (~1 min)
+1. In Xcode, select the **App** target → **Signing & Capabilities** →
+   **+ Capability** → **Sign in with Apple**.
+2. Commit the files Xcode changes under `ios/`.
+
+Nothing else is needed for iOS. Automatic signing turns the capability on for
+the App ID in your developer account.
+
+### 3. Android: Google Cloud (~10 min)
+1. At https://console.cloud.google.com, create a project, e.g. "Forever Mine".
+2. **Google Auth Platform → Branding:** app name *Forever Mine: Gem Rush*, your
+   support email, and the privacy policy URL. **Audience:** External. While it
+   is in *Testing*, add your own Google account under **Test users**.
+   **Data access:** the default `openid`, `email` and `profile` are enough.
+3. **Clients → Create client → Web application**, named e.g. "Supabase".
+   No redirect URIs are needed. Copy the **client ID** and **secret** into
+   Supabase (step 1.3). **Send me the client ID** (it's public; it goes into
+   `CFG.signin.googleWebClientId`).
+4. **Clients → Create client → Android:** package `com.hdexpanse.forevermine`.
+   For the **SHA-1**, after one debug build from Android Studio run:
+   `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
+   and copy the `SHA1:` line. Before release, add two more Android clients
+   with the same package: one with your **upload key** SHA-1, and one with
+   the **Play App Signing** SHA-1 (Play Console → *Test and release → App
+   integrity*).
+
+If Google sign-in fails on Android, filter Logcat for `GoogleProvider`. The
+plugin prints the package and SHA-1 it actually used, to compare with Google
+Cloud.
+
+### Known gap: Apple token revocation
+Apple asks apps that offer Sign in with Apple to also **revoke** the Apple
+token when an account is deleted. Doing that needs a small server function
+holding an Apple private key, which this project doesn't have yet. Today,
+deleting the account removes the link and all data from our side, and the
+privacy policy tells players how to remove the app from their Apple ID
+themselves. If App Review flags it, the fix is a Supabase Edge Function that
+calls Apple's `/auth/revoke` endpoint.
+
 ## Icons and splash
 
 The masters are in `assets/` and are drawn in code: a faceted diamond over

@@ -10,11 +10,8 @@ submit, because Google updates these:
 - iOS: https://developers.google.com/admob/ios/privacy/data-disclosure
 - Android: https://developers.google.com/admob/android/privacy/play-data-disclosure
 
-> **When phase 6 ships (Sign in with Apple / Google), add *Email Address*
-> (Apple: Contact Info; Play: Personal info), used for App Functionality /
-> Account management, linked, not tracking.** Also update section 1 of the
-> privacy policy.
-
+> Includes Sign in with Apple / Google (phase 6): **Email Address** is
+> collected only from players who choose "Save your progress".
 ---
 
 ## Apple: App Privacy ("nutrition label")
@@ -26,13 +23,14 @@ submit, because Google updates these:
 | **Identifiers → User ID** | Us (Supabase account ID) | Yes | No | App Functionality |
 | **User Content → Gameplay Content** | Us (scores, runs, medals) | Yes | No | App Functionality |
 | **User Content → Other User Content** | Us (miner name) | Yes | No | App Functionality |
+| **Contact Info → Email Address** | Us (only if the player links Sign in with Apple) | Yes | No | App Functionality |
 | **Identifiers → Device ID** | AdMob (IDFA, only if tracking allowed) | No | **Yes** | Third-Party Advertising, Analytics |
 | **Location → Coarse Location** | AdMob (from IP address) | No | No | Third-Party Advertising, Analytics |
 | **Usage Data → Product Interaction** | AdMob | No | No | Third-Party Advertising, Analytics |
 | **Usage Data → Advertising Data** | AdMob | No | No | Third-Party Advertising, Analytics |
 | **Diagnostics → Crash Data, Performance Data, Other Diagnostic Data** | AdMob | No | No | Third-Party Advertising, Analytics |
 
-Everything else is **not collected**: contact info, health, financial,
+Everything else is **not collected**: other contact info, health, financial,
 precise location, contacts, browsing/search history, purchases, sensitive
 info, photos, audio and messages.
 
@@ -53,6 +51,7 @@ The text is already in `Info.plist`, with the Chinese version described in
 | Category → type | Collected | Shared | Optional? | Purposes |
 |---|---|---|---|---|
 | **Personal info → User IDs** (account ID) | Yes | No | Required | App functionality, Account management |
+| **Personal info → Email address** (only if the player links Sign in with Google) | Yes | No | Optional | App functionality, Account management |
 | **App activity → Other user-generated content** (miner name) | Yes | No | Optional (only if a name is chosen) | App functionality |
 | **App activity → Other actions** (run results, medals) | Yes | No | Required | App functionality, Fraud prevention / security |
 | **App activity → App interactions** | Yes (AdMob) | Yes (Google) | Required | Advertising or marketing, Analytics, Fraud prevention |
@@ -120,7 +119,8 @@ covers it.
 ```
 No sign-in is required. The game creates an anonymous account automatically
 the first time it goes online; leaderboards, the profile and the daily mine
-work without any credentials.
+work without any credentials. Sign in with Apple is optional, under
+Profile → Save your progress, and only links that anonymous account.
 
 Ads: the only ad is an optional rewarded video offered once per run when the
 player dies ("Second wind? Watch ad · Revive" / "No thanks"). To see it, start
