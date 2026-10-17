@@ -157,6 +157,7 @@ const STRINGS = {
     'common.off': 'OFF',
     'common.metres': '{n} m',
     'common.back': 'BACK',
+    'common.privacy': 'Privacy policy',
 
     /* Online: leaderboards, profile, uploads */
     'title.boards': 'LEADERBOARDS',
@@ -400,6 +401,7 @@ const STRINGS = {
     'common.off': '关',
     'common.metres': '{n} 米',
     'common.back': '返回',
+    'common.privacy': '隐私政策',
 
     /* Online: leaderboards, profile, uploads */
     'title.boards': '排行榜',

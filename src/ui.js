@@ -234,10 +234,12 @@ class UI {
       <div class="help">${rows}</div>
       ${this.langButton()}
       ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
+      ${this.privacyLink()}
     `);
     this.on('#startBtn', () => this.game.newCampaign());
     this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
     this.on('#wipeBtn', () => this.game.wipeSave());
+    this.wirePrivacy();
     this.wireOnlineButtons();
     this.wireLang();
   }
@@ -280,6 +282,10 @@ class UI {
     this._back = this._repaint || (() => this.title(this.game.save));
     draw();
   }
+
+  /** Apple requires the privacy policy to be reachable from inside the app. */
+  privacyLink() { return `<button class="link-btn" id="privacyBtn">${loc('common.privacy')}</button>`; }
+  wirePrivacy() { this.on('#privacyBtn', () => Native.openUrl(CFG.links.privacy)); }
 
   backButton() { return `<button class="btn" id="backBtn">${loc('common.back')}</button>`; }
   wireBack() { this.on('#backBtn', () => { const b = this._back; this._back = null; b(); }); }
@@ -459,6 +465,7 @@ class UI {
         ${body}
         ${this.backButton()}
         ${this.langButton()}
+        ${this.privacyLink()}
       `);
       const input = this.el.panelInner.querySelector('#nameInput');
       if (input) {
@@ -471,6 +478,7 @@ class UI {
       this.on('#saveName', save);
       this.on('#deleteBtn', () => { st.confirmDelete = true; st.err = ''; draw(); });
       this.on('#deleteNo', () => { st.confirmDelete = false; draw(); });
+      this.wirePrivacy();
       this.on('#deleteYes', remove);
       this.wireBack();
       this.wireLang();

@@ -460,6 +460,11 @@ html, body {
   text-align: center; font-size: 46px; font-weight: 900; color: var(--gold);
   font-variant-numeric: tabular-nums; margin: 4px 0 2px;
 }
+.link-btn {
+  display: block; margin: 14px auto 0; padding: 6px 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--dim); font-size: 11px; font-weight: 700; text-decoration: underline;
+}
 .btn.hot { background: linear-gradient(180deg, #e0623c, #b3391f); box-shadow: 0 5px 0 #6d1f0e; }
 
 .help { font-size: 10.5px; line-height: 1.65; color: var(--dim); font-weight: 600; }

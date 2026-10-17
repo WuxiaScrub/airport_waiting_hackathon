@@ -81,6 +81,16 @@ const Native = {
   },
 
   /**
+   * Open a web page outside the game. In the app, navigating the main frame
+   * to an outside address makes Capacitor hand it to the system browser; in a
+   * browser tab, a new tab keeps the game where it was.
+   */
+  openUrl(url) {
+    if (this.app) window.location.href = url;
+    else window.open(url, '_blank', 'noopener');
+  },
+
+  /**
    * Where Supabase keeps the login. WebView localStorage can be cleared by the
    * OS under storage pressure, which would orphan an anonymous account and its
    * medals; native Preferences survive until the app is uninstalled.

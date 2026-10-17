@@ -293,6 +293,11 @@ const CFG = {
     nameCooldownDays: 30,  // mirrors app_config.name_cooldown_days (display only)
   },
 
+  // Pages the game links to. Hosted on the developer's GitHub user site.
+  links: {
+    privacy: 'https://wuxiascrub.github.io/forevermine/privacy.html',
+  },
+
   // AdMob, used only inside the native app (rewarded revive). Public IDs.
   ads: {
     // true = Google's test ads. Keep it true for every build you run yourself
