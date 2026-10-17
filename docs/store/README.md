@@ -29,8 +29,6 @@ Phase 7 paperwork. ✅ = ready in the repo, ☐ = needs you or a running app.
 8. ☐ Release build: set `CFG.ads.test = false`, `npm run sync`, archive / bundle,
    upload to TestFlight / Play internal testing, then set it back to `true`.
 
-## Update when phase 6 (Sign in with Apple / Google) ships
-- Privacy policy section 1: replace the "future version" paragraph.
-- Apple App Privacy and Play Data safety: add **Email address**.
-- Support page: the "new phone" answer.
-- Description: add cross-device progress.
+## Sign in with Apple / Google (phase 6)
+- ✅ Privacy policy, support page, privacy labels and description updated for it.
+- ☐ Its setup steps: `docs/BUILD-mobile.md` → *Save your progress*.

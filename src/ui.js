@@ -368,13 +368,41 @@ class UI {
    * account deletion behind a second confirmation.
    */
   profile() {
-    const st = { res: null, editing: false, draft: '', err: '', busy: false, confirmDelete: false };
+    const st = { res: null, editing: false, draft: '', err: '', busy: false, confirmDelete: false,
+      // Save-your-progress: who this account is linked to, and any switch on offer.
+      acct: { linked: null, busy: false, err: '', cred: null } };
     const p = () => (st.res && st.res.ok && st.res.data) || null;
 
-    const load = () => Online.myProfile().then(res => {
+    const load = () => Promise.all([Online.myProfile(), Account.linked()]).then(([res, linked]) => {
       st.res = res;
+      st.acct.linked = linked;
       if (this._repaint === draw && this.isOpen) draw();
     });
+
+    const link = () => {
+      const a = st.acct;
+      if (a.busy) return;
+      a.busy = true; a.err = ''; draw();
+      Account.link().then(res => {
+        a.busy = false;
+        if (res.ok) { this.toast(loc('acct.done'), 1800); load(); }
+        else if (res.error === 'already_linked') a.cred = res.cred;
+        else if (res.error !== 'cancelled') a.err = loc(res.error === 'offline' ? 'name.err.offline' : 'acct.failed');
+        if (this._repaint === draw && this.isOpen) draw();
+      });
+    };
+
+    const switchOver = () => {
+      const a = st.acct;
+      if (a.busy || !a.cred) return;
+      a.busy = true; draw();
+      Account.switchTo(a.cred).then(res => {
+        a.busy = false; a.cred = null;
+        if (res.ok) { this.toast(loc('acct.switched'), 2000); st.res = null; load(); }
+        else a.err = loc('acct.failed');
+        if (this._repaint === draw && this.isOpen) draw();
+      });
+    };
 
     const save = () => {
       const v = st.draft.trim();
@@ -447,6 +475,7 @@ class UI {
             ${stat('prof.deepest', loc('common.metres', { n: d.deepest || 0 }))}
             ${stat('prof.runs', loc('prof.runsValue', { n: d.runs, d: d.dailies }))}
           </div>
+          ${this.accountBlock(st.acct)}
           <div class="scores">
             <div class="score-head">${loc('prof.recent')}</div>
             ${recent || `<div class="score-empty">${loc('prof.noRuns')}</div>`}
@@ -480,11 +509,48 @@ class UI {
       this.on('#deleteNo', () => { st.confirmDelete = false; draw(); });
       this.wirePrivacy();
       this.on('#deleteYes', remove);
+      this.on('#linkBtn', link);
+      this.on('#switchYes', switchOver);
+      this.on('#switchNo', () => { st.acct.cred = null; draw(); });
       this.wireBack();
       this.wireLang();
     };
     draw();
     load();
+  }
+
+  /**
+   * "Save your progress" on the profile: the sign-in button for this
+   * platform, the account it is linked to, or the switch-profile prompt.
+   * Nothing at all where sign-in isn't offered (the browser, or Android
+   * before a Google client ID is configured).
+   */
+  accountBlock(a) {
+    const provider = Account.provider();
+    if (!provider) return '';
+    const name = loc(provider === 'apple' ? 'acct.apple' : 'acct.google');
+    let body;
+    if (a.linked) {
+      body = `<div class="acct-linked">✓ ${loc('acct.linked', { p: loc(a.linked.provider === 'apple' ? 'acct.pApple' : 'acct.pGoogle') })}
+        ${a.linked.email ? `<span class="acct-email">${esc(a.linked.email)}</span>` : ''}</div>`;
+    } else if (a.cred) {
+      body = `<div class="note">${loc('acct.existsBody', { p: name })}</div>
+        <div class="btn-row">
+          <button class="btn" id="switchYes" ${a.busy ? 'disabled' : ''}>${loc('acct.switch')}</button>
+          <button class="btn ghost" id="switchNo">${loc('prof.cancel')}</button>
+        </div>`;
+    } else {
+      const logo = provider === 'apple'
+        ? '<span class="sso-logo apple">\uF8FF</span>'
+        : '<svg class="sso-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.8 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
+      body = `<div class="name-rules">${loc('acct.why')}</div>
+        <button class="sso ${provider}" id="linkBtn" ${a.busy ? 'disabled' : ''}>${logo}<span>${a.busy ? loc('acct.busy') : name}</span></button>`;
+    }
+    return `<div class="scores acct">
+      <div class="score-head">${loc('acct.title')}</div>
+      ${body}
+      ${a.err ? `<div class="name-err">${a.err}</div>` : ''}
+    </div>`;
   }
 
   /** Words for a set_display_name refusal. */

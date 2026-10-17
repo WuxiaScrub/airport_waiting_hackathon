@@ -23,7 +23,7 @@ const Native = {
     if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return;
     this.app = true;
     this.platform = cap.getPlatform();
-    for (const name of ['App', 'Preferences', 'StatusBar', 'SplashScreen', 'AdMob']) {
+    for (const name of ['App', 'Preferences', 'StatusBar', 'SplashScreen', 'AdMob', 'SocialLogin']) {
       this.plugins[name] = cap.registerPlugin(name);
     }
     document.documentElement.classList.add('native', 'native-' + this.platform);

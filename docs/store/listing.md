@@ -3,7 +3,7 @@
 Paste-ready text for App Store Connect and the Google Play Console, in English
 and Simplified Chinese. Every field has been checked against its store's
 character limit (the limit is in brackets). Don't claim features the game doesn't
-have yet: cross-device progress waits for phase 6.
+have yet.
 
 ## Shared facts
 
@@ -84,6 +84,7 @@ ENDLESS
 
 ALSO
 • Plays offline; your runs upload the next time you're connected.
+• Save your progress with Sign in with Apple or Google and take your name and medals to a new phone.
 • One optional revive per run, by watching an ad. Say no and you'll never see an ad.
 • English and 简体中文.
 ```
@@ -154,6 +155,7 @@ ALSO
 
 还有
 • 支持离线游玩，联网后自动上传成绩。
+• 通过 Apple 或 Google 登录保存进度，换手机也能带走名字和奖牌。
 • 每局可选一次看广告复活。不想看？点"不用了"，就永远不会看到广告。
 • 支持简体中文与英文。
 ```

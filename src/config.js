@@ -293,6 +293,13 @@ const CFG = {
     nameCooldownDays: 30,  // mirrors app_config.name_cooldown_days (display only)
   },
 
+  // "Save your progress": Sign in with Apple (iOS) / Google (Android). The
+  // Google button only appears once the Web OAuth client ID is filled in.
+  // Public value — see docs/BUILD-mobile.md for where it comes from.
+  signin: {
+    googleWebClientId: '',
+  },
+
   // Pages the game links to. Hosted on the developer's GitHub user site.
   links: {
     privacy: 'https://wuxiascrub.github.io/forevermine/privacy.html',

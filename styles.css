@@ -465,6 +465,19 @@ html, body {
   background: none; border: none; cursor: pointer;
   color: var(--dim); font-size: 11px; font-weight: 700; text-decoration: underline;
 }
+.acct .name-rules { margin: 0 0 8px; }
+.sso {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 13px; border-radius: 12px; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0;
+}
+.sso.apple  { background: #fff; color: #000; border: none; }
+.sso.google { background: #fff; color: #1f1f1f; border: 1px solid #747775; }
+.sso:disabled { opacity: .6; cursor: default; }
+.sso-logo { width: 18px; height: 18px; flex-shrink: 0; }
+.sso-logo.apple { width: auto; height: auto; font-size: 19px; line-height: 1; }
+.acct-linked { font-size: 13px; font-weight: 800; color: var(--carry); }
+.acct-email { display: block; color: var(--dim); font-weight: 600; font-size: 11px; margin-top: 2px; overflow-wrap: anywhere; }
 .btn.hot { background: linear-gradient(180deg, #e0623c, #b3391f); box-shadow: 0 5px 0 #6d1f0e; }
 
 .help { font-size: 10.5px; line-height: 1.65; color: var(--dim); font-weight: 600; }

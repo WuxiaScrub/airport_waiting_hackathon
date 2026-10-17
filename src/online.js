@@ -208,6 +208,11 @@ const Online = {
   myRanks() { return this.board('ranks', 'my_ranks', {}, true); },
   myProfile() { return this.board('profile', 'my_profile', {}, true); },
 
+  /** After a sign-in changes who this device is, cached boards are stale. */
+  forgetCache() {
+    try { localStorage.removeItem(this.cacheKey); } catch (e) { /* private mode */ }
+  },
+
   setName(name) { return this.rpc('set_display_name', { new_name: name }, true); },
 
   /** Delete the account server-side, then forget it here. */
