@@ -54,7 +54,7 @@ class Game {
   load() {
     // Screen shake starts off for players whose device asks for less motion.
     const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const blank = { best: 0, bestMine: 0, audio: true, shake: !calm, seenHelp: false, daily: null };
+    const blank = { best: 0, bestMine: 0, audio: true, shake: !calm, seenHelp: false, daily: null, stats: Stats.blank() };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -72,6 +72,8 @@ class Game {
         seenHelp: s.seenHelp !== undefined ? !!s.seenHelp : true,
         // Today's best daily haul on this device: { date, best }.
         daily: s.daily && typeof s.daily.date === 'string' ? { date: s.daily.date, best: s.daily.best || 0 } : null,
+        // Lifetime counters behind the achievements — see src/stats.js.
+        stats: Stats.from(s.stats),
       };
     } catch (e) { return blank; }
   }
@@ -82,10 +84,35 @@ class Game {
 
   wipeSave() {
     // Records go; settings stay.
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null, stats: Stats.blank() };
     this.persist();
     Highscore.reset();
     this.ui.title(this.save);
+  }
+
+  /**
+   * Change the lifetime counters. Any achievement tier this crosses is
+   * announced and saved straight away; plain counting waits for the next
+   * save, which every mine's end makes anyway.
+   */
+  track(change) {
+    const s = this.save.stats;
+    const before = Stats.tiers(s);
+    change(s);
+    const after = Stats.tiers(s);
+    let earned = false;
+    CFG.achievements.forEach((a, i) => {
+      // A leap past several bars at once announces only the best of them.
+      if (after[i] > before[i]) { this.ui.achievement(a, after[i] - 1); earned = true; }
+    });
+    if (earned) this.persist();
+  }
+
+  /** Every enemy death lands here, with how it happened. */
+  recordKill(e, cause) {
+    const who = e instanceof Bat ? 'bat' : 'spider';
+    const how = KILL_CAUSES.indexOf(cause) >= 0 ? cause : 'pick';
+    this.track(s => { s.kills[who][how]++; });
   }
 
   /* ---------------------------------------------------------- run lifecycle */
@@ -108,6 +135,7 @@ class Game {
    */
   newCampaign(quiet, mode) {
     const daily = mode === 'daily' ? utcDate(0) : null;
+    if (!quiet) this.track(s => { s.runs++; });
     this.campaign = {
       mine: 1, upgrades: {}, score: 0,
       found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
@@ -156,6 +184,8 @@ class Game {
     // The eruption clock. It only advances while the mine is actually being
     // played, so a paused game or the title-screen mine never burns it down.
     this.runTime = 0;
+    // Wall time in this mine, eruption or not — what the fastest escape is timed on.
+    this.mineTime = 0;
     this.nextWarn = 0;
     this.resetRunStats();
     if (!this.campaign.revived) Ads.preload();
@@ -218,6 +248,7 @@ class Game {
   endRun(kind) {
     if (this.state === 'over') return;
     const c = this.campaign;
+    if (kind === 'death') this.track(s => { s.deaths++; });
     if (kind === 'death' || kind === 'abandon') {
       this.runStats.lost = this.carryValue();
       this.carry.length = 0;
@@ -421,6 +452,7 @@ class Game {
       const value = g.value !== undefined ? g.value : this.gemValue(g.type);
       this.carry.push({ type: g.type, value });
       if (!g.recovered) { this.campaign.gems++; this.campaign.found += value; }
+      this.track(s => { if (g.recovered) s.recovered++; else s.gems[g.type]++; });
       Sfx.play('gem', { tier: g.type });
       this.fx.flyToHud(scr.x, scr.y, CFG.gems.types[g.type].color, value);
       this.fx.text(g.x, g.y - 0.4, '+' + fmt(value), CFG.gems.types[g.type].glow, { size: 11, life: 0.8 });
@@ -497,6 +529,8 @@ class Game {
     if (winning) {
       p.hasHeartstone = false;
       c.hearts++;
+      const secs = Math.round(this.mineTime);
+      this.track(s => { s.hearts++; if (!s.fastest || secs < s.fastest) s.fastest = secs; });
       Sfx.play('win');
       this.ui.banner(loc('sum.escaped'), loc('banner.heartstonePaid', { v: fmt(CFG.gems.heartstoneValue) }));
       this.ui.syncWallet(this);
@@ -782,6 +816,7 @@ class Game {
     }
 
     this.input.update();
+    this.mineTime += dt;
     this.player.update(dt, this, this.input);
     if (this.player.dead) this.deathAnim += dt;
 

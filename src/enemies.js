@@ -28,19 +28,21 @@ class Enemy {
     return blocked;
   }
 
-  hurt(amount, game, kx, ky) {
+  /** `cause` is how a killing blow landed — one of KILL_CAUSES, for the stats. */
+  hurt(amount, game, kx, ky, cause) {
     if (this.dead) return;
     this.hp -= amount;
     this.hurtFlash = 0.18;
     const d = Math.hypot(kx || 0, ky || 0) || 1;
     this.vx += ((kx || 0) / d) * 9;
     this.vy += ((ky || 0) / d) * 9;
-    if (this.hp <= 0) this.die(game);
+    if (this.hp <= 0) this.die(game, cause);
     else { Sfx.play('hit'); game.fx.burst(this.x, this.y, 6, ['#ff8fa0', '#c8324a'], { speed: 5, life: 0.3, size: 0.13 }); }
   }
 
-  die(game) {
+  die(game, cause) {
     this.dead = true;
+    game.recordKill(this, cause);
     Sfx.play('squish');
     game.fx.burst(this.x, this.y, 16, this.gore || ['#7a2a3a', '#c8324a', '#3a1420'], { speed: 7, life: 0.55, size: 0.17 });
     game.shake(4);
@@ -144,7 +146,7 @@ class Spider extends Enemy {
     this.contact(game, p);
     if (Math.abs(this.vx) > 0.2) this.face = this.vx > 0 ? 1 : -1;
 
-    if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game);
+    if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game, 'lava');
   }
 
   /** Head toward the player, chewing through soft dirt when the way is blocked. */
@@ -265,7 +267,7 @@ class Bat extends Enemy {
     if (this.penned(dt, px, py) && !game.onScreen(this.x, this.y, 1)) { this.dead = true; return; }
 
     if (Math.abs(this.vx) > 0.2) this.face = this.vx > 0 ? 1 : -1;
-    if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game);
+    if (w.get(this.x | 0, this.y | 0) === T.LAVA) this.die(game, 'lava');
   }
 
   /**
@@ -352,19 +354,20 @@ class Bat extends Enemy {
   escape(game) {
     this.dead = true;
     if (this.stolen) {
+      game.track(s => { s.stolen++; });
       game.fx.text(this.x, this.y, loc('fx.gone'), '#ff6b6b', { size: 12, life: 1.2 });
       this.stolen = null;
     }
     game.fx.burst(this.x, this.y, 5, ['#3b2c46'], { speed: 3, life: 0.4, size: 0.12 });
   }
 
-  die(game) {
+  die(game, cause) {
     // Killed in the act: the loot drops back into the mine.
     if (this.stolen) {
       game.dropStolenGem(this.x, this.y, this.stolen);
       game.fx.text(this.x, this.y - 0.5, loc('fx.recovered'), '#7ef0d0', { size: 11, life: 1.1 });
       this.stolen = null;
     }
-    super.die(game);
+    super.die(game, cause);
   }
 }
