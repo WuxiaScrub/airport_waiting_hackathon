@@ -281,6 +281,25 @@ const CFG = {
     stun: 2.5,           // seconds knocked-away spiders stay dazed
   },
 
+  // Lifetime achievements. Each reads one counter from the save (see
+  // Stats.value in src/stats.js) and has three bars: bronze, silver, gold.
+  // `lower` marks a time in seconds, where coming in under the bar counts.
+  // Names and descriptions live in i18n.js under `ach.<id>.name` / `.desc`.
+  achievements: [
+    { id: 'sapphire', stat: 'sapphire',      tiers: [50, 300, 1500] },
+    { id: 'emerald',  stat: 'emerald',       tiers: [25, 150, 750] },
+    { id: 'ruby',     stat: 'ruby',          tiers: [10, 75, 400] },
+    { id: 'diamond',  stat: 'diamond',       tiers: [5, 40, 200] },
+    { id: 'heart',    stat: 'hearts',        tiers: [1, 10, 50] },
+    { id: 'spider',   stat: 'spiders',       tiers: [10, 50, 250] },
+    { id: 'bat',      stat: 'bats',          tiers: [5, 25, 100] },
+    { id: 'pick',     stat: 'pickKills',     tiers: [10, 75, 300] },
+    { id: 'blast',    stat: 'dynamiteKills', tiers: [5, 40, 150] },
+    { id: 'dirt',     stat: 'dirtKills',     tiers: [1, 15, 60] },
+    { id: 'thief',    stat: 'recovered',     tiers: [1, 10, 50] },
+    { id: 'speed',    stat: 'fastest',       tiers: [480, 360, 270], lower: true },
+  ],
+
   // The optional online layer (Supabase). Both values are public by design —
   // the publishable key only reaches what the database's row-level security
   // allows. NEVER put the service-role / secret key anywhere in this repo.

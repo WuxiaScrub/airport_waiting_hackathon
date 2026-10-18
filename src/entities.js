@@ -107,7 +107,7 @@ class Dynamite {
     const R = CFG.dynamite.blastRadius + this.extra;
     for (const e of game.enemies) {
       if (e.dead) continue;
-      if (dist(e.x, e.y, x, y) <= R) e.hurt(CFG.dynamite.enemyDamage, game, e.x - x, e.y - y);
+      if (dist(e.x, e.y, x, y) <= R) e.hurt(CFG.dynamite.enemyDamage, game, e.x - x, e.y - y, 'dynamite');
     }
     for (const d of game.dynamites) {
       if (d !== this && !d.dead && dist(d.x, d.y, x, y) <= R + 0.6) d.fuse = Math.min(d.fuse, 0.12);
@@ -146,7 +146,7 @@ class FallingBlock {
     }
     for (const e of game.enemies) {
       if (!e.dead && Math.abs(e.x - this.x) < 0.7 && Math.abs(e.y - this.y) < 0.7) {
-        e.hurt(2, game, 0, 1);
+        e.hurt(2, game, 0, 1, 'dirt');
       }
     }
 

@@ -326,7 +326,7 @@ class Player {
       if (Math.hypot(dx, dy) > CFG.player.swingReach) continue;
       // Only count enemies roughly in front of the swing.
       if (dx * this.facing.x + dy * this.facing.y < -0.15) continue;
-      e.hurt(1, game, dx, dy);
+      e.hurt(1, game, dx, dy, 'pick');
       didSomething = true;
     }
 
@@ -364,6 +364,7 @@ class Player {
     if (game.dynamites.some(d => d.tx === tt.x && d.ty === tt.y && !d.dead)) return;
 
     this.dynamite--;
+    game.track(s => { s.dynamite++; });
     game.dynamites.push(new Dynamite(tt.x + 0.5, tt.y + 0.5, this.blast));
     this.throwAnim = 1;
     game.ui.syncDynamite(this);

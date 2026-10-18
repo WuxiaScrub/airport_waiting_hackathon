@@ -231,6 +231,33 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* Achievement pop-up: sits under the toast so the two never collide. */
+.achieve {
+  position: absolute;
+  top: 30%; left: 50%;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px 8px 12px;
+  background: rgba(12,9,20,.9);
+  border: 1px solid rgba(255, 207, 74, .45);
+  border-radius: 14px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  z-index: 21;
+}
+.achieve.show { animation: achieveIn 2.6s ease forwards; }
+.achieve .medal { width: 20px; height: 20px; flex-shrink: 0; }
+.achieve-txt { display: flex; flex-direction: column; line-height: 1.25; }
+.achieve-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: var(--gold); }
+.achieve-v { font-size: var(--fs-md); font-weight: 800; color: var(--ink); }
+@keyframes achieveIn {
+  0%   { opacity: 0; transform: translate(-50%, 8px) scale(.92); }
+  10%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
 .banner {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -710,11 +737,15 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .medal.gold   { background: var(--medal-gold); }
 .medal.silver { background: var(--medal-silver); }
 .medal.bronze { background: var(--medal-bronze); }
-.medals { margin-left: 6px; font-size: var(--fs-xs); font-weight: 900; color: var(--dim); }
-.medals .medal {
-  width: auto; height: auto; padding: 0 5px; border-radius: 6px; margin-left: 3px;
-  color: #241a10; line-height: 15px; font-size: var(--fs-xs); vertical-align: 1px;
-}
+.medal.none   { background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+/* A daily-medal tally beside a name: the disc, then "×N" in the medal's own
+   colour. The count never sits on the disc, where it would read as a placing. */
+.medals { margin-left: 6px; font-size: var(--fs-xs); font-weight: 900; }
+.medal-count { margin-left: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.medal-count .medal { width: 9px; height: 9px; margin-right: 2px; vertical-align: 0; }
+.medal-count.gold   { color: var(--medal-gold); }
+.medal-count.silver { color: var(--medal-silver); }
+.medal-count.bronze { color: var(--medal-bronze); }
 
 .medal-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
 .medal-big {
@@ -751,6 +782,29 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .ledger .row span:last-child { color: var(--ink); font-weight: 800; font-variant-numeric: tabular-nums; }
 .ledger .row span.total { color: var(--gold); font-size: var(--fs-md); }
 .ledger .row:last-child { border-top: 1px solid rgba(255,255,255,.14); padding-top: 4px; margin-top: 4px; }
+
+/* ------------------------------------------------- Achievements & stats */
+.ach-list { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 18px; }
+.ach-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border-radius: 12px;
+  background: var(--surface-2); border: 1px solid var(--edge-soft);
+}
+.ach-row.done { border-color: rgba(255, 207, 74, .35); }
+.ach-medals { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.ach-medals .medal { width: 12px; height: 12px; }
+.ach-info { flex: 1; min-width: 0; }
+.ach-nm { font-size: var(--fs-md); font-weight: 800; }
+.ach-ds { font-size: var(--fs-sm); color: var(--dim); font-weight: 600; line-height: 1.35; }
+.ach-bar { height: 5px; margin: 6px 0 3px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.ach-bar span { display: block; height: 100%; border-radius: 3px; background: var(--gold); }
+.ach-row.done .ach-bar span { background: var(--medal-gold); }
+.ach-pg { font-size: var(--fs-xs); font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
+.stats-h { margin-bottom: 10px; }
+.score-head.split { display: flex; justify-content: space-between; }
+.score-head.split span:last-child { color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat-list { margin-bottom: 0; }
+.stat-list .row:last-child { border-top: 0; padding-top: 0; margin-top: 0; }
 
 /* ------------------------------------------------- CJK typography
    The wide Latin letter-spacing used across the HUD looks broken on Chinese,
@@ -813,6 +867,7 @@ body.lang-cjk .panel .logo-sub { letter-spacing: .3em; }
   .banner.show { animation: bannerFade 2.6s linear forwards; }
   @keyframes bannerFade { 0% { opacity: 0 } 10%, 80% { opacity: 1 } 100% { opacity: 0 } }
   .toast, .toast.show { transform: translate(-50%, 0); }
+  .achieve.show { animation: bannerFade 2.6s linear forwards; }
   .heart.pop, .val.bump { transform: none; }
   .timer.warn { animation: none; }
   .panel { animation: none; }

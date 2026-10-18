@@ -39,7 +39,9 @@ class UI {
       panel: document.getElementById('panel'),
       panelInner: document.getElementById('panelInner'),
       pauseBtn: document.getElementById('pauseBtn'),
+      achieve: document.getElementById('achieve'),
     };
+    this._achQueue = [];       // achievement pop-ups waiting their turn
     this._heartCount = -1;
     this._hatCount = -1;
     this._toastTimer = 0;
@@ -195,6 +197,30 @@ class UI {
     b.classList.add('show');
   }
 
+  /**
+   * "ACHIEVEMENT · SILVER — Exterminator". One at a time: a dynamite blast
+   * that crosses two bars at once shows both, one after the other.
+   */
+  achievement(a, tier) {
+    this._achQueue.push({ a, tier });
+    if (this._achQueue.length === 1) this.nextAchievement();
+  }
+
+  nextAchievement() {
+    const item = this._achQueue[0];
+    if (!item) return;
+    const el = this.el.achieve;
+    const k = ACH_TIERS[item.tier];
+    el.innerHTML = `<span class="medal ${k}"></span><span class="achieve-txt">
+      <span class="achieve-k">${loc('ach.unlocked', { tier: loc('ach.tier.' + k) })}</span>
+      <span class="achieve-v">${loc('ach.' + item.a.id + '.name')}</span></span>`;
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    Sfx.play('bank');
+    setTimeout(() => { this._achQueue.shift(); this.nextAchievement(); }, 2700);
+  }
+
   flashHurt() {
     const h = this.el.hurt;
     h.classList.add('show');
@@ -272,7 +298,10 @@ class UI {
       ${this.dailyCard(save)}
       <button class="btn" id="startBtn">${loc('title.endless')}</button>
       ${this.onlineButtons()}
-      <button class="btn ghost" id="helpBtn">${loc('help.title')}</button>
+      <div class="btn-row">
+        <button class="btn ghost" id="helpBtn">${loc('help.title')}</button>
+        <button class="btn ghost" id="achBtn">${loc('title.achievements')}</button>
+      </div>
       <div class="stats three title-stats">
         <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
         <div class="stat"><div class="k">${loc('title.furthestMine')}</div><div class="v carry">${save.bestMine || 0}</div></div>
@@ -285,6 +314,7 @@ class UI {
     this.on('#startBtn', () => this.game.newCampaign());
     this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
     this.on('#helpBtn', () => this.help());
+    this.on('#achBtn', () => this.openOnline(() => this.achievements()));
     this.on('#wipeBtn', () => this.game.wipeSave());
     this.wirePrivacy();
     this.wireOnlineButtons();
@@ -309,6 +339,81 @@ class UI {
       if (first) { save.seenHelp = true; this.game.persist(); }
       this.title(save);
     });
+    this.wireLang();
+  }
+
+  /**
+   * Achievements, then the lifetime counters behind them. Each achievement
+   * shows the medals it has, what the next one asks for, and how close it is.
+   */
+  achievements() {
+    const save = this.game.save;
+    const s = save.stats;
+    const time = (secs) => (secs ? fmtTime(secs) : loc('stats.none'));
+
+    let earned = 0;
+    const rows = CFG.achievements.map(a => {
+      const tier = Stats.tier(a, s);
+      earned += tier;
+      const v = Stats.value(s, a.stat);
+      const done = tier >= a.tiers.length;
+      const bar = a.tiers[Math.min(tier, a.tiers.length - 1)];
+      const key = 'ach.' + a.id + '.desc';
+      const desc = a.lower ? loc(key, { t: fmtTime(bar) })
+        : loc(bar === 1 && STRINGS.en[key + '1'] ? key + '1' : key, { n: fmt(bar) });
+      // A time fills as it comes down toward the bar; a count as it climbs.
+      const pct = done ? 100 : a.lower ? (v ? clamp(bar / v, 0, 1) * 100 : 0) : clamp(v / bar, 0, 1) * 100;
+      const progress = done ? loc('ach.done')
+        : a.lower ? loc('ach.best', { t: time(v) })
+        : loc('ach.progress', { v: fmt(v), n: fmt(bar) });
+      const medals = ACH_TIERS.map((k, i) => `<span class="medal ${i < tier ? k : 'none'}"></span>`).join('');
+      return `
+        <div class="ach-row${done ? ' done' : ''}">
+          <div class="ach-medals">${medals}</div>
+          <div class="ach-info">
+            <div class="ach-nm">${loc('ach.' + a.id + '.name')}</div>
+            <div class="ach-ds">${desc}</div>
+            <div class="ach-bar"><span style="width:${pct.toFixed(1)}%"></span></div>
+            <div class="ach-pg">${progress}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const line = (k, v) => `<div class="row"><span>${loc(k)}</span><span>${v}</span></div>`;
+    const kills = (who) => KILL_CAUSES.map(c => line('stats.by.' + c, fmt(s.kills[who][c]))).join('');
+    // A section's total rides in its heading; the rows under it break it down.
+    const section = (k, total, body) => `<div class="scores">
+      <div class="score-head split"><span>${loc(k)}</span><span>${total === undefined ? '' : fmt(total)}</span></div>
+      <div class="help ledger stat-list">${body}</div></div>`;
+    const stats =
+      section('stats.gems', s.gems.reduce((a, b) => a + b, 0),
+        ['sapphire', 'emerald', 'ruby', 'diamond'].map((k, i) => line('stats.' + k, fmt(s.gems[i]))).join('') +
+        line('stats.hearts', fmt(s.hearts))) +
+      section('stats.spiders', Stats.kills(s, 'spider'), kills('spider')) +
+      section('stats.bats', Stats.kills(s, 'bat'), kills('bat')) +
+      section('stats.other', undefined, `
+        ${line('stats.fastest', time(s.fastest))}
+        ${line('stats.bestHaul', fmt(Highscore.best()))}
+        ${line('stats.bestMine', fmt(save.bestMine || 0))}
+        ${line('stats.deepest', loc('common.metres', { n: save.best || 0 }))}
+        ${line('stats.recovered', fmt(s.recovered))}
+        ${line('stats.stolen', fmt(s.stolen))}
+        ${line('stats.dynamite', fmt(s.dynamite))}
+        ${line('stats.runs', fmt(s.runs))}
+        ${line('stats.deaths', fmt(s.deaths))}`);
+
+    const max = CFG.achievements.reduce((n, a) => n + a.tiers.length, 0);
+    this._repaint = () => this.achievements();
+    this.show(`
+      ${this.langButton()}
+      <h2>${loc('ach.title')}</h2>
+      <div class="sub">${loc('ach.sub', { n: earned, max })}</div>
+      <div class="ach-list">${rows}</div>
+      <h2 class="stats-h">${loc('stats.title')}</h2>
+      ${stats}
+      ${this.backButton()}
+    `);
+    this.wireBack();
     this.wireLang();
   }
 
@@ -361,9 +466,13 @@ class UI {
   /** A name on a board: the player's pick, or Miner#1234 until they pick one. */
   playerName(name, tag) { return name ? esc(name) : loc('name.anon', { tag: esc(tag) }); }
 
+  /**
+   * Medals won on past dailies, as "● ×2". The count sits beside the medal,
+   * never on it: a number on a gold disc reads as a placing, not a tally.
+   */
   medalTally(r) {
     const m = ['gold', 'silver', 'bronze'].filter(k => r[k] > 0)
-      .map(k => `<span class="medal ${k}">${r[k]}</span>`).join('');
+      .map(k => `<span class="medal-count ${k}"><span class="medal ${k}"></span>×${r[k]}</span>`).join('');
     return m ? `<span class="medals">${m}</span>` : '';
   }
 
@@ -533,9 +642,9 @@ class UI {
           ${this.onlineStatus(st.res, '', false)}
           ${nameBlock}
           <div class="medal-row">
-            <div class="medal-big gold"><span></span>${d.gold}</div>
-            <div class="medal-big silver"><span></span>${d.silver}</div>
-            <div class="medal-big bronze"><span></span>${d.bronze}</div>
+            <div class="medal-big gold"><span></span>×${d.gold}</div>
+            <div class="medal-big silver"><span></span>×${d.silver}</div>
+            <div class="medal-big bronze"><span></span>×${d.bronze}</div>
           </div>
           <div class="stats">
             ${stat('prof.bestEndless', fmt(d.best_endless || 0), 'gold')}
