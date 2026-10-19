@@ -567,6 +567,10 @@ class Game {
       const lv = Math.min(level, u.max - 1);
       return { n: Player.dynCapacityFor(lv + 1) - Player.dynCapacityFor(lv) };
     }
+    if (u.id === 'pick') {
+      // Quote the chance the next level brings (or the final one, once maxed).
+      return { n: Math.round(Player.pickChanceFor(Math.min(level + 1, u.max)) * 100) };
+    }
     return null;
   }
 
@@ -605,6 +609,7 @@ class Game {
       if (id === 'jump') p.jumpVel = Player.jumpVelFor(lv.jump);
       if (id === 'helmet') { p.hatMax += CFG.upgradeEffect.helmet; p.hat = p.hatMax; this.ui.syncHat(p); }
       if (id === 'blast') p.blast = Player.blastFor(lv.blast);
+      if (id === 'pick') p.pickChance = Player.pickChanceFor(lv.pick);
     }
     this.ui.syncWallet(this);
 

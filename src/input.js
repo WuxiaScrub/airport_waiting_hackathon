@@ -178,9 +178,10 @@ class Input {
       ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r',
       ArrowUp: 'u', KeyW: 'u', ArrowDown: 'd', KeyS: 'd',
     };
-    const isMine = (c) => c === 'KeyJ' || c === 'Enter' || c === 'KeyE';
+    // J / K / L mirror the touch buttons left to right: dynamite, jump, mine.
+    const isMine = (c) => c === 'KeyL' || c === 'Enter' || c === 'KeyE';
     const isJump = (c) => c === 'Space' || c === 'KeyK';
-    const isDyn = (c) => c === 'KeyF' || c === 'KeyL' || c === 'Digit2';
+    const isDyn = (c) => c === 'KeyJ' || c === 'KeyF' || c === 'Digit2';
 
     window.addEventListener('keydown', (e) => {
       if (e.repeat) { if (map[e.code] || isJump(e.code)) e.preventDefault(); return; }

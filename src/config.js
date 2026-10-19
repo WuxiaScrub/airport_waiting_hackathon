@@ -202,7 +202,7 @@ const CFG = {
   // score). Walking out without it, or dying, ends the campaign — and the next
   // one starts from mine 1 with base stats. Nothing carries between campaigns.
   campaign: {
-    heartstoneStep: 40,  // rows deeper the Heartstone sits in each later mine
+    heartstoneStep: 30,  // rows deeper the Heartstone sits in each later mine
     fusePerMine: 90,     // extra seconds on the eruption clock per later mine
     // Enemy pressure by mine (last entry repeats). Scales both how often
     // things spawn and how many may be alive at once. Mine 1 is played on base
@@ -257,6 +257,7 @@ const CFG = {
     { id: 'dynamite', max: 9, base: 90,  step: 1.90 },  // 3 + 2/lvl, capped at 20
     { id: 'helmet',   max: 3, base: 55,  step: 2.00 },
     { id: 'blast',    max: 1, base: 1000, step: 1 },    // 3x3 -> 5x5 dynamite
+    { id: 'pick',     max: 8, base: 500, step: 1.40 },  // 30% -> 100% one-swing dirt
   ],
 
   upgradeEffect: {
@@ -267,6 +268,10 @@ const CFG = {
     dynamite: 2,         // sticks per level
     helmet: 1,           // hard-hat charges per level
     jump: 1.15,          // extra launch speed per level (~+0.6 tiles of height)
+    // Sharpened Pick: chance a swing breaks soft dirt outright. The first level
+    // buys `pickBase`, each further level adds `pick`; 8 levels reach 100%.
+    pickBase: 0.30,
+    pick: 0.10,
   },
 
   audio: {
