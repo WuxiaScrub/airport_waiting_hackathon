@@ -445,6 +445,18 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   animation: fade .2s ease;
 }
 .panel.hidden { display: none; }
+/* The title sits low and lets the demo mine show through above it: a plain
+   gradient instead of the blur, which would have to be re-run every frame. */
+.panel.demo {
+  align-items: end;
+  background: linear-gradient(180deg, rgba(4,3,9,.05) 0%, rgba(4,3,9,.2) 35%, rgba(4,3,9,.82) 72%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.panel.demo .panel-inner { background: linear-gradient(180deg, rgba(25,19,39,.94), rgba(20,16,31,.97)); }
+/* No HUD or controls while the demo miner is playing. */
+body.attract #hud, body.attract #hudScrim, body.attract #controls,
+body.attract #toast, body.attract #banner { display: none; }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 
 .panel-inner {

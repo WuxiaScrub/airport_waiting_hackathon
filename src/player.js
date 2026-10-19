@@ -373,7 +373,7 @@ class Player {
 
   /** Returns true if the hit actually landed (i-frames can eat it). */
   hurt(amount, game, kx, ky, ignoreInvuln) {
-    if (this.dead) return false;
+    if (this.dead || game.demo) return false;   // the title-screen miner can't be hurt
     if (this.invuln > 0 && !ignoreInvuln) return false;
 
     this.health -= amount;

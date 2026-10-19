@@ -294,6 +294,21 @@ const CFG = {
     stun: 2.5,           // seconds knocked-away spiders stay dazed
   },
 
+  // The miner who plays behind the title screen (src/demo.js). A fresh mine
+  // replaces the demo's after `maxTime` seconds, below `maxDepth`, or once the
+  // miner has been stuck for `stuckReset` seconds.
+  demo: {
+    maxTime: 110,
+    maxDepth: 45,
+    stuckReset: 5,
+    fightRange: 1.9,     // tiles: an enemy this close gets the pickaxe
+    gemReach: 3,         // tiles sideways the miner will tunnel for a gem
+    tunnelEvery: 6,      // tiles of depth between exploratory side tunnels
+    boomEvery: [16, 26], // seconds between sticks of dynamite
+    volume: 0.35,        // the demo's sound effects, relative to the real game's
+    camLift: 0.23,       // the miner sits this fraction of the screen above centre, clear of the menu
+  },
+
   // Lifetime achievements. Each reads one counter from the save (see
   // Stats.value in src/stats.js) and one bar per level, I, II, III… in order.
   // Add a bar to the end of a list to give that achievement another level.
