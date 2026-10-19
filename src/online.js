@@ -99,9 +99,12 @@ const Online = {
       const res = await this.client.rpc(name, args || {});
       if (res.error) {
         const msg = res.error.message || '';
-        // Our own codes are single snake_case words; anything else is the
-        // network or the platform, and is worth trying again later.
-        const code = /^[a-z_]+$/.test(msg) ? msg : 'network';
+        // Our own codes are single snake_case words. Status 0 means the
+        // request never got an answer; anything else is the platform (a
+        // missing function, a permission, a SQL error). Both are worth
+        // trying again later, but only the first is "offline".
+        const code = /^[a-z_]+$/.test(msg) ? msg : res.status === 0 ? 'network' : 'server';
+        if (code === 'server') console.warn('[online] ' + name + ' failed:', res.status, res.error.code, msg);
         if (code === 'update_required') this.updateRequired = true;
         return { ok: false, offline: code === 'network', error: code };
       }

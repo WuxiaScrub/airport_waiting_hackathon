@@ -276,7 +276,7 @@ const CFG = {
     // crossfade in seconds.
     music: {
       tracks: {
-        menu: { src: 'assets/audio/menu_loop.mp3', volume: 0.5 },
+        menu: { src: 'assets/audio/menu_loop.mp3', volume: 0.35 },
         game: { src: 'assets/audio/bgm.mp3', volume: 0.32 },
       },
       duck: 0.45,
