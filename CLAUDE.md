@@ -219,6 +219,8 @@ Initial upgrades:
 * Dynamite capacity
 * Hard hat — absorbs falling dirt, one charge per level, re-forms over time
 * Big Bang — one expensive level; dynamite clears 5×5 instead of 3×3
+* Sharpened Pick — chance a swing breaks soft dirt in one hit: 30% at the first
+  level, +10% a level, 100% at the eighth
 
 Keep upgrades simple and data-driven.
 

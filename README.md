@@ -40,9 +40,9 @@ GitHub Actions*.
 | ---------- | --------------------------------------- | ----------------------- |
 | Move       | Drag left/right on the left half         | `A` / `D` or ← / →      |
 | Aim        | Push the stick up or down                | `W` / `S` or ↑ / ↓      |
-| Mine / hit | Hold **MINE**                            | Hold `J` / `Enter`      |
-| Jump       | Tap **JUMP**                             | `Space` (hold for height) |
-| Dynamite   | Tap **BOMB** (drops at your feet)        | `F`                     |
+| Mine / hit | Hold **MINE**                            | Hold `L` / `Enter`      |
+| Jump       | Tap **JUMP**                             | `K` / `Space` (hold for height) |
+| Dynamite   | Tap **BOMB** (drops at your feet)        | `J` / `F`               |
 | Pause      | —                                        | `Esc`                   |
 | Mute       | Pause menu                               | `M`                     |
 
@@ -137,7 +137,7 @@ exchange for the biggest payout in the game.
 
 ### Campaigns
 
-Carry the Heartstone out and the **next mine** opens: the Heartstone sits 40 m
+Carry the Heartstone out and the **next mine** opens: the Heartstone sits 30 m
 deeper, the eruption clock gets 90 s longer, and more cave bugs and bats come for
 you (the first mine is deliberately gentle). Your **upgrades come with you**;
 your gems do not — what you carried out is score, and you start the next mine

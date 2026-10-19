@@ -34,6 +34,11 @@ class Player {
   static blastFor(level) {
     return (level || 0) * CFG.dynamite.radiusPerLevel;
   }
+  /** Chance (0..1) a swing breaks soft dirt in one hit — the Sharpened Pick. */
+  static pickChanceFor(level) {
+    if (!level) return 0;
+    return Math.min(1, CFG.upgradeEffect.pickBase + (level - 1) * CFG.upgradeEffect.pick);
+  }
 
   constructor(x, y, upgrades) {
     this.x = x; this.y = y;
@@ -49,6 +54,7 @@ class Player {
     this.jumpVel = Player.jumpVelFor(upgrades.jump);
     this.hatMax = (upgrades.helmet || 0) * CFG.upgradeEffect.helmet;
     this.blast = Player.blastFor(upgrades.blast);
+    this.pickChance = Player.pickChanceFor(upgrades.pick);
     this.hat = this.hatMax;
     this.hatTimer = 0;
 
@@ -330,7 +336,11 @@ class Player {
       didSomething = true;
     }
 
-    const res = game.world.damage(tt.x, tt.y);
+    // The sharpened pick sometimes takes soft dirt in one swing; gems still take two.
+    const w = game.world;
+    const clean = this.pickChance > 0 && w.get(tt.x, tt.y) === T.DIRT &&
+      Math.random() < this.pickChance;
+    const res = w.damage(tt.x, tt.y, clean ? CFG.mining.dirtHits : 1);
     if (res === 'broke') {
       Sfx.play('break');
       game.shake(3);
