@@ -139,6 +139,15 @@ const Sfx = {
         [0, 4, 7, 12, 16, 19].forEach((s, i) =>
           this._tone('triangle', 330 * Math.pow(2, s / 12), 0, 0.5, 0.19, i * 0.12));
         break;
+      case 'hiss':      this._noise(0.55, 0.20 * v, 'highpass', 3600, 2400); break;
+      case 'whoosh':
+        this._noise(0.45, 0.60 * v, 'lowpass', 2400, 180);
+        this._tone('sine', 90, 40, 0.35, 0.30 * v);
+        break;
+      case 'rumble':
+        this._noise(0.6, 0.38 * v, 'lowpass', 260, 70);
+        this._tone('sawtooth', 48, 34, 0.55, 0.16 * v);
+        break;
       case 'heart':
         this._tone('sine', 160, 640, 0.9, 0.34);
         this._tone('sine', 240, 960, 1.1, 0.22, 0.08);

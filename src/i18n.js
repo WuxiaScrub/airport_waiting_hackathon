@@ -85,6 +85,8 @@ const STRINGS = {
     'help.credits': 'Music: “8-bit Lofi Ice Cave” by TAD (CC BY 4.0) · “Dark Ambiance” by tarfmagougou (CC BY-SA 3.0), from OpenGameArt.org',
     'help.dark.k': 'THE DARK',
     'help.dark.v': 'Your lamp is all the light there is. <b>Cave bugs</b> dig after you and pounce — watch for the wind-up. <b>Bats</b> cannot dig, but they steal your best gem: kill one before it gets away to take it back.',
+    'help.deep.k': 'DEEPER',
+    'help.deep.v': 'From mine 2, <b>bubbling dirt</b> hides gas that drifts up your tunnels — keep dynamite and lava away from it. From mine 3, a <b>great worm</b> bores across the mine: get out of the red band when the ground rumbles.',
 
     /* Shop */
     'shop.supplyLantern': 'SUPPLY LANTERN',
@@ -294,6 +296,13 @@ const STRINGS = {
     'fx.recovered': 'RECOVERED',
     'fx.clunk': 'CLUNK!',
 
+    // First-encounter cards for the hazards that join in later mines
+    'hint.new': 'NEW DANGER',
+    'hint.gas.title': 'Gas pocket',
+    'hint.gas.body': 'Bubbling dirt hides firedamp. It drifts up your tunnels, and dynamite or lava sets it alight.',
+    'hint.worm.title': 'The Tunneler',
+    'hint.worm.body': 'A great worm is boring through this row. Get out of the red band, and watch for falling dirt behind it.',
+
     /* Stats & achievements */
     'ach.title': 'ACHIEVEMENTS',
     'ach.sub': '{n} of {max} levels unlocked · kept on this device',
@@ -427,6 +436,8 @@ const STRINGS = {
     'help.credits': '音乐：“8-bit Lofi Ice Cave”，作者 TAD（CC BY 4.0）·“Dark Ambiance”，作者 tarfmagougou（CC BY-SA 3.0），来自 OpenGameArt.org',
     'help.dark.k': '黑暗',
     'help.dark.v': '头灯是你唯一的光。<b>洞穴虫</b>会挖洞追你、扑上来咬 —— 看到它蓄力就快躲。<b>蝙蝠</b>不会挖洞，但会叼走你最值钱的宝石：趁它没飞远打下来，就能抢回来。',
+    'help.deep.k': '更深处',
+    'help.deep.v': '从第 2 关起，<b>冒泡的泥土</b>里藏着瓦斯，会顺着坑道往上飘 —— 别让炸药和岩浆碰到它。从第 3 关起，会有<b>钻地巨虫</b>横穿矿井：地面一震动，就赶紧离开红色区域。',
 
     /* Shop */
     'shop.supplyLantern': '补给站',
@@ -635,6 +646,12 @@ const STRINGS = {
     'fx.gone': '被叼走了',
     'fx.recovered': '抢回来了',
     'fx.clunk': '哐！',
+
+    'hint.new': '新的危险',
+    'hint.gas.title': '瓦斯层',
+    'hint.gas.body': '冒泡的泥土里藏着瓦斯。它会顺着坑道往上飘，炸药或岩浆一碰就着。',
+    'hint.worm.title': '钻地巨虫',
+    'hint.worm.body': '一条巨虫正从这一排钻过来。快离开红色区域，小心它身后塌下来的土。',
 
     /* Stats & achievements */
     'ach.title': '成就',

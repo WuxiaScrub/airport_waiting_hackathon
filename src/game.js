@@ -25,6 +25,7 @@ class Game {
     this.gems = [];
     this.dynamites = [];
     this.blocks = [];
+    this.worms = [];
     this.carry = [];
     this.checkpointLock = null;
     this.demo = null;              // the autopilot playing behind the title (src/demo.js)
@@ -54,7 +55,7 @@ class Game {
   load() {
     // Screen shake starts off for players whose device asks for less motion.
     const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, daily: null, stats: Stats.blank() };
+    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, daily: null, stats: Stats.blank(), seen: {} };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -72,6 +73,8 @@ class Game {
         daily: s.daily && typeof s.daily.date === 'string' ? { date: s.daily.date, best: s.daily.best || 0 } : null,
         // Lifetime counters behind the achievements — see src/stats.js.
         stats: Stats.from(s.stats),
+        // Hazards the player has already been warned about: { gas, worm }.
+        seen: s.seen && typeof s.seen === 'object' ? { gas: !!s.seen.gas, worm: !!s.seen.worm } : {},
       };
     } catch (e) { return blank; }
   }
@@ -82,7 +85,7 @@ class Game {
 
   /** Records go; settings stay. The caller decides which panel to show next. */
   wipeSave() {
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, daily: null, stats: Stats.blank() };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, daily: null, stats: Stats.blank(), seen: {} };
     this.persist();
     Highscore.reset();
   }
@@ -108,6 +111,7 @@ class Game {
 
   /** Every enemy death lands here, with how it happened. */
   recordKill(e, cause) {
+    if (cause === 'worm') return;   // the Tunneler's doing, not the player's
     const who = e instanceof Bat ? 'bat' : 'caveBug';
     const how = KILL_CAUSES.indexOf(cause) >= 0 ? cause : 'pick';
     this.track(s => { s.kills[who][how]++; });
@@ -155,6 +159,29 @@ class Game {
   }
 
   /**
+   * Which hazards this mine has. A campaign brings them in a mine at a time
+   * (gas from `CFG.gas.fromMine`, the worm from `CFG.worm.fromMine`). The
+   * daily rolls for each from its seed, so a given day has them for everyone
+   * or for no one; it then gets the gentlest level of each.
+   * Returns { gas: pockets per 100 rows, worm: passes }.
+   */
+  hazards(seed) {
+    const c = this.campaign;
+    const level = (list, from) => list[Math.min(c.mine - from, list.length - 1)];
+    if (c.daily) {
+      const r = new RNG(seed ^ 0x2c1b3c6d);
+      return {
+        gas: r.chance(CFG.gas.dailyChance) ? CFG.gas.pockets[0] : 0,
+        worm: r.chance(CFG.worm.dailyChance) ? CFG.worm.passes[0] : 0,
+      };
+    }
+    return {
+      gas: c.mine >= CFG.gas.fromMine ? level(CFG.gas.pockets, CFG.gas.fromMine) : 0,
+      worm: c.mine >= CFG.worm.fromMine ? level(CFG.worm.passes, CFG.worm.fromMine) : 0,
+    };
+  }
+
+  /**
    * `quiet` builds the title screen's mine: no toast, nothing saved, and the
    * demo miner at the controls (unless the device asks for reduced motion).
    */
@@ -173,14 +200,19 @@ class Game {
     this.fuse = CFG.lava.fuse + (mine - 1) * CFG.campaign.fusePerMine;
 
     const seed = this.campaign.daily ? dailySeed(this.campaign.daily) : (Math.random() * 0xffffffff) >>> 0;
-    this.world = new World(seed, this, heartRow);
+    const hz = this.hazards(seed);
+    this.world = new World(seed, this, heartRow, hz.gas);
     this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.campaign.upgrades);
     this.enemies.length = 0;
     this.gems.length = 0;
     this.dynamites.length = 0;
     this.blocks.length = 0;
+    this.worms.length = 0;
     this.carry.length = 0;
     this.fx.clear();
+    this.wormLeft = hz.worm;
+    this.wormTimer = randRange(CFG.worm.firstDelay);
+    this._hissAt = -1; this._whooshAt = -1;
     this.tempLights.length = 0;
 
     this.volcano = false;
@@ -397,6 +429,8 @@ class Game {
       const b = this.blocks[i];
       if (Math.hypot(b.x - p.x, b.y - p.y) <= R.clearRadius) this.blocks.splice(i, 1);
     }
+    // A worm still going through is sent back into the rock.
+    this.worms.length = 0;
 
     this.closePanel();
     this.ui.syncHealth(p);
@@ -754,6 +788,85 @@ class Game {
     return null;
   }
 
+  /* -------------------------------------------------------------- hazards */
+
+  /**
+   * A one-off card the first time a player meets a hazard, ever, on this
+   * device. It does not pause the game, so it is kept to two short lines.
+   */
+  firstSight(id) {
+    if (this.demo || this.save.seen[id]) return false;
+    this.save.seen[id] = true;
+    this.persist();
+    this.ui.hint(loc('hint.' + id + '.title'), loc('hint.' + id + '.body'));
+    return true;
+  }
+
+  onGasReleased(x, y, amount) {
+    this.fx.drift(x, y, Math.ceil(amount * 6), ['#c8d870', '#a8c060', '#e0eaa0'],
+      { life: 1.2, size: 0.18, rise: 0.8, spread: 0.8, glow: false });
+    if (this.time - this._hissAt > 0.25) { this._hissAt = this.time; Sfx.play('hiss'); }
+    this.firstSight('gas');
+  }
+
+  onGasIgnited(x, y) {
+    this.fx.burst(x, y, 4, ['#fff3c4', '#ffb03a', '#ff6a1e'], { speed: 4, life: 0.4, size: 0.2, grav: -3, glow: true });
+    if (this.time - this._whooshAt > 0.15) {
+      this._whooshAt = this.time;
+      Sfx.play('whoosh');
+      this.shake(4);
+    }
+  }
+
+  /** Fire hurts whoever stands in it and cooks off any dynamite lying in it. */
+  updateFire() {
+    const w = this.world;
+    if (w.burning.length === 0) return;
+    const p = this.player;
+    if (!p.dead && w.burningAt(p.x, p.y)) p.hurt(CFG.gas.damage, this, 0, -1);
+    for (const e of this.enemies) {
+      if (!e.dead && w.burningAt(e.x, e.y)) e.hurt(CFG.gas.enemyDamage, this, 0, -1, 'dynamite');
+    }
+    for (const d of this.dynamites) {
+      if (!d.dead && w.burningAt(d.x, d.y)) d.fuse = Math.min(d.fuse, 0.12);
+    }
+  }
+
+  /** The worm comes a set number of times a mine, never while the volcano is awake. */
+  updateWorms(dt) {
+    for (let i = this.worms.length - 1; i >= 0; i--) {
+      this.worms[i].update(dt, this);
+      if (this.worms[i].dead) this.worms.splice(i, 1);
+    }
+    if (this.demo || this.wormLeft <= 0 || this.volcano || this.player.dead || this.worms.length) return;
+    this.wormTimer -= dt;
+    if (this.wormTimer > 0 || this.depth() < CFG.worm.minDepth) return;
+
+    const row = this.wormRow();
+    if (row === null) { this.wormTimer = 4; return; }
+    // Usually from the far side, so the warning has room to be read.
+    const far = this.player.x < this.world.w / 2 ? -1 : 1;
+    const dir = Math.random() < 0.75 ? far : -far;
+    const first = this.firstSight('worm');
+    this.worms.push(new Tunneler(this.world, row, dir, first ? CFG.worm.firstWarn : CFG.worm.warn));
+    this.wormLeft--;
+    this.wormTimer = randRange(CFG.worm.interval);
+  }
+
+  /** A row near the player that keeps the worm clear of stations and the Heartstone chamber. */
+  wormRow() {
+    const W = CFG.worm, w = this.world, every = CFG.world.checkpointEvery;
+    const py = Math.floor(this.player.y);
+    for (let i = 0; i < 20; i++) {
+      const row = py + Math.round((Math.random() * 2 - 1) * W.offset);
+      if (row < w.surface + 6 || row > w.heartRow - 12) continue;
+      const rel = (row - w.surface) % every;
+      if (rel <= 4 || rel >= every - 2) continue;
+      return row;
+    }
+    return null;
+  }
+
   /* -------------------------------------------------------------- volcano */
 
   /** `cause` is 'heartstone' (the climax) or 'timer' (the clock ran out). */
@@ -851,6 +964,8 @@ class Game {
     if (this.player.dead) this.deathAnim += dt;
 
     this.world.update(dt);
+    this.updateFire();
+    this.updateWorms(dt);
     if (!demo) this.updateFuse(dt);
     this.updateLava(dt);
     this.updateSpawns(dt);
@@ -967,7 +1082,10 @@ class Game {
       if (y < 0 || y >= w.h) continue;
       for (let x = px - r; x <= px + r; x++) {
         if (x < 0 || x >= w.w) continue;
-        if (dist2(x + 0.5, y + 0.5, p.x, p.y) <= r2) w.explored[y * w.w + x] = 1;
+        if (dist2(x + 0.5, y + 0.5, p.x, p.y) > r2) continue;
+        const i = y * w.w + x;
+        w.explored[i] = 1;
+        if (w.t[i] === T.GAS && !this.save.seen.gas) this.firstSight('gas');
       }
     }
   }
@@ -989,6 +1107,11 @@ class Game {
       L.push({ x: c.x + 0.5, y: c.y + 0.5, r: c.spent ? 2.2 : 5.2, a: c.spent ? 0.5 : 0.9 });
     }
     for (const d of this.dynamites) L.push({ x: d.x, y: d.y, r: 2.6, a: 0.8 });
+    const w = this.world;
+    for (let k = 0; k < w.burning.length && k < 40; k++) {
+      const i = w.burning[k];
+      L.push({ x: (i % w.w) + 0.5, y: ((i / w.w) | 0) + 0.5, r: 2.2, a: 0.9 });
+    }
     for (const g of this.gems) L.push({ x: g.x, y: g.y, r: g.heart ? 5 : 1.5, a: 0.75 });
 
     for (let i = this.tempLights.length - 1; i >= 0; i--) {

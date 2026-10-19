@@ -165,6 +165,8 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 
 - **Seed**: `hash('forevermine-daily|' + YYYY-MM-DD (UTC) + '|' + gen_version)`
   → `World` seed. Enemies keep `Math.random()`, so each attempt differs.
+  Since gen_version 2 the seed also rolls whether the day has gas pockets and
+  the Tunneler worm (`Game.hazards`); the worm's timing and path stay random.
 - **Rules**: mine-1 settings (Heartstone row and threat level); base stats; full
   satchel; shops work as normal. Score = whatever is carried out through the
   camp, plus 7,000 for the Heartstone. A death scores 0. The score is still

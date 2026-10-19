@@ -40,6 +40,9 @@ class RNG {
   }
 }
 
+/** A uniform random number in [lo, hi], from a `[lo, hi]` pair in the config. */
+function randRange(pair) { return pair[0] + Math.random() * (pair[1] - pair[0]); }
+
 /** Stable hash -> [0,1). Used as the lattice for value noise. */
 function hash2(x, y, seed) {
   let h = (x * 374761393 + y * 668265263 + seed * 2246822519) | 0;

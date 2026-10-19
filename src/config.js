@@ -185,6 +185,57 @@ const CFG = {
     penDistance: 2.0,    // less ground than this in a window = walled in, give up
   },
 
+  // Firedamp. From `fromMine` on, some soft dirt hides a pocket of gas. The
+  // first swing at one hisses (the tell); breaking it lets the gas out, and
+  // the cloud drifts UP your tunnels. Gas is harmless until a dynamite blast,
+  // the lava, or a burning neighbour lights it — then the flame races through
+  // every cell of the cloud and bursts any pocket it touches.
+  gas: {
+    fromMine: 2,
+    // Pockets per 100 rows of mine, by mine counted from `fromMine` (the last
+    // entry repeats). A daily mine with gas uses the first entry.
+    pockets: [5, 7, 9, 11],
+    dailyChance: 0.5,    // chance a given day's daily mine has gas
+    pocketSize: [3, 6],  // tiles in one pocket
+    topClear: 12,        // rows under the surface kept free of pockets
+    release: 1.0,        // gas let out by breaking one pocket tile
+    leak: 0.3,           // ...of which this much escapes on the first (cracking) hit
+    tick: 0.1,           // seconds per diffusion step
+    rise: 0.42,          // share of a cell's gas that moves up each step
+    spread: 0.12,        // share that moves to each open side each step
+    decay: 0.045,        // share lost per second (a cloud lasts ~20s)
+    surfaceDecay: 0.6,   // ...and per second once it reaches open sky
+    ignite: 0.06,        // a cell needs at least this much gas to burn
+    spreadDelay: 0.06,   // seconds before a burning cell lights its neighbours
+    burn: 0.4,           // seconds a cell burns
+    damage: 1,
+    enemyDamage: 3,
+  },
+
+  // The Tunneler. From `fromMine` on, a great worm crosses the mine a few
+  // times, side to side, boring a tunnel through soft dirt (rock it slides
+  // past). It doesn't hunt and can't be killed — it is a terrain event. It
+  // rumbles a warning first, hurts whatever it touches, and leaves loosened
+  // dirt over its tunnel, so a collapse follows it.
+  worm: {
+    fromMine: 3,
+    // Passes per mine counted from `fromMine` (last entry repeats). A daily
+    // mine with the worm uses the first entry.
+    passes: [1, 2, 3],
+    dailyChance: 0.4,    // chance a given day's daily mine has the worm
+    firstDelay: [45, 90],// seconds into a mine before the first pass may come
+    interval: [60, 110], // seconds between passes
+    minDepth: 15,        // rows under the surface the player must be
+    offset: 5,           // its row is within this many of the player's
+    warn: 2.2,           // seconds of rumble before it breaks through
+    firstWarn: 3.6,      // ...the very first time a player meets one
+    speed: 5.2,          // tiles/sec, a little faster than the miner runs
+    length: 7,           // body segments
+    wave: 1.3,           // tiles its path undulates up and down
+    loosen: 0.5,         // chance each dirt tile over the tunnel is loosened
+    damage: 1,
+  },
+
   spawn: {
     interval: 7.0,       // base seconds between spawn attempts
     intervalDepth: 0.028,// shortened by this much per row of depth
@@ -347,7 +398,7 @@ const CFG = {
     url: 'https://uyxpfuhedfqzvxmmjyti.supabase.co',
     key: 'sb_publishable_acqASii6zBrNZ8vDSwbxgg_HfcQltjP',
     gameVersion: '1.0.0',  // compared against app_config.min_game_version
-    genVersion: 1,         // bump whenever world generation changes: the same
+    genVersion: 2,         // bump whenever world generation changes: the same
                            // daily seed must build the same mine for everyone
     nameCooldownDays: 30,  // mirrors app_config.name_cooldown_days (display only)
   },
@@ -391,7 +442,8 @@ const T = {
   LAVA: 5,
   HEART: 6,
   BEDROCK: 7,
+  GAS: 8,       // soft dirt with a pocket of firedamp inside
 };
 
-const SOLID = { 0: 0, 1: 1, 2: 1, 3: 1, 4: 0, 5: 0, 6: 1, 7: 1 };
-const MINEABLE = { 1: 1, 3: 1, 6: 1 };
+const SOLID = { 0: 0, 1: 1, 2: 1, 3: 1, 4: 0, 5: 0, 6: 1, 7: 1, 8: 1 };
+const MINEABLE = { 1: 1, 3: 1, 6: 1, 8: 1 };

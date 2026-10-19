@@ -40,6 +40,7 @@ class UI {
       panelInner: document.getElementById('panelInner'),
       pauseBtn: document.getElementById('pauseBtn'),
       achieve: document.getElementById('achieve'),
+      hint: document.getElementById('hint'),
     };
     this._achQueue = [];       // achievement pop-ups waiting their turn
     this._back = [];           // panels to return to, innermost last — see open()
@@ -224,6 +225,21 @@ class UI {
     setTimeout(() => { this._achQueue.shift(); this.nextAchievement(); }, 2700);
   }
 
+  /**
+   * A first-encounter card for a new hazard: what it is, and what to do about
+   * it. It does not pause the game, and the game only ever sends each one once.
+   */
+  hint(title, body) {
+    if (this.game.demo) return;
+    const el = this.el.hint;
+    el.innerHTML = `<span class="hint-k">${loc('hint.new')}</span>
+      <span class="hint-t">${title}</span><span class="hint-b">${body}</span>`;
+    el.classList.remove('show');
+    void el.offsetWidth;
+    el.classList.add('show');
+    Sfx.play('alert', { v: 0.6 });
+  }
+
   flashHurt() {
     if (this.game.demo) return;
     const h = this.el.hurt;
@@ -343,7 +359,7 @@ class UI {
 
   /** How to play: one row per rule. Only opens from the title's button. */
   help() {
-    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark'].map(k =>
+    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark', 'deep'].map(k =>
       `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
 
     this._repaint = () => this.help();

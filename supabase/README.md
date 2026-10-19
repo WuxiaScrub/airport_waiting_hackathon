@@ -17,6 +17,7 @@ Run each file in `migrations/`, **in order**, in the Supabase dashboard:
 | `002_banned_words.sql` | Starter display-name blocklist (English + Chinese). |
 | `003_daily_medals_job.sql` | Schedules the medal award at 01:05 UTC daily (needs pg_cron). |
 | `004_name_regex_ascii.sql` | Rewrites `set_display_name`'s character checks as ASCII escapes, so a paste can't break them. |
+| `005_gen_version_2.sql` | Moves the daily board to generator version 2 (gas pockets and the worm in the daily). |
 
 Never edit a file that has already been run — add the next number instead. Keep
 migrations plain ASCII: the SQL Editor can silently drop invisible characters
@@ -79,6 +80,7 @@ psql -d fm -f supabase/tests/00_supabase_stub.sql
 psql -d fm -f supabase/migrations/001_core.sql
 psql -d fm -f supabase/migrations/002_banned_words.sql
 psql -d fm -f supabase/migrations/004_name_regex_ascii.sql
+psql -d fm -f supabase/migrations/005_gen_version_2.sql
 psql -d fm -f supabase/tests/10_behaviour.sql   # ERROR lines are expected rejections
 psql -d fm -f supabase/tests/20_medals.sql
 ```

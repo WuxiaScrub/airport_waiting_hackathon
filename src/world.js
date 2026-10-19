@@ -6,12 +6,16 @@
  * ========================================================================== */
 
 class World {
-  /** `heartRow` is where this mine's Heartstone sits — deeper in later mines. */
-  constructor(seed, game, heartRow) {
+  /**
+   * `heartRow` is where this mine's Heartstone sits — deeper in later mines.
+   * `gasPockets` is how many gas pockets per 100 rows it hides (0 = none).
+   */
+  constructor(seed, game, heartRow, gasPockets) {
     this.game = game;
     this.seed = seed >>> 0;
     this.rng = new RNG(seed);
     this.heartRow = heartRow || CFG.world.heartstoneRow;
+    this.gasPockets = gasPockets || 0;
     this.w = CFG.world.width;
     this.h = this.heartRow + CFG.world.bottomPad;
     this.surface = CFG.world.surfaceRow;
@@ -22,6 +26,13 @@ class World {
     this.gem = new Uint8Array(n);        // gem type + 1, 0 = none
     this.explored = new Uint8Array(n);   // fog-of-war memory
     this.variant = new Uint8Array(n);    // visual variant index
+    this.gas = new Float32Array(n);      // loose firedamp in open cells
+    this.gasNext = new Float32Array(n);  // scratch buffer for a diffusion step
+    this.fire = new Float32Array(n);     // seconds a cell has left to burn
+    this.fireSpread = new Uint8Array(n); // 1 once a burning cell lit its neighbours
+    this.burning = [];                   // indices of burning cells
+    this.gasLive = false;                // any loose gas at all? (skip the sim if not)
+    this.gasClock = 0;
 
     this.pendingFalls = new Map();       // tile index -> seconds until it drops
     this.checkpoints = [];               // {x, y, home, spent} of every station
@@ -118,6 +129,33 @@ class World {
     this.carveCheckpoints();
     this.carveHeartstoneChamber();
     this.ensureRowsPassable();
+    if (this.gasPockets > 0) this.placeGasPockets();
+  }
+
+  /**
+   * Firedamp pockets: small blobs of soft dirt turned to gas tiles. They roll
+   * on their own RNG, after everything else, so a mine without gas is built
+   * exactly as it was before gas existed. Station bands, the opening shaft
+   * and the Heartstone chamber stay clear.
+   */
+  placeGasPockets() {
+    const G = CFG.gas;
+    const rng = new RNG(this.seed ^ 0x6a5d39e1);
+    const top = this.surface + G.topClear;
+    const bottom = this.heartRow - 9;
+    const n = Math.round((bottom - top) / 100 * this.gasPockets);
+    for (let k = 0; k < n; k++) {
+      let x = rng.int(2, this.w - 3), y = rng.int(top, bottom);
+      const rel = (y - this.surface) % CFG.world.checkpointEvery;
+      if (rel <= 4 || rel >= CFG.world.checkpointEvery - 2) continue;
+      const size = rng.int(G.pocketSize[0], G.pocketSize[1]);
+      for (let j = 0, guard = 0; j < size && guard < size * 4; guard++) {
+        if (this.get(x, y) === T.DIRT) { this.set(x, y, T.GAS, CFG.mining.dirtHits); j++; }
+        // Wander to a neighbour, mostly sideways, so a pocket reads as a seam.
+        if (rng.chance(0.7)) x = clamp(x + (rng.chance(0.5) ? 1 : -1), 1, this.w - 2);
+        else y = clamp(y + (rng.chance(0.5) ? 1 : -1), top, bottom);
+      }
+    }
   }
 
   /**
@@ -290,6 +328,7 @@ class World {
     // Compare before subtracting: hp is unsigned, so overshooting would wrap.
     if (this.hp[i] <= amount) { this.destroy(x, y); return 'broke'; }
     this.hp[i] -= amount;
+    if (type === T.GAS) { this.leakGas(x, y); return 'hiss'; }
     this.queueFall(x, y);
     return 'hit';
   }
@@ -314,12 +353,14 @@ class World {
     if (g && g.fx) {
       const pal = type === T.ROCK ? ['#8b8f9c', '#6b6f7c', '#a9adb8']
                 : type === T.GEM  ? [CFG.gems.types[Math.max(0, this.gem[i] - 1)].color, '#7a5a3a', '#5d4429']
+                : type === T.GAS  ? ['#8a6440', '#6f4f31', '#c8d870']
                 : ['#8a6440', '#6f4f31', '#a97c4f'];
       g.fx.burst(x + 0.5, y + 0.5, 9, pal);
     }
 
     this.t[i] = T.EMPTY; this.hp[i] = 0; this.gem[i] = 0;
     this.pendingFalls.delete(i);
+    if (type === T.GAS) this.releaseGas(x, y, CFG.gas.release);
     this.checkNeighbours(x, y);
   }
 
@@ -340,6 +381,8 @@ class World {
   }
 
   update(dt) {
+    this.updateGas(dt);
+    this.updateFire(dt);
     if (this.pendingFalls.size === 0) return;
     const drop = [];
     for (const [i, t] of this.pendingFalls) {
@@ -368,6 +411,136 @@ class World {
         this.destroy(x, y);
       }
     this.checkNeighbours(cx, cy);
+  }
+
+  /* ------------------------------------------------------------------ gas */
+
+  /** Open air that gas can drift through. */
+  isOpen(i) { const t = this.t[i]; return t === T.EMPTY || t === T.CHECKPOINT; }
+
+  /** Put loose gas into a cell (the cell must already be open). */
+  releaseGas(x, y, amount) {
+    if (!this.inBounds(x, y)) return;
+    this.gas[this.idx(x, y)] += amount;
+    this.gasLive = true;
+    const g = this.game;
+    if (g && g.onGasReleased) g.onGasReleased(x + 0.5, y + 0.5, amount);
+  }
+
+  /** The tell: a cracked pocket hisses a little gas into the open air nearby. */
+  leakGas(x, y) {
+    for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) {
+      if (this.inBounds(x + dx, y + dy) && this.isOpen(this.idx(x + dx, y + dy))) {
+        this.releaseGas(x + dx, y + dy, CFG.gas.leak);
+        return;
+      }
+    }
+  }
+
+  /**
+   * One diffusion step every `CFG.gas.tick`: gas rises, spreads sideways a
+   * little, and thins out. A whole-grid pass is ~10k cells, ten times a
+   * second, and only while there is gas at all.
+   */
+  updateGas(dt) {
+    if (!this.gasLive) return;
+    const G = CFG.gas;
+    this.gasClock += dt;
+    if (this.gasClock < G.tick) return;
+    const k = this.gasClock;
+    this.gasClock = 0;
+
+    const { w, gas } = this;
+    const next = this.gasNext;
+    next.set(gas);
+    for (let i = 0; i < gas.length; i++) {
+      const g = gas[i];
+      if (g <= 0) continue;
+      const x = i % w;
+      if (!this.isOpen(i)) {
+        // Dirt landed in it: the gas is squeezed upward, or lost.
+        next[i] -= g;
+        if (i >= w && this.isOpen(i - w)) next[i - w] += g;
+        continue;
+      }
+      let out = 0;
+      if (i >= w && this.isOpen(i - w)) { const m = g * G.rise; next[i - w] += m; out += m; }
+      if (x > 0 && this.isOpen(i - 1)) { const m = g * G.spread; next[i - 1] += m; out += m; }
+      if (x < w - 1 && this.isOpen(i + 1)) { const m = g * G.spread; next[i + 1] += m; out += m; }
+      next[i] -= out;
+    }
+
+    let any = false;
+    const sky = this.surface * w;
+    for (let i = 0; i < next.length; i++) {
+      let g = next[i];
+      if (g <= 0) { next[i] = 0; continue; }
+      g *= 1 - (i < sky ? G.surfaceDecay : G.decay) * k;
+      if (g < 0.004) g = 0; else any = true;
+      next[i] = g;
+    }
+    this.gasNext = gas;
+    this.gas = next;
+    this.gasLive = any;
+  }
+
+  /** Light every gas cell inside a square of radius `r` — a blast's reach. */
+  igniteArea(cx, cy, r) {
+    for (let y = cy - r; y <= cy + r; y++)
+      for (let x = cx - r; x <= cx + r; x++) {
+        if (!this.inBounds(x, y)) continue;
+        const i = this.idx(x, y);
+        if (this.gas[i] >= CFG.gas.ignite) this.ignite(i);
+      }
+  }
+
+  /** Set one cell burning; it lights its neighbours a moment later. */
+  ignite(i) {
+    if (this.fire[i] > 0) return;
+    this.fire[i] = CFG.gas.burn;
+    this.fireSpread[i] = 0;
+    this.gas[i] = 0;
+    this.burning.push(i);
+    const g = this.game;
+    if (g && g.onGasIgnited) g.onGasIgnited((i % this.w) + 0.5, ((i / this.w) | 0) + 0.5);
+  }
+
+  /**
+   * The flame front. A burning cell lights any neighbour holding enough gas,
+   * and bursts any gas pocket it touches — so a pocket next to a fire is a
+   * fire too.
+   */
+  updateFire(dt) {
+    if (this.burning.length === 0) return;
+    const G = CFG.gas;
+    const list = this.burning;
+    for (let n = list.length - 1; n >= 0; n--) {
+      const i = list[n];
+      this.fire[i] -= dt;
+      if (!this.fireSpread[i] && this.fire[i] <= G.burn - G.spreadDelay) {
+        this.fireSpread[i] = 1;
+        const x = i % this.w, y = (i / this.w) | 0;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            if ((!dx && !dy) || !this.inBounds(x + dx, y + dy)) continue;
+            const j = this.idx(x + dx, y + dy);
+            if (this.t[j] === T.GAS) this.destroy(x + dx, y + dy);
+            if (this.gas[j] >= G.ignite) this.ignite(j);
+          }
+      }
+      if (this.fire[i] <= 0) {
+        this.fire[i] = 0;
+        this.fireSpread[i] = 0;
+        list[n] = list[list.length - 1];
+        list.pop();
+      }
+    }
+  }
+
+  /** Is the cell under a world position on fire? */
+  burningAt(px, py) {
+    const x = Math.floor(px), y = Math.floor(py);
+    return this.inBounds(x, y) && this.fire[this.idx(x, y)] > 0;
   }
 
   /* ----------------------------------------------------------------- lava */
@@ -402,6 +575,13 @@ class World {
         const i = this.idx(x, y);
         if (this.t[i] === T.BEDROCK || this.t[i] === T.LAVA) continue;
         if (this.t[i] === T.GEM || this.t[i] === T.HEART) { this.gem[i] = 0; }
+        // The lava lights any gas it reaches, and a sealed pocket it swallows
+        // goes up in a burst of flame into the air above it.
+        if (this.gas[i] >= CFG.gas.ignite) this.ignite(i);
+        if (this.t[i] === T.GAS && y > 0 && this.isOpen(i - this.w)) {
+          this.gas[i - this.w] += CFG.gas.release;
+          this.ignite(i - this.w);
+        }
         this.t[i] = T.LAVA; this.hp[i] = 0;
       }
     }
