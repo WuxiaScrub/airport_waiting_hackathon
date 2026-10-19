@@ -16,8 +16,11 @@ Run each file in `migrations/`, **in order**, in the Supabase dashboard:
 | `001_core.sql` | Tables, row-level security, and every function the game calls. |
 | `002_banned_words.sql` | Starter display-name blocklist (English + Chinese). |
 | `003_daily_medals_job.sql` | Schedules the medal award at 01:05 UTC daily (needs pg_cron). |
+| `004_name_regex_ascii.sql` | Rewrites `set_display_name`'s character checks as ASCII escapes, so a paste can't break them. |
 
-Never edit a file that has already been run — add `004_…` instead.
+Never edit a file that has already been run — add the next number instead. Keep
+migrations plain ASCII: the SQL Editor can silently drop invisible characters
+pasted into it, so write them as `\uXXXX` escapes.
 
 Before running: **Authentication → Sign In / Providers → Allow anonymous
 sign-ins** on, and **Database → Extensions → pg_cron** on.
@@ -75,6 +78,7 @@ createdb fm
 psql -d fm -f supabase/tests/00_supabase_stub.sql
 psql -d fm -f supabase/migrations/001_core.sql
 psql -d fm -f supabase/migrations/002_banned_words.sql
+psql -d fm -f supabase/migrations/004_name_regex_ascii.sql
 psql -d fm -f supabase/tests/10_behaviour.sql   # ERROR lines are expected rejections
 psql -d fm -f supabase/tests/20_medals.sql
 ```
