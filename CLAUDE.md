@@ -50,7 +50,9 @@ Game Modes
 * Daily Mine — one single mine per UTC day. Its TERRAIN comes from a seed
   derived from the date (and `CFG.online.genVersion`), so everyone digs the same
   mine; enemies stay random per attempt so they can't be memorised. Mine-1
-  settings and base stats. Unlimited attempts; a player's best score of the day
+  settings and base stats. The seed also rolls whether the day has gas pockets
+  and/or the Tunneler (gentlest level of each), so a day has them for everyone
+  or no one; the worm's timing and path stay random per attempt. Unlimited attempts; a player's best score of the day
   counts. Escaping with the Heartstone ends the daily — there is no next mine.
 * The daily rolls over at 00:00 UTC. Gold, silver and bronze go to the day's
   top three once a short grace window has passed (so offline runs can sync).
@@ -203,6 +205,23 @@ The secondary economic threat.
 * If killed before escaping, the stolen gem can be recovered.
 
 This enemy threatens the player’s loot, rather than their health.
+
+Later-Mine Hazards
+
+Two hazards join the campaign gradually; mine 1 has neither. Each shows a
+one-off "new danger" card the first time a player meets it on a device.
+
+* Gas pockets (from mine 2, more each mine) — seams of soft dirt hiding
+  firedamp, told apart only by faint bubbles in the headlight. The first swing
+  hisses; breaking one releases a cloud that drifts up the tunnels. Harmless
+  until a dynamite blast or the lava lights it: the flame races through the
+  cloud, bursts any pocket it touches, hurts the player and kills enemies.
+  Gas is terrain, so it is part of seeded generation.
+* The Tunneler (from mine 3: 1 pass, then 2, then 3) — a great worm that
+  crosses the mine side to side near the player's row, never during the
+  eruption. It rumbles and shows a red band on its row before breaking in,
+  bores through soft dirt (rock it slides past), hurts what it touches, and
+  loosens the dirt over its tunnel so a collapse follows. It cannot be killed.
 
 Do not add more enemy types until the core game is polished.
 

@@ -9,7 +9,7 @@ insert into auth.users (id) values
 select count(*) from public.profiles;
 
 create or replace function pg_temp.as_user(u text) returns void language sql as $$ select set_config('request.jwt.claim.sub', u, false) $$;
-create or replace function pg_temp.run(cid text, mode text, score int, mines int, d text default null, ver text default '1.0.0', ms int default 60000, gen int default 1)
+create or replace function pg_temp.run(cid text, mode text, score int, mines int, d text default null, ver text default '1.0.0', ms int default 60000, gen int default 2)
 returns jsonb language sql as $$ select jsonb_build_object('client_run_id',cid,'mode',mode,'score',score,'mines_escaped',mines,
  'daily_date',d,'duration_ms',ms,'game_version',ver,'gen_version',gen,'max_depth',120,'gems',30,'result','cashout','played_at',now()) $$;
 grant execute on all functions in schema pg_temp to anon, authenticated;
@@ -36,7 +36,7 @@ select public.submit_run(pg_temp.run('aaaaaaaa-0000-0000-0000-000000000009','end
 select public.submit_run(pg_temp.run('aaaaaaaa-0000-0000-0000-000000000009','endless',900,0,null,'1.0.0',3000));
 select public.submit_run(pg_temp.run('aaaaaaaa-0000-0000-0000-000000000009','endless',900,0,null,'0.9.9'));
 select public.submit_run(pg_temp.run('aaaaaaaa-0000-0000-0000-000000000009','daily',900,0,(current_date+1)::text));
-select public.submit_run('{"client_run_id":"aaaaaaaa-0000-0000-0000-000000000009","mode":"endless","score":"abc","gen_version":1,"game_version":"1.0.0"}');
+select public.submit_run('{"client_run_id":"aaaaaaaa-0000-0000-0000-000000000009","mode":"endless","score":"abc","gen_version":2,"game_version":"1.0.0"}');
 select public.submit_run(pg_temp.run('not-a-uuid','endless',900,0));
 select public.submit_run(pg_temp.run('aaaaaaaa-0000-0000-0000-000000000009','daily',900,2,current_date::text));
 

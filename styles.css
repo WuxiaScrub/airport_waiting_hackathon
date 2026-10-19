@@ -259,6 +259,34 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   100% { opacity: 0; transform: translate(-50%, -6px); }
 }
 
+/* First-encounter hazard card, just under the HUD: it must not sit over the
+   miner, where the danger it describes is. */
+.hint {
+  position: absolute;
+  top: calc(var(--safe-t) + 88px); left: 50%;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  width: min(86vw, 340px);
+  padding: 9px 16px 10px;
+  background: rgba(12,9,20,.9);
+  border: 1px solid rgba(255, 110, 80, .55);
+  border-radius: 14px;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  z-index: 21;
+}
+.hint.show { animation: hintIn 5.5s ease forwards; }
+.hint-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: #ff8a6a; }
+.hint-t { font-size: var(--fs-md); font-weight: 800; color: var(--ink); }
+.hint-b { font-size: var(--fs-sm); font-weight: 600; color: #d8cfe8; line-height: 1.35; }
+@keyframes hintIn {
+  0%   { opacity: 0; transform: translate(-50%, 8px) scale(.94); }
+  6%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  90%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
 .banner {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
@@ -456,7 +484,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .panel.demo .panel-inner { background: linear-gradient(180deg, rgba(25,19,39,.94), rgba(20,16,31,.97)); }
 /* No HUD or controls while the demo miner is playing. */
 body.attract #hud, body.attract #hudScrim, body.attract #controls,
-body.attract #toast, body.attract #banner { display: none; }
+body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 
 .panel-inner {
@@ -870,6 +898,7 @@ body.lang-cjk .timer,
 body.lang-cjk .score-head,
 body.lang-cjk .wallet .lbl,
 body.lang-cjk .toast,
+body.lang-cjk .hint-k,
 body.lang-cjk .banner p,
 body.lang-cjk .panel h2,
 body.lang-cjk .panel .tagline,
@@ -924,6 +953,7 @@ body.lang-cjk .panel .logo-sub { letter-spacing: .3em; }
   @keyframes bannerFade { 0% { opacity: 0 } 10%, 80% { opacity: 1 } 100% { opacity: 0 } }
   .toast, .toast.show { transform: translate(-50%, 0); }
   .achieve.show { animation: bannerFade 2.6s linear forwards; }
+  .hint.show { animation: bannerFade 5.5s linear forwards; }
   .heart.pop, .val.bump { transform: none; }
   .timer.warn { animation: none; }
   .panel { animation: none; }

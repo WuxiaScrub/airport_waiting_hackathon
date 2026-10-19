@@ -1,10 +1,14 @@
 /* ============================================================================
- * Enemies. Two of them, per the design: the Cave Bug threatens your health, the
- * Bat threatens your loot. Both are deliberately readable — the Cave Bug always
- * telegraphs before it pounces, the Bat always shows you what it stole.
+ * Enemies. The Cave Bug threatens your health, the Bat threatens your loot.
+ * Both are deliberately readable — the Cave Bug always telegraphs before it
+ * pounces, the Bat always shows you what it stole.
  *
  * Only the Cave Bug digs. The Bat flies, and flies *around* solid tiles, so the
  * open air it can reach you through is the tunnel network you cut yourself.
+ *
+ * The Tunneler, at the bottom, is a terrain event more than an enemy: it does
+ * not hunt, cannot be killed, and lives in its own list rather than among the
+ * enemies the spawner counts.
  * ========================================================================== */
 
 class Enemy {
@@ -369,5 +373,126 @@ class Bat extends Enemy {
       this.stolen = null;
     }
     super.die(game, cause);
+  }
+}
+
+/* --------------------------------------------------------------- Tunneler */
+
+class Tunneler {
+  /**
+   * One pass of the great worm: in through one wall, along `row` with a slow
+   * undulation, and out through the other. `warn` is the seconds of rumble
+   * before it breaks through.
+   */
+  constructor(world, row, dir, warn) {
+    this.row = row;
+    this.dir = dir;                  // +1 travels left to right
+    this.warn = warn;
+    this.warnMax = warn;
+    this.phase = Math.random() * TAU;
+    this.x = dir > 0 ? -1 : world.w + 1;   // the head starts inside the wall
+    this.y = this.pathY(this.x);
+    this.trail = [];                 // past head positions, newest first
+    this.last = null;                // the last tile it carved
+    this.dead = false;
+    this.anim = 0;
+    this._rumble = 0;
+  }
+
+  pathY(x) { return this.row + 0.5 + Math.sin(this.phase + x * 0.42) * CFG.worm.wave; }
+
+  /** Body segment positions, head first, spaced along the trail. */
+  segments() {
+    const out = [{ x: this.x, y: this.y }];
+    for (let k = 1; k < CFG.worm.length; k++) {
+      const p = this.trail[Math.min(this.trail.length - 1, k * 3)];
+      if (p) out.push(p);
+    }
+    return out;
+  }
+
+  update(dt, game) {
+    const W = CFG.worm, w = game.world;
+    this.anim += dt;
+
+    if (this.warn > 0) {
+      this.warn -= dt;
+      this.rumble(dt, game);
+      return;
+    }
+
+    this.x += this.dir * W.speed * dt;
+    this.y = this.pathY(this.x);
+    const prev = this.trail[0];
+    if (!prev || Math.abs(prev.x - this.x) >= 0.25) {
+      this.trail.unshift({ x: this.x, y: this.y });
+      if (this.trail.length > W.length * 3 + 1) this.trail.pop();
+    }
+
+    const tx = Math.floor(this.x), ty = Math.floor(this.y);
+    if (!this.last || this.last.x !== tx || this.last.y !== ty) {
+      this.carve(game, tx, ty);
+      // A step up or down leaves the tunnel joined only at a corner, which no
+      // miner fits through — cut the tile that joins it properly.
+      if (this.last && this.last.y !== ty) this.carve(game, tx, this.last.y);
+      this.last = { x: tx, y: ty };
+      if (tx > 0 && tx < w.w - 1 && game.onScreen(this.x, this.y, 2)) {
+        game.shake(1.6);
+        if (Math.random() < 0.35) Sfx.play('break', { v: 0.35 });
+      }
+    }
+
+    this.contact(game);
+    const out = W.length + 3;
+    if (this.x < -out || this.x > w.w + out) this.dead = true;
+  }
+
+  /**
+   * The warning: the mine shakes, dust sifts down along the row it is coming
+   * through, thickest on the side it will break in from.
+   */
+  rumble(dt, game) {
+    const w = game.world;
+    this._rumble -= dt;
+    if (this._rumble <= 0) {
+      this._rumble = 0.55;
+      Sfx.play('rumble');
+      game.shake(3.5);
+    }
+    if (Math.random() < dt * 30) {
+      const near = Math.random() < 0.6;
+      const x = near ? (this.dir > 0 ? 1 + Math.random() * 6 : w.w - 1 - Math.random() * 6)
+                     : 1 + Math.random() * (w.w - 2);
+      game.fx.burst(x, this.row - 0.4, 1, ['#8a6440', '#a97c4f', '#6f4f31'],
+        { speed: 0.6, life: 0.7, size: 0.1, grav: 9 });
+    }
+  }
+
+  /** Bore through soft ground; rock, stations and the Heartstone it slides past. */
+  carve(game, x, y) {
+    const w = game.world;
+    if (x < 1 || x > w.w - 2 || y <= w.surface || y >= w.h - 1) return;
+    const t = w.get(x, y);
+    if (t === T.DIRT || t === T.GEM || t === T.GAS) w.destroy(x, y);
+    // Loosen the roof: a collapse comes down behind it.
+    if (w.get(x, y - 1) === T.DIRT && Math.random() < CFG.worm.loosen) {
+      w.hp[w.idx(x, y - 1)] = Math.min(w.hp[w.idx(x, y - 1)], CFG.mining.dirtHits - 1);
+      w.queueFall(x, y - 1);
+    }
+  }
+
+  /** Anything in its way gets hurt: the miner, and any bug or bat. */
+  contact(game) {
+    const p = game.player;
+    for (const s of this.segments()) {
+      if (!p.dead && Math.abs(p.x - s.x) < 0.8 && Math.abs(p.y - s.y) < 0.8) {
+        p.hurt(CFG.worm.damage, game, this.dir, -0.8);
+      }
+      for (const e of game.enemies) {
+        if (!e.dead && Math.abs(e.x - s.x) < 0.8 && Math.abs(e.y - s.y) < 0.8) {
+          e.hurt(99, game, this.dir, -0.5, 'worm');
+        }
+      }
+    }
   }
 }

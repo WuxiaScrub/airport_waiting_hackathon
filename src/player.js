@@ -351,6 +351,11 @@ class Player {
         ['#8a6440', '#a97c4f', '#5d4429'], { speed: 4, life: 0.32, size: 0.12 });
       game.shake(1.4);
       didSomething = true;
+    } else if (res === 'hiss') {
+      // A cracked gas pocket: the swing lands, and the hiss is the warning.
+      Sfx.play('mine');
+      game.shake(1.4);
+      didSomething = true;
     } else if (res === 'hard') {
       Sfx.play('clink');
       game.fx.burst(cx - this.facing.x * 0.4, cy - this.facing.y * 0.4, 4,

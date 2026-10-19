@@ -21,6 +21,8 @@ const MEM_COLOR = {
   [T.LAVA]: '#7a2408',
   [T.HEART]: '#7a2436',
   [T.BEDROCK]: '#1b1b22',
+  // A gas pocket is remembered as plain dirt: its tell only shows in the light.
+  [T.GAS]: '#4b3724',
 };
 
 class Renderer {
@@ -254,6 +256,7 @@ class Renderer {
     lctx.globalCompositeOperation = 'source-over';
     this.drawTerrain(lctx, game, x0, y0, x1, y1, ox, oy, ppt);
     this.drawUnderFloor(lctx, game, x0, x1, yUnder, ox, oy, ppt);
+    this.drawGasCloud(lctx, game, x0, y0, x1, y1, ox, oy, ppt);
     this.drawActors(lctx, game, ox, oy, ppt);
     this.drawParticles(lctx, game, ox, oy, ppt);
     this.applyLightMask(lctx, game, ox, oy, ppt, cw, ch);
@@ -261,6 +264,7 @@ class Renderer {
 
     /* ---- always-visible overlays ---- */
     this.drawLavaGlow(ctx, game, oy, ppt, cw, ch);
+    this.drawWormWarnings(ctx, game, ox, oy, ppt, cw, ch);
     this.drawFloatingText(ctx, game, ox, oy, ppt);
     this.drawFlights(ctx, game);
     this.drawVignette(ctx, game, cw, ch);
@@ -313,6 +317,10 @@ class Renderer {
           case T.DIRT:
             c.drawImage(w.hp[i] < CFG.mining.dirtHits ? A.dirtCracked[v] : A.dirt[v], px, py, S, S);
             break;
+          case T.GAS:
+            c.drawImage(w.hp[i] < CFG.mining.dirtHits ? A.dirtCracked[v] : A.dirt[v], px, py, S, S);
+            this.drawGasSeep(c, px, py, ppt, game.time + i * 0.61, w.hp[i] < CFG.mining.dirtHits);
+            break;
           case T.ROCK:    c.drawImage(A.rock[v], px, py, S, S); break;
           case T.BEDROCK: c.drawImage(A.bedrock[v], px, py, S, S); break;
           case T.GEM:
@@ -350,6 +358,56 @@ class Renderer {
         c.drawImage(A[v], Math.floor(ox + x * ppt), Math.floor(oy + y * ppt), S, S);
       }
     }
+  }
+
+  /**
+   * The gas pocket's tell: a few pale bubbles seeping out of the dirt. Faint
+   * on purpose, and only drawn in the lit layer, so a better headlight spots
+   * a pocket sooner. A cracked pocket seeps harder.
+   */
+  drawGasSeep(c, px, py, ppt, t, cracked) {
+    const n = cracked ? 4 : 2;
+    c.fillStyle = '#d6e88a';
+    for (let k = 0; k < n; k++) {
+      const ph = (t * (cracked ? 0.9 : 0.5) + k / n) % 1;
+      c.globalAlpha = (cracked ? 0.75 : 0.5) * Math.sin(ph * Math.PI);
+      const bx = px + ppt * (0.25 + 0.5 * hash2(k, Math.floor(t * 0.5 + k / n), 77));
+      const by = py + ppt * (0.85 - ph * 0.7);
+      c.beginPath(); c.arc(bx, by, ppt * (0.045 + ph * 0.035), 0, TAU); c.fill();
+    }
+    c.globalAlpha = 1;
+  }
+
+  /** Loose gas as a sickly haze, and burning cells as flame. Lit layer only. */
+  drawGasCloud(c, game, x0, y0, x1, y1, ox, oy, ppt) {
+    const w = game.world;
+    if (!w.gasLive && w.burning.length === 0) return;
+    const t = game.time;
+    c.fillStyle = '#b9d36a';
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const g = w.gas[y * w.w + x];
+        if (g < 0.02) continue;
+        c.globalAlpha = Math.min(0.45, g * 0.6);
+        const wx = Math.sin(t * 1.3 + x * 1.7 + y) * ppt * 0.1;
+        const wy = Math.cos(t * 1.1 + y * 1.3 + x) * ppt * 0.1;
+        c.beginPath();
+        c.arc(ox + (x + 0.5) * ppt + wx, oy + (y + 0.5) * ppt + wy, ppt * 0.72, 0, TAU);
+        c.fill();
+      }
+    }
+    for (const i of w.burning) {
+      const x = i % w.w, y = (i / w.w) | 0;
+      if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+      const k = clamp(w.fire[i] / CFG.gas.burn, 0, 1);
+      const cx = ox + (x + 0.5) * ppt, cy = oy + (y + 0.5) * ppt;
+      c.globalAlpha = 0.5 + 0.5 * k;
+      c.fillStyle = '#ff6a1e';
+      c.beginPath(); c.arc(cx, cy, ppt * (0.55 + 0.25 * k), 0, TAU); c.fill();
+      c.fillStyle = '#ffd36b';
+      c.beginPath(); c.arc(cx, cy + ppt * 0.08, ppt * (0.3 + 0.15 * k) * (0.85 + Math.random() * 0.3), 0, TAU); c.fill();
+    }
+    c.globalAlpha = 1;
   }
 
   drawLavaTile(c, px, py, S, time, x, y) {
@@ -445,6 +503,7 @@ class Renderer {
     }
     for (const g of game.gems) this.drawGemPickup(c, g, ox, oy, ppt, game.time);
     for (const d of game.dynamites) this.drawDynamite(c, d, ox, oy, ppt, game.time);
+    for (const m of game.worms) this.drawWorm(c, m, game.world, ox, oy, ppt, game.time);
     for (const e of game.enemies) {
       if (e instanceof CaveBug) this.drawCaveBug(c, e, ox, oy, ppt, game.time);
       else this.drawBat(c, e, ox, oy, ppt, game.time);
@@ -556,6 +615,71 @@ class Renderer {
       c.lineTo(cx + s.aim.x * ppt * 2.4, cy + s.aim.y * ppt * 2.4);
       c.stroke();
       c.restore();
+    }
+  }
+
+  /**
+   * The Tunneler: a fat, ringed body trailing a round, toothed maw. Segments
+   * still inside the bedrock walls are not drawn, so it bursts out of them.
+   */
+  drawWorm(c, m, world, ox, oy, ppt, time) {
+    if (m.warn > 0) return;
+    const segs = m.segments();
+    for (let k = segs.length - 1; k >= 0; k--) {
+      const s = segs[k];
+      if (s.x < 1 || s.x > world.w - 1) continue;
+      const head = k === 0;
+      const r = ppt * (head ? 0.62 : 0.56 - k * 0.025) * (1 + 0.05 * Math.sin(time * 9 - k));
+      const cx = ox + s.x * ppt, cy = oy + s.y * ppt;
+      c.fillStyle = head ? '#b0645a' : (k % 2 ? '#8e4c48' : '#a35a52');
+      c.beginPath(); c.arc(cx, cy, r, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(40,14,16,.55)';
+      c.lineWidth = Math.max(1, ppt * 0.05);
+      c.beginPath(); c.arc(cx, cy, r * 0.82, 0, TAU); c.stroke();
+      if (!head) continue;
+      // The maw, facing the way it is going.
+      const mx = cx + m.dir * r * 0.45;
+      c.fillStyle = '#2a0e12';
+      c.beginPath(); c.arc(mx, cy, r * 0.48, 0, TAU); c.fill();
+      c.fillStyle = '#f2e6c8';
+      for (let i = 0; i < 6; i++) {
+        const a = i / 6 * TAU + time * 2;
+        const tx = mx + Math.cos(a) * r * 0.42, ty = cy + Math.sin(a) * r * 0.42;
+        c.beginPath(); c.arc(tx, ty, r * 0.08, 0, TAU); c.fill();
+      }
+    }
+  }
+
+  /**
+   * The worm's warning, drawn above the darkness: a pulsing band across the
+   * row it will come through, and chevrons on the side it breaks in from.
+   */
+  drawWormWarnings(ctx, game, ox, oy, ppt, cw, ch) {
+    for (const m of game.worms) {
+      if (m.warn <= 0) continue;
+      const k = 1 - m.warn / m.warnMax;
+      const pulse = 0.5 + 0.5 * Math.sin(game.time * 10);
+      const top = oy + (m.row + 0.5 - CFG.worm.wave - 0.5) * ppt;
+      const h = (CFG.worm.wave * 2 + 1) * ppt;
+      if (top > ch || top + h < 0) continue;
+      ctx.fillStyle = `rgba(255,70,50,${0.1 + 0.12 * pulse * (0.4 + k)})`;
+      ctx.fillRect(0, top, cw, h);
+      ctx.save();
+      ctx.strokeStyle = `rgba(255,110,80,${0.55 + 0.45 * pulse})`;
+      ctx.lineWidth = Math.max(2, ppt * 0.1);
+      ctx.lineCap = 'round';
+      const cy = oy + (m.row + 0.5) * ppt;
+      const edge = m.dir > 0 ? ppt * 0.5 : cw - ppt * 0.5;
+      for (let i = 0; i < 3; i++) {
+        const x = edge + m.dir * (i * ppt * 0.45 + ((game.time * 2) % 1) * ppt * 0.3);
+        const s = ppt * 0.28;
+        ctx.beginPath();
+        ctx.moveTo(x - m.dir * s * 0.5, cy - s);
+        ctx.lineTo(x + m.dir * s * 0.5, cy);
+        ctx.lineTo(x - m.dir * s * 0.5, cy + s);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
   }
 

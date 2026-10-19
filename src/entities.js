@@ -96,6 +96,8 @@ class Dynamite {
     this.dead = true;
     const { x, y } = this;
     game.world.explode(this.tx, this.ty, CFG.dynamite.radius + this.extra);
+    // Any gas the blast reaches — loose, or let out of a pocket it just broke — goes up.
+    game.world.igniteArea(this.tx, this.ty, CFG.dynamite.radius + this.extra + 1);
 
     game.fx.burst(x, y, 34, ['#fff3c4', '#ffb03a', '#ff5a1e', '#8a3410'], { speed: 12, life: 0.6, size: 0.24, grav: 4, glow: true });
     game.fx.drift(x, y, 14, ['#4a4048', '#2e272f'], { life: 1.5, size: 0.4, spread: 1.6, rise: 1.0, glow: false });
