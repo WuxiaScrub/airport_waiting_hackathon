@@ -53,7 +53,6 @@ const STRINGS = {
     'title.dailyInfo': '{d} · new mine in {h}h {m}m',
     'title.dailyBest': 'Your best today: {v}',
     'help.title': 'HOW TO PLAY',
-    'help.gotIt': 'GOT IT',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': 'MY TOP HAULS',
@@ -394,7 +393,6 @@ const STRINGS = {
     'title.dailyInfo': '{d} · {h} 小时 {m} 分后换新矿',
     'title.dailyBest': '今日最佳：{v}',
     'help.title': '玩法说明',
-    'help.gotIt': '知道了',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
     'score.title': '我的最佳战绩',

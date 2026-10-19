@@ -341,13 +341,8 @@ class UI {
       </svg></button>`;
   }
 
-  /** How to play: one row per rule. Opens by itself on a first launch. */
+  /** How to play: one row per rule. Only opens from the title's button. */
   help() {
-    const save = this.game.save;
-    // Shown once per device: seen the moment it opens, not only on GOT IT,
-    // so no way out of it can bring it back on the next launch.
-    const first = !save.seenHelp || this._helpFirst;
-    if (!save.seenHelp) { save.seenHelp = true; this._helpFirst = true; this.game.persist(); }
     const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark'].map(k =>
       `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
 
@@ -357,12 +352,9 @@ class UI {
       <h2>${loc('help.title')}</h2>
       <div class="help" style="margin-top: 12px">${rows}</div>
       <div class="credits">${loc('help.credits')}</div>
-      <button class="btn" id="helpDone">${loc(first ? 'help.gotIt' : 'common.back')}</button>
+      <button class="btn" id="helpDone">${loc('common.back')}</button>
     `);
-    this.on('#helpDone', () => {
-      this._helpFirst = false;
-      this.title();
-    });
+    this.on('#helpDone', () => this.title());
     this.wireLang();
   }
 
