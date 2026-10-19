@@ -42,8 +42,6 @@ class Game {
 
     this.ui.title();
     Music.play('menu');
-    // A first launch opens on the rules; GOT IT drops back to the title.
-    if (!this.save.seenHelp) this.ui.help();
   }
 
   /* ------------------------------------------------------------ persistence */
@@ -56,7 +54,7 @@ class Game {
   load() {
     // Screen shake starts off for players whose device asks for less motion.
     const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, seenHelp: false, daily: null, stats: Stats.blank() };
+    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, daily: null, stats: Stats.blank() };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -70,9 +68,6 @@ class Game {
         audio: s.audio !== false,
         music: s.music !== false,
         shake: s.shake !== undefined ? s.shake !== false : !calm,
-        // A save from before the help panel existed belongs to someone who
-        // read the rules on the old title screen.
-        seenHelp: s.seenHelp !== undefined ? !!s.seenHelp : true,
         // Today's best daily haul on this device: { date, best }.
         daily: s.daily && typeof s.daily.date === 'string' ? { date: s.daily.date, best: s.daily.best || 0 } : null,
         // Lifetime counters behind the achievements — see src/stats.js.
@@ -87,7 +82,7 @@ class Game {
 
   /** Records go; settings stay. The caller decides which panel to show next. */
   wipeSave() {
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null, stats: Stats.blank() };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, daily: null, stats: Stats.blank() };
     this.persist();
     Highscore.reset();
   }
