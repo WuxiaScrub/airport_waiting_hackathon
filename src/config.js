@@ -157,7 +157,7 @@ const CFG = {
     heartstoneValue: 7000,
   },
 
-  spider: {
+  caveBug: {
     hp: 2,
     speed: 2.15,
     chargeSpeed: 6.4,
@@ -290,8 +290,8 @@ const CFG = {
     offer: 6,            // seconds the offer stays up before it declines itself
     invuln: 3,           // seconds of invulnerability after getting back up
     lavaPush: 7,         // rows of clear air the lava is pushed below the miner
-    clearRadius: 4,      // tiles: spiders knocked away, falling dirt removed
-    stun: 2.5,           // seconds knocked-away spiders stay dazed
+    clearRadius: 4,      // tiles: cave bugs knocked away, falling dirt removed
+    stun: 2.5,           // seconds knocked-away cave bugs stay dazed
   },
 
   // The miner who plays behind the title screen (src/demo.js). A fresh mine
@@ -306,6 +306,12 @@ const CFG = {
     tunnelEvery: 6,      // tiles of depth between exploratory side tunnels
     boomEvery: [16, 26], // seconds between sticks of dynamite
     volume: 0.35,        // the demo's sound effects, relative to the real game's
+    // Enemies come sooner and more often than in a real run, so the demo
+    // shows a fight or a theft most times round.
+    spawnDepth: 3,       // rows down before anything spawns (a real run: 6)
+    spawnRate: 3,        // spawn attempts this many times as often
+    extraAlive: 2,       // more enemies allowed at once
+    batBias: 0.5,        // share of spawns that are bats once the miner carries gems
     camLift: 0.23,       // the miner sits this fraction of the screen above centre, clear of the menu
   },
 
@@ -320,7 +326,7 @@ const CFG = {
     { id: 'ruby',     stat: 'ruby',          levels: [10, 75, 400] },
     { id: 'diamond',  stat: 'diamond',       levels: [5, 40, 200] },
     { id: 'heart',    stat: 'hearts',        levels: [1, 10, 50] },
-    { id: 'spider',   stat: 'spiders',       levels: [10, 50, 250] },
+    { id: 'caveBug',  stat: 'caveBugs',      levels: [10, 50, 250] },
     { id: 'bat',      stat: 'bats',          levels: [5, 25, 100] },
     { id: 'pick',     stat: 'pickKills',     levels: [10, 75, 300] },
     { id: 'blast',    stat: 'dynamiteKills', levels: [5, 40, 150] },

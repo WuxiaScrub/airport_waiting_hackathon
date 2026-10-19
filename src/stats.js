@@ -18,7 +18,7 @@ const Stats = {
     return {
       gems: [0, 0, 0, 0],        // mined, by gem type (recovered gems don't count twice)
       hearts: 0,                 // Heartstones carried out of a mine
-      kills: { spider: kills(), bat: kills() },
+      kills: { caveBug: kills(), bat: kills() },
       recovered: 0,              // stolen gems won back from bats
       stolen: 0,                 // gems bats got away with
       dynamite: 0,               // sticks lit
@@ -34,8 +34,11 @@ const Stats = {
     if (!raw || typeof raw !== 'object') return s;
     const n = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? v : 0);
     for (let i = 0; i < s.gems.length; i++) s.gems[i] = n(raw.gems && raw.gems[i]);
-    for (const who of ['spider', 'bat']) {
-      for (const c of KILL_CAUSES) s.kills[who][c] = n(raw.kills && raw.kills[who] && raw.kills[who][c]);
+    const kills = raw.kills || {};
+    // Saves from before the rename count cave bugs under their old name.
+    const from = { caveBug: kills.caveBug || kills.spider, bat: kills.bat };
+    for (const who of ['caveBug', 'bat']) {
+      for (const c of KILL_CAUSES) s.kills[who][c] = n(from[who] && from[who][c]);
     }
     for (const k of ['hearts', 'recovered', 'stolen', 'dynamite', 'runs', 'deaths', 'fastest']) s[k] = n(raw[k]);
     return s;
@@ -53,11 +56,11 @@ const Stats = {
       case 'emerald': return s.gems[1];
       case 'ruby': return s.gems[2];
       case 'diamond': return s.gems[3];
-      case 'spiders': return this.kills(s, 'spider');
+      case 'caveBugs': return this.kills(s, 'caveBug');
       case 'bats': return this.kills(s, 'bat');
-      case 'pickKills': return s.kills.spider.pick + s.kills.bat.pick;
-      case 'dynamiteKills': return s.kills.spider.dynamite + s.kills.bat.dynamite;
-      case 'dirtKills': return s.kills.spider.dirt + s.kills.bat.dirt;
+      case 'pickKills': return s.kills.caveBug.pick + s.kills.bat.pick;
+      case 'dynamiteKills': return s.kills.caveBug.dynamite + s.kills.bat.dynamite;
+      case 'dirtKills': return s.kills.caveBug.dirt + s.kills.bat.dirt;
       default: return s[key] || 0;
     }
   },

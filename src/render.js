@@ -5,7 +5,7 @@
  * Lighting is a two-layer composite:
  *   1. a dim "memory" layer showing terrain you have already explored,
  *   2. a full-brightness layer (terrain + actors) masked by the light sources.
- * That is what makes darkness a mechanic: you remember the walls, but a spider
+ * That is what makes darkness a mechanic: you remember the walls, but a cave bug
  * standing in an unlit tunnel is genuinely invisible.
  * ========================================================================== */
 
@@ -446,7 +446,7 @@ class Renderer {
     for (const g of game.gems) this.drawGemPickup(c, g, ox, oy, ppt, game.time);
     for (const d of game.dynamites) this.drawDynamite(c, d, ox, oy, ppt, game.time);
     for (const e of game.enemies) {
-      if (e instanceof Spider) this.drawSpider(c, e, ox, oy, ppt, game.time);
+      if (e instanceof CaveBug) this.drawCaveBug(c, e, ox, oy, ppt, game.time);
       else this.drawBat(c, e, ox, oy, ppt, game.time);
     }
     if (!game.player.dead || game.deathAnim < 0.6) this.drawPlayer(c, game, ox, oy, ppt);
@@ -495,7 +495,7 @@ class Renderer {
     c.restore();
   }
 
-  drawSpider(c, s, ox, oy, ppt, time) {
+  drawCaveBug(c, s, ox, oy, ppt, time) {
     const cx = ox + s.x * ppt, cy = oy + s.y * ppt;
     const wind = s.state === 'wind';
     const pounce = s.state === 'pounce';

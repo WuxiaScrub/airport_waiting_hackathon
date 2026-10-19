@@ -74,7 +74,7 @@ Data deletion*):
 
 | Question | Answer |
 |---|---|
-| Cartoon or Fantasy Violence | **Infrequent/Mild**: a pickaxe against cartoon spiders and bats, no blood |
+| Cartoon or Fantasy Violence | **Infrequent/Mild**: a pickaxe against cartoon cave bugs and bats, no blood |
 | Realistic Violence, Sexual content, Nudity, Profanity, Horror/Fear, Alcohol/Tobacco/Drugs, Medical, Mature/Suggestive | None |
 | Simulated Gambling / Contests | None. The daily medals are a skill leaderboard with no entry fee and no prizes. |
 | Unrestricted Web Access | No |
@@ -124,7 +124,7 @@ Profile → Save your progress, and only links that anonymous account.
 
 Ads: the only ad is an optional rewarded video offered once per run when the
 player dies ("Second wind? Watch ad · Revive" / "No thanks"). To see it, start
-Endless or Daily Mine and let a spider or the lava kill you.
+Endless or Daily Mine and let a cave bug or the lava kill you.
 
 Account deletion: Profile → Delete account (two-step confirmation). It deletes
 the server account and all its data immediately.

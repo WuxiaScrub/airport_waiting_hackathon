@@ -113,7 +113,7 @@ class Game {
 
   /** Every enemy death lands here, with how it happened. */
   recordKill(e, cause) {
-    const who = e instanceof Bat ? 'bat' : 'spider';
+    const who = e instanceof Bat ? 'bat' : 'caveBug';
     const how = KILL_CAUSES.indexOf(cause) >= 0 ? cause : 'pick';
     this.track(s => { s.kills[who][how]++; });
   }
@@ -394,7 +394,7 @@ class Game {
 
     for (const e of this.enemies) {
       const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy) || 1;
-      if (!(e instanceof Spider) || d > R.clearRadius) continue;
+      if (!(e instanceof CaveBug) || d > R.clearRadius) continue;
       e.vx = (dx / d) * 10; e.vy = (dy / d) * 10 - 2;
       e.state = 'rest'; e.timer = R.stun;
     }
@@ -712,17 +712,20 @@ class Game {
 
   updateSpawns(dt) {
     const depth = this.depth();
-    if (depth < 6) return;
+    const D = this.demo ? CFG.demo : null;   // the title demo wants a busier mine
+    if (depth < (D ? D.spawnDepth : 6)) return;
 
     // Later mines send more of everything; the first is kept gentle.
     const threat = this.threat();
     const maxAlive = Math.max(1, Math.round(
-      (CFG.spawn.maxAlive + Math.floor(depth / CFG.spawn.maxAliveDepth)) * threat)) + (this.volcano ? 2 : 0);
+      (CFG.spawn.maxAlive + Math.floor(depth / CFG.spawn.maxAliveDepth)) * threat)) +
+      (this.volcano ? 2 : 0) + (D ? D.extraAlive : 0);
     this.spawnTimer -= dt;
     if (this.spawnTimer > 0) return;
 
     let interval = Math.max(CFG.spawn.intervalMin, CFG.spawn.interval - depth * CFG.spawn.intervalDepth) / threat;
     if (this.volcano) interval *= CFG.spawn.volcanoMultiplier;
+    if (D) interval /= D.spawnRate;
     this.spawnTimer = interval * (0.7 + Math.random() * 0.6);
     if (this.enemies.length >= maxAlive) return;
 
@@ -730,8 +733,8 @@ class Game {
     if (!spot) return;
 
     // Bats show up when there is something worth stealing.
-    const wantBat = this.carry.length > 0 && Math.random() < CFG.spawn.batBias;
-    this.enemies.push(wantBat ? new Bat(spot.x, spot.y) : new Spider(spot.x, spot.y));
+    const wantBat = this.carry.length > 0 && Math.random() < (D ? D.batBias : CFG.spawn.batBias);
+    this.enemies.push(wantBat ? new Bat(spot.x, spot.y) : new CaveBug(spot.x, spot.y));
   }
 
   findSpawnSpot() {

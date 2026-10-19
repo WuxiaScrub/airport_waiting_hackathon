@@ -439,7 +439,7 @@ class UI {
       section('stats.gems', s.gems.reduce((a, b) => a + b, 0),
         ['sapphire', 'emerald', 'ruby', 'diamond'].map((k, i) => line('stats.' + k, fmt(s.gems[i]))).join('') +
         line('stats.hearts', fmt(s.hearts))) +
-      section('stats.spiders', Stats.kills(s, 'spider'), kills('spider')) +
+      section('stats.caveBugs', Stats.kills(s, 'caveBug'), kills('caveBug')) +
       section('stats.bats', Stats.kills(s, 'bat'), kills('bat')) +
       section('stats.other', undefined, `
         ${line('stats.fastest', time(s.fastest))}

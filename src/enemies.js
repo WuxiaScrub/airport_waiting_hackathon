@@ -1,9 +1,9 @@
 /* ============================================================================
- * Enemies. Two of them, per the design: the Spider threatens your health, the
- * Bat threatens your loot. Both are deliberately readable — the Spider always
+ * Enemies. Two of them, per the design: the Cave Bug threatens your health, the
+ * Bat threatens your loot. Both are deliberately readable — the Cave Bug always
  * telegraphs before it pounces, the Bat always shows you what it stole.
  *
- * Only the Spider digs. The Bat flies, and flies *around* solid tiles, so the
+ * Only the Cave Bug digs. The Bat flies, and flies *around* solid tiles, so the
  * open air it can reach you through is the tunnel network you cut yourself.
  * ========================================================================== */
 
@@ -66,12 +66,12 @@ class Enemy {
   }
 }
 
-/* ------------------------------------------------------------------ Spider */
+/* ------------------------------------------------------------------ Cave Bug */
 
-class Spider extends Enemy {
+class CaveBug extends Enemy {
   constructor(x, y) {
-    super(x, y, CFG.spider.radius);
-    this.hp = CFG.spider.hp;
+    super(x, y, CFG.caveBug.radius);
+    this.hp = CFG.caveBug.hp;
     this.state = 'wander';
     this.timer = 0;
     this.digTile = null;
@@ -89,7 +89,7 @@ class Spider extends Enemy {
     this.timer -= dt;
 
     const d = dist(this.x, this.y, p.x, p.y);
-    const sees = !p.dead && d < CFG.spider.aggro;
+    const sees = !p.dead && d < CFG.caveBug.aggro;
 
     switch (this.state) {
       case 'wander': {
@@ -98,15 +98,15 @@ class Spider extends Enemy {
           this.timer = 0.8 + Math.random() * 1.4;
           this.wanderDir = { x: Math.random() * 2 - 1, y: Math.random() * 2 - 1 };
         }
-        this.steer(this.wanderDir.x, this.wanderDir.y, CFG.spider.speed * 0.5, dt);
+        this.steer(this.wanderDir.x, this.wanderDir.y, CFG.caveBug.speed * 0.5, dt);
         break;
       }
       case 'hunt': {
-        if (!sees && d > CFG.spider.aggro * 1.4) { this.state = 'wander'; this.timer = 0; break; }
+        if (!sees && d > CFG.caveBug.aggro * 1.4) { this.state = 'wander'; this.timer = 0; break; }
         const clear = this.hasSight(w, p.x, p.y);
-        if (clear && d < CFG.spider.pounceRange && d > 0.9) {
+        if (clear && d < CFG.caveBug.pounceRange && d > 0.9) {
           this.state = 'wind';
-          this.timer = CFG.spider.telegraph;
+          this.timer = CFG.caveBug.telegraph;
           this.aim = { x: (p.x - this.x) / d, y: (p.y - this.y) / d };
           this.vx *= 0.2; this.vy *= 0.2;
           Sfx.play('screech', { v: 0.7 });
@@ -120,9 +120,9 @@ class Spider extends Enemy {
         this.vx *= 0.86; this.vy *= 0.86;
         if (this.timer <= 0) {
           this.state = 'pounce';
-          this.timer = CFG.spider.chargeTime;
-          this.vx = this.aim.x * CFG.spider.chargeSpeed;
-          this.vy = this.aim.y * CFG.spider.chargeSpeed;
+          this.timer = CFG.caveBug.chargeTime;
+          this.vx = this.aim.x * CFG.caveBug.chargeSpeed;
+          this.vy = this.aim.y * CFG.caveBug.chargeSpeed;
           game.fx.burst(this.x, this.y, 6, ['#59304a'], { speed: 4, life: 0.3, size: 0.12 });
         }
         break;
@@ -131,7 +131,7 @@ class Spider extends Enemy {
         const b = this.move(dt, w, false);
         if (b.x) this.vx = 0;
         if (b.y) this.vy = 0;
-        if (this.timer <= 0 || (b.x && b.y)) { this.state = 'rest'; this.timer = CFG.spider.cooldown; }
+        if (this.timer <= 0 || (b.x && b.y)) { this.state = 'rest'; this.timer = CFG.caveBug.cooldown; }
         this.contact(game, p);
         return;
       }
@@ -182,10 +182,10 @@ class Spider extends Enemy {
         { x: Math.floor(this.x) + (ahead.x ? 0 : sign(ux) || 1), y: Math.floor(this.y) + (ahead.y ? 0 : sign(uy) || 1) },
       ];
       for (const c of cands) {
-        if (w.isMineable(c.x, c.y)) { this.digTile = c; this.digTimer = CFG.spider.digTime; return; }
+        if (w.isMineable(c.x, c.y)) { this.digTile = c; this.digTimer = CFG.caveBug.digTime; return; }
       }
     }
-    this.steer(ux, uy, CFG.spider.speed, dt);
+    this.steer(ux, uy, CFG.caveBug.speed, dt);
   }
 
   steer(ux, uy, speed, dt) {
@@ -197,10 +197,10 @@ class Spider extends Enemy {
 
   contact(game, p) {
     if (p.dead) return;
-    if (dist(this.x, this.y, p.x, p.y) < CFG.spider.contactRange) {
-      if (p.hurt(CFG.spider.damage, game, p.x - this.x, p.y - this.y)) {
+    if (dist(this.x, this.y, p.x, p.y) < CFG.caveBug.contactRange) {
+      if (p.hurt(CFG.caveBug.damage, game, p.x - this.x, p.y - this.y)) {
         this.vx = -(p.x - this.x) * 5; this.vy = -(p.y - this.y) * 5;
-        this.state = 'rest'; this.timer = CFG.spider.cooldown;
+        this.state = 'rest'; this.timer = CFG.caveBug.cooldown;
       }
     }
   }

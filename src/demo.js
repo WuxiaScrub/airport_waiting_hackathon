@@ -61,6 +61,9 @@ class Demo {
       dx = foe.x - p.x; dy = foe.y - p.y;
       const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
+      // Mid-air, a sideways push would hook the grapple into the wall: swing
+      // only up or down until the miner lands.
+      if (!p.grounded) { dx = 0; dy = Math.sign(dy); }
       mine = true;
       if (dy < -0.5 && p.grounded && Math.random() < dt * 2) jump = true;
       this.set(inp, dx, dy, mine, jump);
@@ -96,11 +99,13 @@ class Demo {
           this.tunnel(tx, this.side, Math.round(demoRand(3, 6)));
           break;
         }
-        const below = w.get(tx, ty + 1);
-        if (below === T.ROCK || below === T.BEDROCK) {
-          // Can't go down here: step over to a column that can.
-          const s = w.isSolid(tx + this.side, ty + 1) && w.get(tx + this.side, ty + 1) === T.ROCK ? -this.side : this.side;
-          this.tunnel(tx, s, 2);
+        if (this.hard(w, tx, ty + 1)) {
+          // Rock underfoot — a lantern station's floor, say. Walk to the
+          // nearest column that does go down; with none, try another mine.
+          const x = this.wayDown(w, tx, ty);
+          if (x === null) return false;
+          this.goalX = x;
+          this.to('walk');
           break;
         }
         dy = 1; mine = w.isSolid(tx, ty + 1);
@@ -125,8 +130,7 @@ class Demo {
           break;
         }
         dx = this.side;
-        const ahead = w.get(tx + dx, ty);
-        if (ahead === T.ROCK || ahead === T.BEDROCK) { this.to('dig'); break; }
+        if (this.hard(w, tx + dx, ty)) { this.to('dig'); break; }
         mine = w.isSolid(tx + dx, ty);
         break;
       }
@@ -161,6 +165,26 @@ class Demo {
     this.startX = from;
     this.goalX = from + this.side * Math.max(1, len);
     this.to('tunnel');
+  }
+
+  hard(w, x, y) { const t = w.get(x, y); return t === T.ROCK || t === T.BEDROCK; }
+
+  /**
+   * The nearest column on this row the miner can walk to and dig down from:
+   * nothing hard in the way along the row, and something soft (or open) under
+   * it. Prefers the way the miner is already facing on a tie. Null if none.
+   */
+  wayDown(w, tx, ty) {
+    const blocked = { [-1]: false, [1]: false };
+    for (let d = 1; d < w.w; d++) {
+      for (const s of [this.side, -this.side]) {
+        const x = tx + s * d;
+        if (blocked[s] || x < 1 || x > w.w - 2 || this.hard(w, x, ty)) { blocked[s] = true; continue; }
+        if (!this.hard(w, x, ty + 1)) { this.side = s; return x; }
+      }
+      if (blocked[-1] && blocked[1]) return null;
+    }
+    return null;
   }
 
   /** Column of a gem tile on this row or the next, within reach of a tunnel. */
