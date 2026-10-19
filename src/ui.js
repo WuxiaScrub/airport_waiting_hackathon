@@ -423,7 +423,7 @@ class UI {
         <div class="ach${done ? ' done' : ''}">
           <div class="ach-head">
             <span class="ach-nm">${loc('ach.' + a.id + '.name')}</span>
-            <span class="ach-lv">${level ? loc('ach.level', { n: roman(level), max: roman(a.levels.length) }) : loc('ach.none')}</span>
+            <span class="ach-lv">${level ? loc('ach.level', { n: roman(level), max: roman(a.levels.length) }) : loc(v ? 'ach.started' : 'ach.none')}</span>
           </div>
           <div class="lv-strip" data-at="${Math.min(level, a.levels.length - 1)}">${cards}</div>
         </div>`;
@@ -824,7 +824,7 @@ class UI {
       const next = new Date(Date.parse(prof.name_changed_at) + CFG.online.nameCooldownDays * 86400000);
       return loc('name.err.name_cooldown', { date: this.shortDate(next) });
     }
-    const known = ['name_length', 'name_chars', 'name_banned', 'name_taken', 'offline'];
+    const known = ['name_length', 'name_chars', 'name_banned', 'name_taken', 'offline', 'server'];
     return loc('name.err.' + (known.indexOf(code) >= 0 ? code : code === 'network' ? 'offline' : 'unknown'));
   }
 
