@@ -39,7 +39,8 @@ class Game {
       if (document.hidden && this.state === 'play') this.togglePause();
     });
 
-    this.ui.title(this.save);
+    this.ui.title();
+    Music.play('menu');
     // A first launch opens on the rules; GOT IT drops back to the title.
     if (!this.save.seenHelp) this.ui.help();
   }
@@ -54,7 +55,7 @@ class Game {
   load() {
     // Screen shake starts off for players whose device asks for less motion.
     const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const blank = { best: 0, bestMine: 0, audio: true, shake: !calm, seenHelp: false, daily: null, stats: Stats.blank() };
+    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, seenHelp: false, daily: null, stats: Stats.blank() };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -66,6 +67,7 @@ class Game {
         best: s.best || 0,
         bestMine: s.bestMine || 0,
         audio: s.audio !== false,
+        music: s.music !== false,
         shake: s.shake !== undefined ? s.shake !== false : !calm,
         // A save from before the help panel existed belongs to someone who
         // read the rules on the old title screen.
@@ -82,28 +84,27 @@ class Game {
     try { localStorage.setItem(CFG.saveKey, JSON.stringify(this.save)); } catch (e) { /* private mode */ }
   }
 
+  /** Records go; settings stay. The caller decides which panel to show next. */
   wipeSave() {
-    // Records go; settings stay.
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null, stats: Stats.blank() };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, seenHelp: this.save.seenHelp, daily: null, stats: Stats.blank() };
     this.persist();
     Highscore.reset();
-    this.ui.title(this.save);
   }
 
   /**
-   * Change the lifetime counters. Any achievement tier this crosses is
+   * Change the lifetime counters. Any achievement level this crosses is
    * announced and saved straight away; plain counting waits for the next
    * save, which every mine's end makes anyway.
    */
   track(change) {
     const s = this.save.stats;
-    const before = Stats.tiers(s);
+    const before = Stats.levels(s);
     change(s);
-    const after = Stats.tiers(s);
+    const after = Stats.levels(s);
     let earned = false;
     CFG.achievements.forEach((a, i) => {
       // A leap past several bars at once announces only the best of them.
-      if (after[i] > before[i]) { this.ui.achievement(a, after[i] - 1); earned = true; }
+      if (after[i] > before[i]) { this.ui.achievement(a, after[i]); earned = true; }
     });
     if (earned) this.persist();
   }
@@ -157,7 +158,8 @@ class Game {
   }
 
   startMine(quiet) {
-    if (!quiet) Sfx.init();
+    if (!quiet) { Sfx.init(); Music.play('game', true); }
+    Music.duck(false);
     Sfx.setEnabled(this.save.audio !== false);
     Sfx.stopRumble();
 
@@ -219,7 +221,8 @@ class Game {
     this.newCampaign(true);
     this.state = 'title';
     ExitGuard.sync();
-    this.ui.title(this.save);
+    Music.play('menu');
+    this.ui.title();
   }
 
   /** Straight into the next mine: same gear, empty pockets. */
@@ -282,6 +285,8 @@ class Game {
     this.persist();
     Sfx.stopRumble();
     this.state = 'over';
+    Music.duck(false);
+    Music.play('menu');
     this.input.reset();
     this.ui.syncWallet(this);
     this.ui.syncTimer(this);
@@ -357,10 +362,11 @@ class Game {
     const die = () => { if (this.campaign === c && this.state !== 'over') this.endRun('death'); };
     this.openPanel(() => this.ui.revive(this, {
       onDecline: die,
-      onWatch: () => Ads.show().then((earned) => {
+      onWatch: () => { Music.hold(true); return Ads.show().then((earned) => {
+        Music.hold(false);
         if (this.campaign !== c) return;
         if (earned) this.revivePlayer(); else die();
-      }),
+      }); },
     }));
   }
 
@@ -641,6 +647,7 @@ class Game {
   openPanel(builder) {
     this.state = 'paused';
     this.input.reset();
+    Music.duck(true);
     builder();
   }
 
@@ -648,6 +655,7 @@ class Game {
     if (this.state !== 'paused') return;
     this.ui.hide();
     this.input.reset();
+    Music.duck(false);
     this.state = 'play';
   }
 
@@ -661,6 +669,12 @@ class Game {
     Sfx.setEnabled(this.save.audio);
     this.persist();
     this.ui.toast(loc('toast.sound', { s: loc(this.save.audio ? 'common.on' : 'common.off') }));
+  }
+
+  toggleMusic() {
+    this.save.music = !Music.enabled;
+    Music.setEnabled(this.save.music);
+    this.persist();
   }
 
   toggleShake() {

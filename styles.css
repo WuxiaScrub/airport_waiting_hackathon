@@ -49,9 +49,10 @@
   --accent:      #6f57b8;
   --accent-deep: #4a3a86;
   --accent-edge: #2c2154;
-  --hot:         #e0623c;
-  --hot-deep:    #b3391f;
-  --hot-edge:    #6d1f0e;
+  /* Red is for leaving: quitting a run, erasing, deleting. */
+  --quit:        #e5484d;
+  --quit-deep:   #b42328;
+  --quit-edge:   #5e1013;
 
   --medal-gold:   #ffcf4a;
   --medal-silver: #cfd8e6;
@@ -247,7 +248,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   z-index: 21;
 }
 .achieve.show { animation: achieveIn 2.6s ease forwards; }
-.achieve .medal { width: 20px; height: 20px; flex-shrink: 0; }
+.achieve .lv-badge { align-self: center; flex-shrink: 0; }
 .achieve-txt { display: flex; flex-direction: column; line-height: 1.25; }
 .achieve-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: var(--gold); }
 .achieve-v { font-size: var(--fs-md); font-weight: 800; color: var(--ink); }
@@ -511,9 +512,16 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 }
 .lang-chip svg { width: 14px; height: 14px; }
 .lang-chip:active { background: var(--surface-3); color: var(--ink); }
+.music-chip { right: auto; left: 14px; padding: 6px 9px; }
+.music-chip.off { color: var(--mute); }
+
+/* The title: a little headroom for the corner chips, and nothing below the
+   doors but two quiet links. */
+.panel-inner.title { padding-top: 34px; }
+.title-links { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.title-links .link-btn { margin: 0; }
 
 .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .stat {
   background: var(--surface-2);
   border: 1px solid var(--edge-soft);
@@ -526,11 +534,6 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   font-size: 20px; font-weight: 700;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.stats.three .stat { padding: 8px 9px; }
-.stats.three .stat .k { line-height: 1.25; }
-.stats.three .stat { display: flex; flex-direction: column; justify-content: space-between; }
-.title-stats { margin-top: 14px; }
-.stats.three .stat .v { font-size: var(--fs-lg); }
 .stat .v.gold { color: var(--gold); }
 .stat .v.carry { color: var(--carry); }
 /* An odd stat out sits across the whole row rather than leaving a hole. */
@@ -679,6 +682,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   color: var(--dim); font-size: var(--fs-xs); font-weight: 700; text-decoration: underline;
 }
 .link-btn:active { color: var(--ink); }
+.credits { font-size: var(--fs-xs); font-weight: 600; line-height: 1.5; color: var(--mute); margin: 6px 0 4px; }
 .acct .name-rules { margin: 0 0 8px; }
 .sso {
   display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -692,8 +696,10 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .sso-logo.apple { width: auto; height: auto; font-size: 19px; line-height: 1; }
 .acct-linked { font-size: var(--fs-md); font-weight: 800; color: var(--carry); }
 .acct-email { display: block; color: var(--dim); font-weight: 600; font-size: var(--fs-xs); margin-top: 2px; overflow-wrap: anywhere; }
-.btn.hot { background: linear-gradient(180deg, var(--hot), var(--hot-deep)); box-shadow: 0 5px 0 var(--hot-edge); }
-.btn.hot:active { box-shadow: 0 2px 0 var(--hot-edge); }
+.btn.quit { background: linear-gradient(180deg, var(--quit), var(--quit-deep)); box-shadow: 0 5px 0 var(--quit-edge); }
+.btn.quit:active { box-shadow: 0 2px 0 var(--quit-edge); }
+.btn.ghost.quit { background: transparent; box-shadow: none; color: #ff8a8d; border-color: rgba(229, 72, 77, .5); }
+.btn.ghost.quit:active { background: rgba(229, 72, 77, .14); color: #ffb3b5; }
 
 .help { font-size: var(--fs-sm); line-height: 1.6; color: var(--dim); font-weight: 600; }
 .help b { color: var(--ink); font-weight: 800; }
@@ -703,6 +709,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 /* ------------------------------------------------- online panels */
 .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .btn-row .btn { margin-top: 9px; }
+.btn-row.one { grid-template-columns: 1fr; }
 .btn.small { width: auto; display: inline-block; margin: 0; padding: 7px 12px; font-size: var(--fs-sm); }
 .btn:disabled { opacity: .5; cursor: default; }
 
@@ -784,22 +791,59 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .ledger .row:last-child { border-top: 1px solid rgba(255,255,255,.14); padding-top: 4px; margin-top: 4px; }
 
 /* ------------------------------------------------- Achievements & stats */
-.ach-list { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 18px; }
-.ach-row {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; border-radius: 12px;
+.ach-list { display: flex; flex-direction: column; gap: 14px; margin: 12px 0 20px; }
+.ach-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.ach-nm { font-size: var(--fs-md); font-weight: 800; }
+.ach-lv { flex-shrink: 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .06em; color: var(--dim); }
+.ach.done .ach-lv { color: var(--gold); }
+
+/* One achievement's levels, side by side. Cards are narrower than the row so
+   the next one always peeks in: the row reads as something to swipe. */
+.lv-strip {
+  position: relative;
+  display: flex; gap: 8px;
+  overflow-x: auto; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+}
+.lv-strip::-webkit-scrollbar { display: none; }
+.lv-card {
+  flex: 0 0 74%;
+  scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 11px; border-radius: 12px;
   background: var(--surface-2); border: 1px solid var(--edge-soft);
 }
-.ach-row.done { border-color: rgba(255, 207, 74, .35); }
-.ach-medals { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
-.ach-medals .medal { width: 12px; height: 12px; }
-.ach-info { flex: 1; min-width: 0; }
-.ach-nm { font-size: var(--fs-md); font-weight: 800; }
-.ach-ds { font-size: var(--fs-sm); color: var(--dim); font-weight: 600; line-height: 1.35; }
-.ach-bar { height: 5px; margin: 6px 0 3px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
+.lv-card.done { border-color: rgba(255, 201, 94, .38); background: rgba(255, 201, 94, .06); }
+.lv-card.now { border-color: var(--edge-strong); }
+.lv-card.locked { opacity: .5; }
+.lv-ds { font-size: var(--fs-sm); font-weight: 700; line-height: 1.35; color: var(--ink); }
+.lv-card.locked .lv-ds { color: var(--dim); }
+.lv-pg { font-size: var(--fs-xs); font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
+.lv-card.done .lv-pg { color: var(--gold); }
+.ach-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
 .ach-bar span { display: block; height: 100%; border-radius: 3px; background: var(--gold); }
-.ach-row.done .ach-bar span { background: var(--medal-gold); }
-.ach-pg { font-size: var(--fs-xs); font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* The level itself, in Roman numerals. Filled once earned, outlined while
+   being worked on, grey while locked. */
+.lv-badge {
+  align-self: flex-start;
+  min-width: 30px; height: 22px; padding: 0 7px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 13px; font-weight: 700; letter-spacing: .06em; line-height: 1;
+}
+.lv-badge.done { background: linear-gradient(180deg, #ffe08a, #e0a63a); color: #3a2506; box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
+.lv-badge.now { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.lv-badge.locked { color: var(--dim); box-shadow: inset 0 0 0 1px var(--edge-strong); }
+
+/* Profile: the way into achievements, and the save's two red buttons. */
+.btn.ach-btn { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 16px; }
+.ach-count { font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.danger-zone { margin-top: 4px; }
+
 .stats-h { margin-bottom: 10px; }
 .score-head.split { display: flex; justify-content: space-between; }
 .score-head.split span:last-child { color: var(--ink); font-variant-numeric: tabular-nums; }

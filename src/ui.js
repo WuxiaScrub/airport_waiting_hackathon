@@ -42,6 +42,7 @@ class UI {
       achieve: document.getElementById('achieve'),
     };
     this._achQueue = [];       // achievement pop-ups waiting their turn
+    this._back = [];           // panels to return to, innermost last — see open()
     this._heartCount = -1;
     this._hatCount = -1;
     this._toastTimer = 0;
@@ -198,11 +199,11 @@ class UI {
   }
 
   /**
-   * "ACHIEVEMENT · SILVER — Exterminator". One at a time: a dynamite blast
-   * that crosses two bars at once shows both, one after the other.
+   * "ACHIEVEMENT UNLOCKED — Exterminator II". One at a time: a dynamite blast
+   * that finishes two achievements at once shows both, one after the other.
    */
-  achievement(a, tier) {
-    this._achQueue.push({ a, tier });
+  achievement(a, level) {
+    this._achQueue.push({ a, level });
     if (this._achQueue.length === 1) this.nextAchievement();
   }
 
@@ -210,10 +211,9 @@ class UI {
     const item = this._achQueue[0];
     if (!item) return;
     const el = this.el.achieve;
-    const k = ACH_TIERS[item.tier];
-    el.innerHTML = `<span class="medal ${k}"></span><span class="achieve-txt">
-      <span class="achieve-k">${loc('ach.unlocked', { tier: loc('ach.tier.' + k) })}</span>
-      <span class="achieve-v">${loc('ach.' + item.a.id + '.name')}</span></span>`;
+    el.innerHTML = `${this.levelBadge(item.level, 'done')}<span class="achieve-txt">
+      <span class="achieve-k">${loc('ach.unlocked')}</span>
+      <span class="achieve-v">${this.achName(item.a, item.level)}</span></span>`;
     el.classList.remove('show');
     void el.offsetWidth;
     el.classList.add('show');
@@ -287,38 +287,49 @@ class UI {
     </div>`;
   }
 
-  title(save) {
-    const best = save.best || 0;
-    this._repaint = () => this.title(save);
+  /**
+   * The title: two ways to play and two doors (boards, profile). Records,
+   * stats and the save itself all live behind PROFILE.
+   */
+  title() {
+    const save = this.game.save;
+    this._back = [];
+    this._repaint = () => this.title();
     this.show(`
+      ${this.musicButton()}
       ${this.langButton()}
       <div class="logo">${loc('title.logo')}</div>
       <div class="logo-sub">${loc('title.logoSub')}</div>
       <div class="tagline">${loc('title.tagline')}</div>
+      ${Online.enabled && Online.updateRequired ? `<div class="note">${loc('online.update')}</div>` : ''}
       ${this.dailyCard(save)}
       <button class="btn" id="startBtn">${loc('title.endless')}</button>
-      ${this.onlineButtons()}
-      <div class="btn-row">
-        <button class="btn ghost" id="helpBtn">${loc('help.title')}</button>
-        <button class="btn ghost" id="achBtn">${loc('title.achievements')}</button>
+      <div class="btn-row${Online.enabled ? '' : ' one'}">
+        ${Online.enabled ? `<button class="btn ghost" id="boardsBtn">${loc('title.boards')}</button>` : ''}
+        <button class="btn ghost" id="profileBtn">${loc('title.profile')}</button>
       </div>
-      <div class="stats three title-stats">
-        <div class="stat"><div class="k">${loc('title.bestHaul')}</div><div class="v gold">${fmt(Highscore.best())}</div></div>
-        <div class="stat"><div class="k">${loc('title.furthestMine')}</div><div class="v carry">${save.bestMine || 0}</div></div>
-        <div class="stat"><div class="k">${loc('title.deepest')}</div><div class="v">${loc('common.metres', { n: best })}</div></div>
+      <div class="title-links">
+        <button class="link-btn" id="helpBtn">${loc('help.title')}</button>
+        ${this.privacyLink()}
       </div>
-      ${this.scoreBoard()}
-      ${best || Highscore.list().length ? `<button class="btn ghost" id="wipeBtn">${loc('title.wipe')}</button>` : ''}
-      ${this.privacyLink()}
-    `);
+    `, 'title');
     this.on('#startBtn', () => this.game.newCampaign());
     this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
     this.on('#helpBtn', () => this.help());
-    this.on('#achBtn', () => this.openOnline(() => this.achievements()));
-    this.on('#wipeBtn', () => this.game.wipeSave());
+    this.on('#musicBtn', () => { this.game.toggleMusic(); this.title(); });
     this.wirePrivacy();
     this.wireOnlineButtons();
     this.wireLang();
+  }
+
+  /** Music on/off, the title's other corner chip. */
+  musicButton() {
+    const on = Music.enabled;
+    return `<button class="lang-chip music-chip${on ? '' : ' off'}" id="musicBtn"
+      aria-label="${loc('pause.music', { s: loc(on ? 'common.on' : 'common.off') })}" aria-pressed="${on}">
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>${on ? '' : '<path d="M3 3l18 18"/>'}
+      </svg></button>`;
   }
 
   /** How to play: one row per rule. Opens by itself on a first launch. */
@@ -333,49 +344,79 @@ class UI {
       ${this.langButton()}
       <h2>${loc('help.title')}</h2>
       <div class="help" style="margin-top: 12px">${rows}</div>
+      <div class="credits">${loc('help.credits')}</div>
       <button class="btn" id="helpDone">${loc(first ? 'help.gotIt' : 'common.back')}</button>
     `);
     this.on('#helpDone', () => {
       if (first) { save.seenHelp = true; this.game.persist(); }
-      this.title(save);
+      this.title();
     });
     this.wireLang();
   }
 
+  /** "Exterminator II" — an achievement's name at a level (none at 0). */
+  achName(a, level) {
+    const name = loc('ach.' + a.id + '.name');
+    return level ? loc('ach.nameLevel', { name, n: roman(level) }) : name;
+  }
+
+  /** The Roman-numeral badge for one level: 'done', 'now' (being worked on) or 'locked'. */
+  levelBadge(level, state) {
+    return `<span class="lv-badge ${state}">${roman(level)}</span>`;
+  }
+
+  /** What level `i` (0-based) of an achievement asks for. */
+  achDesc(a, i) {
+    const bar = a.levels[i];
+    const key = 'ach.' + a.id + '.desc';
+    return a.lower ? loc(key, { t: fmtTime(bar) })
+      : loc(bar === 1 && STRINGS.en[key + '1'] ? key + '1' : key, { n: fmt(bar) });
+  }
+
+  /** Levels unlocked across every achievement, and how many there are. */
+  achCount() {
+    const s = this.game.save.stats;
+    return {
+      n: CFG.achievements.reduce((n, a) => n + Stats.level(a, s), 0),
+      max: CFG.achievements.reduce((n, a) => n + a.levels.length, 0),
+    };
+  }
+
   /**
-   * Achievements, then the lifetime counters behind them. Each achievement
-   * shows the medals it has, what the next one asks for, and how close it is.
+   * Achievements, then the lifetime counters behind them. Each achievement is
+   * a row of level cards — I, II, III… — that scrolls sideways, opened on the
+   * level being worked on: the ones before it are done, the ones after locked.
    */
   achievements() {
     const save = this.game.save;
     const s = save.stats;
     const time = (secs) => (secs ? fmtTime(secs) : loc('stats.none'));
 
-    let earned = 0;
     const rows = CFG.achievements.map(a => {
-      const tier = Stats.tier(a, s);
-      earned += tier;
+      const level = Stats.level(a, s);
       const v = Stats.value(s, a.stat);
-      const done = tier >= a.tiers.length;
-      const bar = a.tiers[Math.min(tier, a.tiers.length - 1)];
-      const key = 'ach.' + a.id + '.desc';
-      const desc = a.lower ? loc(key, { t: fmtTime(bar) })
-        : loc(bar === 1 && STRINGS.en[key + '1'] ? key + '1' : key, { n: fmt(bar) });
-      // A time fills as it comes down toward the bar; a count as it climbs.
-      const pct = done ? 100 : a.lower ? (v ? clamp(bar / v, 0, 1) * 100 : 0) : clamp(v / bar, 0, 1) * 100;
-      const progress = done ? loc('ach.done')
-        : a.lower ? loc('ach.best', { t: time(v) })
-        : loc('ach.progress', { v: fmt(v), n: fmt(bar) });
-      const medals = ACH_TIERS.map((k, i) => `<span class="medal ${i < tier ? k : 'none'}"></span>`).join('');
+      const done = level >= a.levels.length;
+      const cards = a.levels.map((bar, i) => {
+        const state = i < level ? 'done' : i === level ? 'now' : 'locked';
+        let foot = '';
+        if (state === 'done') foot = `<div class="lv-pg">${loc('ach.done')}</div>`;
+        else if (state === 'now') {
+          // A time fills as it comes down toward the bar; a count as it climbs.
+          const pct = a.lower ? (v ? clamp(bar / v, 0, 1) * 100 : 0) : clamp(v / bar, 0, 1) * 100;
+          foot = `<div class="ach-bar"><span style="width:${pct.toFixed(1)}%"></span></div>
+            <div class="lv-pg">${a.lower ? loc('ach.best', { t: time(v) }) : loc('ach.progress', { v: fmt(v), n: fmt(bar) })}</div>`;
+        }
+        return `<div class="lv-card ${state}">
+          ${this.levelBadge(i + 1, state)}
+          <div class="lv-ds">${this.achDesc(a, i)}</div>${foot}</div>`;
+      }).join('');
       return `
-        <div class="ach-row${done ? ' done' : ''}">
-          <div class="ach-medals">${medals}</div>
-          <div class="ach-info">
-            <div class="ach-nm">${loc('ach.' + a.id + '.name')}</div>
-            <div class="ach-ds">${desc}</div>
-            <div class="ach-bar"><span style="width:${pct.toFixed(1)}%"></span></div>
-            <div class="ach-pg">${progress}</div>
+        <div class="ach${done ? ' done' : ''}">
+          <div class="ach-head">
+            <span class="ach-nm">${loc('ach.' + a.id + '.name')}</span>
+            <span class="ach-lv">${level ? loc('ach.level', { n: roman(level), max: roman(a.levels.length) }) : loc('ach.none')}</span>
           </div>
+          <div class="lv-strip" data-at="${Math.min(level, a.levels.length - 1)}">${cards}</div>
         </div>`;
     }).join('');
 
@@ -402,17 +443,22 @@ class UI {
         ${line('stats.runs', fmt(s.runs))}
         ${line('stats.deaths', fmt(s.deaths))}`);
 
-    const max = CFG.achievements.reduce((n, a) => n + a.tiers.length, 0);
     this._repaint = () => this.achievements();
     this.show(`
       ${this.langButton()}
       <h2>${loc('ach.title')}</h2>
-      <div class="sub">${loc('ach.sub', { n: earned, max })}</div>
+      <div class="sub">${loc('ach.sub', this.achCount())}</div>
       <div class="ach-list">${rows}</div>
       <h2 class="stats-h">${loc('stats.title')}</h2>
       ${stats}
       ${this.backButton()}
     `);
+    // Open each strip on the level being worked on; the finished ones are a
+    // swipe back to the left.
+    this.el.panelInner.querySelectorAll('.lv-strip').forEach(strip => {
+      const card = strip.children[+strip.dataset.at];
+      if (card) strip.scrollLeft = card.offsetLeft;
+    });
     this.wireBack();
     this.wireLang();
   }
@@ -433,7 +479,7 @@ class UI {
 
   /* ---------------------------------------------------------------- online */
 
-  /** LEADERBOARDS / PROFILE, plus the update notice. Nothing when offline-only. */
+  /** LEADERBOARDS / PROFILE on the summary, plus the update notice. Nothing when offline-only. */
   onlineButtons() {
     if (!Online.enabled) return '';
     return `${Online.updateRequired ? `<div class="note">${loc('online.update')}</div>` : ''}
@@ -446,13 +492,16 @@ class UI {
   wireOnlineButtons() {
     // From a daily's summary, open on today's board; everywhere else, endless.
     const tab = this.game.state === 'over' && this.game.campaign.daily ? 'today' : 'endless';
-    this.on('#boardsBtn', () => this.openOnline(() => this.leaderboards(tab)));
-    this.on('#profileBtn', () => this.openOnline(() => this.profile()));
+    this.on('#boardsBtn', () => this.open(() => this.leaderboards(tab)));
+    this.on('#profileBtn', () => this.open(() => this.profile()));
   }
 
-  /** Remember the panel underneath so BACK returns to it, then open `draw`. */
-  openOnline(draw) {
-    this._back = this._repaint || (() => this.title(this.game.save));
+  /**
+   * Open `draw` over the current panel. BACK returns to the panel underneath,
+   * one level at a time (title → profile → achievements and back again).
+   */
+  open(draw) {
+    this._back.push(this._repaint || (() => this.title()));
     draw();
   }
 
@@ -461,7 +510,7 @@ class UI {
   wirePrivacy() { this.on('#privacyBtn', () => Native.openUrl(CFG.links.privacy)); }
 
   backButton() { return `<button class="btn" id="backBtn">${loc('common.back')}</button>`; }
-  wireBack() { this.on('#backBtn', () => { const b = this._back; this._back = null; b(); }); }
+  wireBack() { this.on('#backBtn', () => (this._back.pop() || (() => this.title()))()); }
 
   /** A name on a board: the player's pick, or Miner#1234 until they pick one. */
   playerName(name, tag) { return name ? esc(name) : loc('name.anon', { tag: esc(tag) }); }
@@ -541,16 +590,18 @@ class UI {
   }
 
   /**
-   * The player's profile: name (editable), medals, bests and recent runs, and
-   * account deletion behind a second confirmation.
+   * The player's profile. Online: name (editable), medals, bests, sign-in and
+   * recent runs. Always, from this device: achievements & stats, the personal
+   * haul board, and erasing the save. Erasing and account deletion each sit
+   * behind a second confirmation.
    */
   profile() {
-    const st = { res: null, editing: false, draft: '', err: '', busy: false, confirmDelete: false,
+    const st = { res: null, editing: false, draft: '', err: '', busy: false, confirmDelete: false, confirmWipe: false,
       // Save-your-progress: who this account is linked to, and any switch on offer.
       acct: { linked: null, busy: false, err: '', cred: null } };
     const p = () => (st.res && st.res.ok && st.res.data) || null;
 
-    const load = () => Promise.all([Online.myProfile(), Account.linked()]).then(([res, linked]) => {
+    const load = () => Online.enabled && Promise.all([Online.myProfile(), Account.linked()]).then(([res, linked]) => {
       st.res = res;
       st.acct.linked = linked;
       if (this._repaint === draw && this.isOpen) draw();
@@ -598,19 +649,28 @@ class UI {
       st.busy = true; draw();
       Online.deleteAccount().then(res => {
         st.busy = false;
-        if (res.ok) { this._back = null; this.game.wipeSave(); this.toast(loc('prof.deleted'), 2200); return; }
+        if (res.ok) { this.game.wipeSave(); this.title(); this.toast(loc('prof.deleted'), 2200); return; }
         st.err = loc(res.offline ? 'name.err.offline' : 'board.error');
         st.confirmDelete = false;
         if (this._repaint === draw && this.isOpen) draw();
       });
     };
 
+    const wipe = () => {
+      this.game.wipeSave();
+      st.confirmWipe = false;
+      this.toast(loc('prof.wiped'), 1800);
+      draw();
+    };
+
     const draw = () => {
       this._repaint = draw;
       const d = p();
-      const pending = Online.pending();
-      let body;
-      if (!d) {
+      const pending = Online.enabled ? Online.pending() : 0;
+      let body = '';
+      if (!Online.enabled) {
+        body = '';
+      } else if (!d) {
         body = this.onlineStatus(st.res, 'board.error', true);
       } else {
         const nameBlock = st.editing ? `
@@ -656,19 +716,34 @@ class UI {
           <div class="scores">
             <div class="score-head">${loc('prof.recent')}</div>
             ${recent || `<div class="score-empty">${loc('prof.noRuns')}</div>`}
-          </div>
-          ${st.confirmDelete ? `
-            <div class="note danger">${loc('prof.deleteBody')}</div>
-            <button class="btn hot" id="deleteYes" ${st.busy ? 'disabled' : ''}>${loc('prof.deleteYes')}</button>
-            <button class="btn ghost" id="deleteNo">${loc('prof.cancel')}</button>`
-          : `<button class="btn ghost" id="deleteBtn">${loc('prof.delete')}</button>`}`;
+          </div>`;
         if (!st.editing && st.err) body = `<div class="name-err">${st.err}</div>` + body;
       }
+
+      // Both destructive buttons wait at the bottom, each behind a second tap.
+      const ach = this.achCount();
+      const danger = st.confirmWipe ? `
+          <div class="note danger">${loc('prof.wipeBody')}</div>
+          <button class="btn quit" id="wipeYes">${loc('prof.wipeYes')}</button>
+          <button class="btn ghost" id="wipeNo">${loc('prof.cancel')}</button>`
+        : st.confirmDelete ? `
+          <div class="note danger">${loc('prof.deleteBody')}</div>
+          <button class="btn quit" id="deleteYes" ${st.busy ? 'disabled' : ''}>${loc('prof.deleteYes')}</button>
+          <button class="btn ghost" id="deleteNo">${loc('prof.cancel')}</button>`
+        : `<div class="btn-row${d ? '' : ' one'}">
+            <button class="btn ghost quit" id="wipeBtn">${loc('prof.wipe')}</button>
+            ${d ? `<button class="btn ghost quit" id="deleteBtn">${loc('prof.delete')}</button>` : ''}
+          </div>`;
 
       this.show(`
         <h2>${loc('prof.title')}</h2>
         ${pending ? `<div class="sub">${loc('prof.pending', { n: pending })}</div>` : ''}
         ${body}
+        <button class="btn ach-btn" id="achBtn">
+          <span>${loc('prof.achievements')}</span><span class="ach-count">${ach.n} / ${ach.max}</span>
+        </button>
+        ${this.scoreBoard()}
+        <div class="danger-zone">${danger}</div>
         ${this.backButton()}
         ${this.langButton()}
         ${this.privacyLink()}
@@ -682,7 +757,11 @@ class UI {
       this.on('#editName', () => { st.editing = true; st.err = ''; st.draft = (p() && p().name) || ''; draw(); });
       this.on('#cancelName', () => { st.editing = false; st.err = ''; draw(); });
       this.on('#saveName', save);
-      this.on('#deleteBtn', () => { st.confirmDelete = true; st.err = ''; draw(); });
+      this.on('#achBtn', () => this.open(() => this.achievements()));
+      this.on('#wipeBtn', () => { st.confirmWipe = true; st.confirmDelete = false; draw(); });
+      this.on('#wipeNo', () => { st.confirmWipe = false; draw(); });
+      this.on('#wipeYes', wipe);
+      this.on('#deleteBtn', () => { st.confirmDelete = true; st.confirmWipe = false; st.err = ''; draw(); });
       this.on('#deleteNo', () => { st.confirmDelete = false; draw(); });
       this.wirePrivacy();
       this.on('#deleteYes', remove);
@@ -955,7 +1034,7 @@ class UI {
             <div class="v carry">${fmt(game.carryValue())}</div></div>
         </div>
         <button class="btn" id="stayBtn">${loc('confirm.stay')}</button>
-        <button class="btn ghost" id="leaveBtn">${loc('confirm.leave')}</button>
+        <button class="btn quit" id="leaveBtn">${loc('confirm.leave')}</button>
         ${this.langButton()}
       `);
       this.on('#stayBtn', () => { restore(); opts.onStay(); });
@@ -1031,12 +1110,14 @@ class UI {
       <button class="btn" id="resumeBtn">${loc('pause.resume')}</button>
       <div class="btn-row">
         <button class="btn ghost" id="audioBtn">${loc('pause.sound', { s: onOff(Sfx.enabled) })}</button>
-        <button class="btn ghost" id="shakeBtn">${loc('pause.shake', { s: onOff(game.save.shake !== false) })}</button>
+        <button class="btn ghost" id="musicBtn">${loc('pause.music', { s: onOff(Music.enabled) })}</button>
       </div>
-      <button class="btn ghost" id="quitBtn">${loc('pause.quit')}</button>
+      <button class="btn ghost" id="shakeBtn">${loc('pause.shake', { s: onOff(game.save.shake !== false) })}</button>
+      <button class="btn ghost quit" id="quitBtn">${loc('pause.quit')}</button>
     `);
     this.on('#resumeBtn', () => game.closePanel());
     this.on('#audioBtn', () => { game.toggleAudio(); this.pause(game); });
+    this.on('#musicBtn', () => { game.toggleMusic(); this.pause(game); });
     this.on('#shakeBtn', () => { game.toggleShake(); this.pause(game); });
     this.on('#quitBtn', () => this.confirmQuit(game));
     this.wireLang();
@@ -1062,7 +1143,7 @@ class UI {
           <div class="v carry">${fmt(game.carryValue())}</div></div>
       </div>
       <button class="btn" id="stayBtn">${loc('confirm.stay')}</button>
-      <button class="btn ghost" id="quitGo">${loc('confirm.quitGo')}</button>
+      <button class="btn quit" id="quitGo">${loc('confirm.quitGo')}</button>
     `);
     this.on('#stayBtn', () => this.pause(game));
     this.on('#quitGo', () => game.endRun('abandon'));

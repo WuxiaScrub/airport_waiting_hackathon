@@ -183,7 +183,8 @@ src/i18n.js         ← every user-facing string, in English and 简体中文
 src/util.js         math, seeded RNG, value noise
 src/highscore.js    campaign-score board (local today, global backend ready)
 src/guard.js        refresh / Back confirmation while a mine is live
-src/audio.js        Web Audio synthesis (swap for samples here)
+src/audio.js        Web Audio synthesis, plus the two looping music tracks
+assets/audio/       menu and in-mine music (credits in attribution.txt)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights
 src/entities.js     gem pickups, lit dynamite, falling blocks
@@ -215,7 +216,9 @@ Two notes for anyone extending this:
   unioned into their own buffer first — compositing them one at a time with
   `destination-in` intersects them instead, which blacks out the screen.
 - **Audio is one function.** `Sfx.play(name)` maps names to synth recipes; point
-  those names at decoded buffers to drop in real sound effects later.
+  those names at decoded buffers to drop in real sound effects later. Music is
+  separate: `Music.play('menu' | 'game')` crossfades between the two streamed
+  tracks in `CFG.audio.music`, and starts on the player's first tap.
 - **A live mine exists only in memory.** The save file holds records, settings
   and the scores of mines already escaped, so `src/guard.js` stands between a
   stray tap and a lost campaign: `beforeunload` covers a reload or a closed tab

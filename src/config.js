@@ -269,7 +269,20 @@ const CFG = {
     jump: 1.15,          // extra launch speed per level (~+0.6 tiles of height)
   },
 
-  audio: { master: 0.32 },
+  audio: {
+    master: 0.32,          // sound effects
+    // Background music (see Music in src/audio.js). `volume` is each track's
+    // full level; `duck` scales it while the game is paused; `fade` is the
+    // crossfade in seconds.
+    music: {
+      tracks: {
+        menu: { src: 'assets/audio/menu_loop.mp3', volume: 0.5 },
+        game: { src: 'assets/audio/bgm.mp3', volume: 0.32 },
+      },
+      duck: 0.45,
+      fade: 1.2,
+    },
+  },
 
   // The rewarded-ad revive: once per run, and it has to be survivable.
   revive: {
@@ -282,22 +295,23 @@ const CFG = {
   },
 
   // Lifetime achievements. Each reads one counter from the save (see
-  // Stats.value in src/stats.js) and has three bars: bronze, silver, gold.
+  // Stats.value in src/stats.js) and one bar per level, I, II, III… in order.
+  // Add a bar to the end of a list to give that achievement another level.
   // `lower` marks a time in seconds, where coming in under the bar counts.
   // Names and descriptions live in i18n.js under `ach.<id>.name` / `.desc`.
   achievements: [
-    { id: 'sapphire', stat: 'sapphire',      tiers: [50, 300, 1500] },
-    { id: 'emerald',  stat: 'emerald',       tiers: [25, 150, 750] },
-    { id: 'ruby',     stat: 'ruby',          tiers: [10, 75, 400] },
-    { id: 'diamond',  stat: 'diamond',       tiers: [5, 40, 200] },
-    { id: 'heart',    stat: 'hearts',        tiers: [1, 10, 50] },
-    { id: 'spider',   stat: 'spiders',       tiers: [10, 50, 250] },
-    { id: 'bat',      stat: 'bats',          tiers: [5, 25, 100] },
-    { id: 'pick',     stat: 'pickKills',     tiers: [10, 75, 300] },
-    { id: 'blast',    stat: 'dynamiteKills', tiers: [5, 40, 150] },
-    { id: 'dirt',     stat: 'dirtKills',     tiers: [1, 15, 60] },
-    { id: 'thief',    stat: 'recovered',     tiers: [1, 10, 50] },
-    { id: 'speed',    stat: 'fastest',       tiers: [480, 360, 270], lower: true },
+    { id: 'sapphire', stat: 'sapphire',      levels: [50, 300, 1500] },
+    { id: 'emerald',  stat: 'emerald',       levels: [25, 150, 750] },
+    { id: 'ruby',     stat: 'ruby',          levels: [10, 75, 400] },
+    { id: 'diamond',  stat: 'diamond',       levels: [5, 40, 200] },
+    { id: 'heart',    stat: 'hearts',        levels: [1, 10, 50] },
+    { id: 'spider',   stat: 'spiders',       levels: [10, 50, 250] },
+    { id: 'bat',      stat: 'bats',          levels: [5, 25, 100] },
+    { id: 'pick',     stat: 'pickKills',     levels: [10, 75, 300] },
+    { id: 'blast',    stat: 'dynamiteKills', levels: [5, 40, 150] },
+    { id: 'dirt',     stat: 'dirtKills',     levels: [1, 15, 60] },
+    { id: 'thief',    stat: 'recovered',     levels: [1, 10, 50] },
+    { id: 'speed',    stat: 'fastest',       levels: [480, 360, 270], lower: true },
   ],
 
   // The optional online layer (Supabase). Both values are public by design —

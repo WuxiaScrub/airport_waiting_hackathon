@@ -16,6 +16,12 @@
     else ExitGuard.install(game);
     Ads.init();                      // app only: consent, then preload the revive ad
     Sfx.setEnabled(game.save.audio !== false);
+    Music.setEnabled(game.save.music !== false);
+    // Browsers hold all sound until the player touches something; the music
+    // starts on that first touch, wherever it lands. (A touch only counts as
+    // a gesture once the finger lifts, hence touchend and pointerup.)
+    const unlock = () => Music.unlock();
+    for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) window.addEventListener(ev, unlock, true);
     game.start();
   }
 
