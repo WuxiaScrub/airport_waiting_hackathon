@@ -191,6 +191,7 @@ src/entities.js     gem pickups, lit dynamite, falling blocks
 src/enemies.js      Spider, Bat
 src/player.js       gravity, jumping, mining, tools, damage, hard hat
 src/input.js        floating joystick, buttons, keyboard
+src/demo.js         the autopilot miner playing behind the title screen
 src/render.js       procedural sprite atlas + the two-layer lighting composite
 src/ui.js           HUD syncing and modal panels
 src/game.js         state machine, run lifecycle, spawning, economy

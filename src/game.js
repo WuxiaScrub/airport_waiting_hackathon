@@ -27,11 +27,12 @@ class Game {
     this.blocks = [];
     this.carry = [];
     this.checkpointLock = null;
+    this.demo = null;              // the autopilot playing behind the title (src/demo.js)
 
     this.save = this.load();
-    // A live mine sits behind the title panel instead of a black rectangle.
+    // A live mine sits behind the title panel instead of a black rectangle,
+    // with a miner at work in it.
     this.newCampaign(true);
-    this.state = 'title';
 
     window.addEventListener('resize', () => this.renderer.resize());
     window.addEventListener('orientationchange', () => setTimeout(() => this.renderer.resize(), 260));
@@ -97,6 +98,7 @@ class Game {
    * save, which every mine's end makes anyway.
    */
   track(change) {
+    if (this.demo) return;         // the title-screen miner's work is not the player's
     const s = this.save.stats;
     const before = Stats.levels(s);
     change(s);
@@ -157,8 +159,16 @@ class Game {
     return t[Math.min(this.campaign.mine, t.length) - 1];
   }
 
+  /**
+   * `quiet` builds the title screen's mine: no toast, nothing saved, and the
+   * demo miner at the controls (unless the device asks for reduced motion).
+   */
   startMine(quiet) {
     if (!quiet) { Sfx.init(); Music.play('game', true); }
+    const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.demo = quiet && !calm ? new Demo() : null;
+    Sfx.setDim(quiet ? CFG.demo.volume : 1);
+    document.body.classList.toggle('attract', !!quiet);
     Music.duck(false);
     Sfx.setEnabled(this.save.audio !== false);
     Sfx.stopRumble();
@@ -198,14 +208,14 @@ class Game {
     this.cam.x = this.player.x;
     this.cam.y = this.player.y;
 
-    this.ui.hide();
+    if (!quiet) this.ui.hide();
     this.ui.syncHealth(this.player);
     this.ui.syncHat(this.player);
     this.ui.syncDynamite(this.player);
     this.ui.syncWallet(this);
     this.ui.syncTimer(this);
     this.input.reset();
-    this.state = 'play';
+    this.state = quiet ? 'title' : 'play';
     // From here on a reload or a Back press would cost the player a run.
     ExitGuard.sync();
     if (!quiet) {
@@ -219,7 +229,6 @@ class Game {
   /** Back to the title, with a fresh idle mine behind it. */
   toTitle() {
     this.newCampaign(true);
-    this.state = 'title';
     ExitGuard.sync();
     Music.play('menu');
     this.ui.title();
@@ -460,7 +469,7 @@ class Game {
       if (!g.recovered) { this.campaign.gems++; this.campaign.found += value; }
       this.track(s => { if (g.recovered) s.recovered++; else s.gems[g.type]++; });
       Sfx.play('gem', { tier: g.type });
-      this.fx.flyToHud(scr.x, scr.y, CFG.gems.types[g.type].color, value);
+      if (!this.demo) this.fx.flyToHud(scr.x, scr.y, CFG.gems.types[g.type].color, value);
       this.fx.text(g.x, g.y - 0.4, '+' + fmt(value), CFG.gems.types[g.type].glow, { size: 11, life: 0.8 });
     }
     this.ui.syncWallet(this);
@@ -695,6 +704,7 @@ class Game {
 
   shake(amount) {
     if (this.save.shake === false) return;
+    if (this.demo) amount *= 0.35;   // behind the menu, only a tremor
     this.shakeAmt = Math.min(26, this.shakeAmt + amount);
   }
 
@@ -822,20 +832,23 @@ class Game {
     this.ui.syncTimer(this);
     this.ui.syncPause(this);
 
-    // Paused / title / summary still animate the mine behind the panel.
-    if (this.state !== 'play') {
+    // The title runs the real mine with the demo at the controls.
+    const demo = this.state === 'title' && this.demo;
+    if (demo && !demo.think(dt, this)) { this.newCampaign(true); return; }
+
+    // Paused / summary still animate the mine behind the panel.
+    if (this.state !== 'play' && !demo) {
       this.fx.update(dt);
       if (this.world) { this.updateCamera(dt); this.markExplored(); this.buildLights(); }
       return;
     }
 
-    this.input.update();
-    this.mineTime += dt;
-    this.player.update(dt, this, this.input);
+    if (!demo) { this.input.update(); this.mineTime += dt; }
+    this.player.update(dt, this, demo ? demo.input : this.input);
     if (this.player.dead) this.deathAnim += dt;
 
     this.world.update(dt);
-    this.updateFuse(dt);
+    if (!demo) this.updateFuse(dt);
     this.updateLava(dt);
     this.updateSpawns(dt);
 
@@ -865,11 +878,12 @@ class Game {
     }
 
     this.fx.update(dt);
-    this.checkCheckpoint();
-
-    const d = this.depth();
-    if (d > this.runStats.depth) this.runStats.depth = d;
-    this.ui.syncDepth(d, this.world, this.player);
+    if (!demo) {
+      this.checkCheckpoint();
+      const d = this.depth();
+      if (d > this.runStats.depth) this.runStats.depth = d;
+      this.ui.syncDepth(d, this.world, this.player);
+    }
 
     this.updateCamera(dt);
     this.markExplored();
@@ -919,7 +933,9 @@ class Game {
     // lead is gentler than the horizontal one — gravity makes vy spike, and a
     // camera that snaps down on every fall is nauseating on a phone.
     const tx = p.x + clamp(p.vx * 0.16, -1.2, 1.2);
-    const ty = p.y + clamp(p.vy * 0.09, -1.0, 1.4);
+    // Behind the title the camera sits low, so the demo miner shows above the menu.
+    const lift = this.state === 'title' && this.demo ? halfH * 2 * CFG.demo.camLift : 0;
+    const ty = p.y + clamp(p.vy * 0.09, -1.0, 1.4) + lift;
     const k = clamp(dt * CFG.render.camLerp, 0, 1);
     this.cam.x = lerp(this.cam.x, tx, k);
     this.cam.y = lerp(this.cam.y, ty, k);
@@ -1015,7 +1031,7 @@ class Game {
     // Behind an open panel the mine is dimmed and blurred, and the blur is
     // re-run on every new frame — so redraw it at a quarter rate there.
     this.frameNo = (this.frameNo || 0) + 1;
-    if (this.world && (!this.ui.isOpen || this.frameNo % 4 === 0)) this.renderer.draw(this);
+    if (this.world && (!this.ui.isOpen || this.ui.showingDemo || this.frameNo % 4 === 0)) this.renderer.draw(this);
     requestAnimationFrame(this.frame.bind(this));
   }
 

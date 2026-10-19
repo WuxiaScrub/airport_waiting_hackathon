@@ -51,7 +51,7 @@ class UI {
     I18N.onChange(() => this.onLanguageChange());
 
     this.el.pauseBtn.addEventListener('click', () => {
-      Sfx.init(); Sfx.play('ui');
+      Sfx.init(); Sfx.play('ui', { ui: true });
       // Drop focus, or the next Space (jump) would press it again on desktop.
       this.el.pauseBtn.blur();
       if (game.state === 'play') game.togglePause();
@@ -182,7 +182,9 @@ class UI {
 
   /* -------------------------------------------------------------- feedback */
 
+  // The title-screen demo is silent on the HUD: no toasts, banners or flashes.
   toast(msg, ms) {
+    if (this.game.demo) return;
     const t = this.el.toast;
     t.textContent = msg;
     t.classList.add('show');
@@ -191,6 +193,7 @@ class UI {
   }
 
   banner(title, sub) {
+    if (this.game.demo) return;
     const b = this.el.banner;
     b.innerHTML = `<h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}`;
     b.classList.remove('show');
@@ -222,12 +225,14 @@ class UI {
   }
 
   flashHurt() {
+    if (this.game.demo) return;
     const h = this.el.hurt;
     h.classList.add('show');
     setTimeout(() => h.classList.remove('show'), 90);
   }
 
   flashLoss() {
+    if (this.game.demo) return;
     const el = this.el.unbanked;
     el.classList.add('lose');
     setTimeout(() => el.classList.remove('lose'), 320);
@@ -242,6 +247,8 @@ class UI {
   /* ---------------------------------------------------------------- panels */
 
   show(html, cls) {
+    // The title alone is see-through, so the demo mine shows around it.
+    this.el.panel.classList.toggle('demo', cls === 'title');
     this.el.panelInner.className = 'panel-inner' + (cls ? ' ' + cls : '');
     this.el.panelInner.innerHTML = html;
     this.el.panel.classList.remove('hidden');
@@ -249,11 +256,13 @@ class UI {
   }
 
   hide() { this.el.panel.classList.add('hidden'); this._repaint = null; }
+  /** The title is up and the demo behind it should be drawn at full rate. */
+  get showingDemo() { return this.isOpen && this.el.panel.classList.contains('demo'); }
   get isOpen() { return !this.el.panel.classList.contains('hidden'); }
 
   on(sel, fn) {
     const el = this.el.panelInner.querySelector(sel);
-    if (el) el.addEventListener('click', (e) => { Sfx.init(); Sfx.play('ui'); fn(e); });
+    if (el) el.addEventListener('click', (e) => { Sfx.init(); Sfx.play('ui', { ui: true }); fn(e); });
   }
   onAll(sel, fn) {
     this.el.panelInner.querySelectorAll(sel).forEach(el =>
@@ -576,7 +585,7 @@ class UI {
         ${this.backButton()}
         ${this.langButton()}
       `);
-      this.onAll('[data-tab]', (el) => { Sfx.play('ui'); if (el.dataset.tab !== tab) this.leaderboards(el.dataset.tab); });
+      this.onAll('[data-tab]', (el) => { Sfx.play('ui', { ui: true }); if (el.dataset.tab !== tab) this.leaderboards(el.dataset.tab); });
       this.wireBack();
       this.wireLang();
     };

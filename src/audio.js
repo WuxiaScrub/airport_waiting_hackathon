@@ -9,8 +9,11 @@
 const Sfx = {
   ctx: null,
   master: null,
+  world: null,             // everything but menu clicks: quieter behind the title
+  _bus: null,              // where the sound being played right now goes
   noiseBuf: null,
   enabled: true,
+  dim: 1,
   _rumble: null,
 
   /** Must be called from a user gesture or mobile browsers keep us muted. */
@@ -22,12 +25,21 @@ const Sfx = {
     this.master = this.ctx.createGain();
     this.master.gain.value = CFG.audio.master;
     this.master.connect(this.ctx.destination);
+    this.world = this.ctx.createGain();
+    this.world.gain.value = this.dim;
+    this.world.connect(this.master);
 
     // One second of white noise, reused by every percussive sound.
     const len = this.ctx.sampleRate;
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  },
+
+  /** Scale every sound except menu clicks — the title-screen demo plays quietly. */
+  setDim(f) {
+    this.dim = f;
+    if (this.world) this.world.gain.value = f;
   },
 
   setEnabled(on) {
@@ -44,7 +56,7 @@ const Sfx = {
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(gain, t + Math.min(0.012, dur * 0.3));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(this.master);
+    o.connect(g); g.connect(this._bus);
     o.start(t); o.stop(t + dur + 0.02);
   },
 
@@ -58,13 +70,14 @@ const Sfx = {
     const g = c.createGain();
     g.gain.setValueAtTime(gain, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(this.master);
+    s.connect(f); f.connect(g); g.connect(this._bus);
     s.start(t); s.stop(t + dur + 0.02);
   },
 
   play(name, opt) {
     if (!this.enabled || !this.ctx || this.ctx.state === 'closed') return;
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    this._bus = opt && opt.ui ? this.master : this.world;
     const v = (opt && opt.v) || 1;
     switch (name) {
       case 'mine':      this._noise(0.10, 0.42 * v, 'bandpass', 900, 260); break;
@@ -141,7 +154,7 @@ const Sfx = {
     const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 150;
     const g = c.createGain(); g.gain.value = 0;
     g.gain.linearRampToValueAtTime(0.30, c.currentTime + 3);
-    s.connect(f); f.connect(g); g.connect(this.master);
+    s.connect(f); f.connect(g); g.connect(this.world);
     s.start();
     this._rumble = { s, g };
   },
