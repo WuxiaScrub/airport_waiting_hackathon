@@ -220,7 +220,7 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
   - 3 seconds of invulnerability, shown with flashing
   - pockets kept
   - lava pushed down 6 rows below the player
-  - spiders within 4 tiles knocked back and stunned
+  - cave bugs within 4 tiles knocked back and stunned
   - falling blocks around the player removed
   - a stolen gem already flying away stays stolen
 - `revived = true` is recorded on the run.

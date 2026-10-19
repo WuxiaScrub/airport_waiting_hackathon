@@ -85,7 +85,7 @@ Revive Ads
 * The revive is granted only on the ad's reward callback, with the game paused
   and the eruption clock frozen while the ad plays.
 * A revive must be survivable: full health, brief invulnerability, lava pushed
-  back, nearby spiders knocked away. The pockets are kept.
+  back, nearby cave bugs knocked away. The pockets are kept.
 
 Localization
 
@@ -177,7 +177,7 @@ Enemies
 
 Start with two enemy types.
 
-Spider
+Cave Bug
 
 The primary combat threat.
 
@@ -194,7 +194,7 @@ The secondary economic threat.
 
 * Small stylized bat.
 * CANNOT dig. It flies, and steers around solid tiles — open air is the only
-  route it has to the player. Only the Spider digs.
+  route it has to the player. Only the Cave Bug digs.
 * Does NOT directly damage the player.
 * Can approach and steal one unbanked gem.
 * When this happens, visibly animate the gem/score count decreasing.
@@ -365,7 +365,7 @@ Build in this order:
 5. Dynamite
 6. Procedural mine generation
 7. Visibility/headlights
-8. Spider
+8. Cave Bug
 9. Bat gem thief
 10. Checkpoints + banking
 11. Shop/upgrades

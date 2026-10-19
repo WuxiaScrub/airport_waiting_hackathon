@@ -57,7 +57,7 @@ Forever Mine: Gem Rush is a fast, one-thumb mining roguelite. Every mine is carv
 
 DIG YOUR OWN ESCAPE
 • Pickaxe through soft dirt, and blast rock with dynamite.
-• Cracked dirt falls, onto spiders or onto you. Build staircases, knock dirt loose on purpose, and grapple up sheer shafts.
+• Cracked dirt falls, onto cave bugs or onto you. Build staircases, knock dirt loose on purpose, and grapple up sheer shafts.
 • There's no teleport home. The tunnel you dig on the way down is the only way back up.
 
 RISK EVERYTHING
@@ -70,7 +70,7 @@ WAKE THE VOLCANO
 • Carry it out to open the next, deeper mine. Your upgrades come with you; your luck may not.
 
 THINGS IN THE DARK
-• Spiders dig through dirt and pounce when they see you.
+• Cave bugs dig through dirt and pounce when they see you.
 • Bats can't hurt you, but they'll snatch a gem and fly. Knock one down to get your gem back.
 • Your headlamp only reaches so far. Upgrade it to see trouble coming.
 
@@ -128,7 +128,7 @@ ALSO
 
 自己挖出逃生路
 • 用镐子挖开松土，用炸药炸开岩石。
-• 挖松的泥土会塌下来，可能砸中蜘蛛，也可能砸中你。挖台阶、故意弄塌泥土垫脚、用抓钩攀上竖井。
+• 挖松的泥土会塌下来，可能砸中洞穴虫，也可能砸中你。挖台阶、故意弄塌泥土垫脚、用抓钩攀上竖井。
 • 没有传送回家这种好事。下去时挖的那条路，就是唯一的回头路。
 
 孤注一掷
@@ -141,7 +141,7 @@ ALSO
 • 把它带出去，就能进入更深的下一座矿。升级跟着你走，运气可不一定。
 
 黑暗里的东西
-• 蜘蛛会钻泥土，一看到你就扑上来。
+• 洞穴虫会钻泥土，一看到你就扑上来。
 • 蝙蝠伤不了你，却会叼走一颗宝石就跑。把它打下来，宝石就能抢回来。
 • 头灯只照得到眼前。升级头灯，才能提前看到危险。
 
@@ -167,7 +167,7 @@ ALSO
 - **Screenshots** need the running app (phase 4). Apple needs a 6.9″ set
   (1320 × 2868); Play needs at least 2 phone screenshots. Suggested shots:
   the daily mine card on the title; mid-dig with the headlamp and gems; a
-  spider pounce; the volcano escape with lava below; the leaderboards with
+  cave bug pounce; the volcano escape with lava below; the leaderboards with
   medals.
 - **Play feature graphic** (1024 × 500): done, in `assets/store/feature-graphic-en.png` and
   `feature-graphic-zh.png`. Upload the Chinese one to the zh-CN listing.

@@ -71,7 +71,7 @@ Descend → mine → collect → risk going deeper → checkpoint (shop) → rep
   weakened dirt with nothing beneath it hangs for ~0.9 s before falling and
   settling on the next solid tile below. Intact dirt is structural and never
   falls, so collapses are something you cause on purpose — including onto a
-  spider, or onto your own head. A **hard hat** from the shop absorbs a falling
+  cave bug, or onto your own head. A **hard hat** from the shop absorbs a falling
   block outright and re-forms after a few seconds.
 - **Rock** is immune to the pickaxe. Dynamite goes through it. Beyond the veins
   the noise lays down, loose boulders are scattered through every stretch
@@ -113,13 +113,13 @@ Descend → mine → collect → risk going deeper → checkpoint (shop) → rep
 
 ### What's down there
 
-- **Spiders** hunt you, chew through soft dirt to reach you, and pounce when
+- **Cave bugs** hunt you, chew through soft dirt to reach you, and pounce when
   they have a clear line. Every pounce is preceded by a visible wind-up: they
   freeze, their eyes flare, and a dashed line shows exactly where they're going.
 - **Bats** ignore your health and go for your wallet. One touch and they take
   your single most valuable carried gem, which then dangles visibly beneath
   them as they flee. Kill the thief before it escapes and the gem drops back
-  into the mine. Unlike spiders they *cannot dig* — they fly, and they steer
+  into the mine. Unlike cave bugs they *cannot dig* — they fly, and they steer
   around solid tiles, so the only way one reaches you is through open air. Seal
   yourself in and your loot is safe from them.
 
@@ -138,7 +138,7 @@ exchange for the biggest payout in the game.
 ### Campaigns
 
 Carry the Heartstone out and the **next mine** opens: the Heartstone sits 40 m
-deeper, the eruption clock gets 90 s longer, and more spiders and bats come for
+deeper, the eruption clock gets 90 s longer, and more cave bugs and bats come for
 you (the first mine is deliberately gentle). Your **upgrades come with you**;
 your gems do not — what you carried out is score, and you start the next mine
 with empty pockets.
@@ -188,7 +188,7 @@ assets/audio/       menu and in-mine music (credits in attribution.txt)
 src/world.js        tile grid, procedural generation, dirt physics, lava
 src/particles.js    particles, floating text, screen-space gem flights
 src/entities.js     gem pickups, lit dynamite, falling blocks
-src/enemies.js      Spider, Bat
+src/enemies.js      Cave Bug, Bat
 src/player.js       gravity, jumping, mining, tools, damage, hard hat
 src/input.js        floating joystick, buttons, keyboard
 src/demo.js         the autopilot miner playing behind the title screen
