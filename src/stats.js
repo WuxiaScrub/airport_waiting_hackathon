@@ -1,11 +1,12 @@
 /* ============================================================================
- * Stats & achievements — lifetime counters kept in the save, and the tiered
+ * Stats & achievements — lifetime counters kept in the save, and the levelled
  * achievements read off them. Like the rest of the save these are records on
  * this device only: they never feed back into a run.
  *
  * Achievements are pure data (CFG.achievements): each names one counter and
- * three thresholds, bronze → silver → gold. Nothing about an achievement is
- * stored — its tier is worked out from the counters whenever it is needed.
+ * a list of thresholds, one per level (I, II, III…). Nothing about an
+ * achievement is stored — its level is worked out from the counters whenever
+ * it is needed, so adding a level later needs no save migration.
  * ========================================================================== */
 
 /** How an enemy died. Lava is the volcano's kill, so no achievement reads it. */
@@ -61,18 +62,23 @@ const Stats = {
     }
   },
 
-  /** Tiers reached, 0–3. A `lower` achievement is a time: under the bar counts. */
-  tier(a, s) {
+  /** Levels reached, 0 to levels.length. A `lower` achievement is a time: under the bar counts. */
+  level(a, s) {
     const v = this.value(s, a.stat);
-    let t = 0;
-    for (const bar of a.tiers) {
-      if (a.lower ? v > 0 && v <= bar : v >= bar) t++;
+    let n = 0;
+    for (const bar of a.levels) {
+      if (a.lower ? v > 0 && v <= bar : v >= bar) n++;
     }
-    return t;
+    return n;
   },
 
-  tiers(s) { return CFG.achievements.map(a => this.tier(a, s)); },
+  levels(s) { return CFG.achievements.map(a => this.level(a, s)); },
 };
 
-/** Tier names, lowest first — they double as the medal colour classes. */
-const ACH_TIERS = ['bronze', 'silver', 'gold'];
+/** 1 → "I", 4 → "IV". Achievement levels are counted in these. */
+function roman(n) {
+  const marks = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let out = '';
+  for (const [v, m] of marks) while (n >= v) { out += m; n -= v; }
+  return out;
+}

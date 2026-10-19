@@ -5,7 +5,7 @@
 import { cpSync, rmSync, mkdirSync } from 'node:fs';
 
 const OUT = 'www';
-const FILES = ['index.html', 'styles.css', 'src', 'vendor', '.nojekyll'];
+const FILES = ['index.html', 'styles.css', 'src', 'vendor', 'assets/audio', '.nojekyll'];
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT);

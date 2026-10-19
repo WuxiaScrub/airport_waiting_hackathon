@@ -1,5 +1,6 @@
 /* ============================================================================
- * Sfx — Web Audio synthesis. No asset files.
+ * Sfx — Web Audio synthesis. No asset files. (Music, at the bottom of this
+ * file, is the one thing that plays recordings.)
  *
  * Every sound is a named recipe below. To swap in real samples later, replace
  * the body of play() with a buffer lookup keyed by the same names.
@@ -152,5 +153,109 @@ const Sfx = {
       this._rumble.s.stop(this.ctx.currentTime + 0.5);
     } catch (e) { /* already stopped */ }
     this._rumble = null;
+  },
+};
+
+/* ============================================================================
+ * Music — two looping tracks: one for the menus, one for the mine.
+ *
+ * The files are minutes long, so they stream through <audio> elements rather
+ * than being decoded whole into memory. Each element feeds the Sfx context
+ * through its own gain, which is what lets the tracks crossfade (iOS ignores
+ * an <audio> element's own volume). Music has its own on/off, separate from
+ * the sound effects.
+ *
+ * play() only says which track SHOULD be on; nothing is heard until the first
+ * tap unlocks audio (browsers refuse to autoplay sound before one).
+ * ========================================================================== */
+
+const Music = {
+  els: {},
+  gains: {},
+  want: null,              // track the game is in: 'menu' | 'game'
+  enabled: true,
+  unlocked: false,
+  ducked: false,           // paused game: the track carries on, quieter
+  held: false,             // an ad is playing: silence, and resume after
+
+  /** Switch to `name`. `fromStart` rewinds it if it wasn't already on. */
+  play(name, fromStart) {
+    if (fromStart && this.want !== name && this.els[name]) this.els[name].currentTime = 0;
+    this.want = name;
+    this.apply();
+  },
+
+  setEnabled(on) { this.enabled = on; this.apply(); },
+  duck(on) { this.ducked = on; this.apply(); },
+  hold(on) { this.held = on; this.apply(); },
+
+  /** The track that should be audible now, or null. */
+  current() { return this.enabled && !this.held && !document.hidden ? this.want : null; },
+
+  /**
+   * Called on every tap and key press. The first one is the moment music is
+   * allowed to start; after that it only retries a track the browser refused.
+   */
+  unlock() {
+    if (!this.unlocked) {
+      Sfx.init();
+      this.unlocked = true;
+      document.addEventListener('visibilitychange', () => this.apply());
+      this.apply();
+      return;
+    }
+    const on = this.current();
+    if (on && this.els[on] && this.els[on].paused) { Sfx.init(); this.apply(); }
+  },
+
+  track(name) {
+    if (this.els[name]) return this.els[name];
+    const el = new Audio(CFG.audio.music.tracks[name].src);
+    el.loop = true;
+    el.preload = 'auto';
+    const c = Sfx.ctx;
+    if (c && c.createMediaElementSource) {
+      const g = c.createGain();
+      g.gain.value = 0;
+      c.createMediaElementSource(el).connect(g);
+      g.connect(c.destination);
+      this.gains[name] = g;
+    } else {
+      el.volume = 0;
+    }
+    this.els[name] = el;
+    return el;
+  },
+
+  /** Fade every track toward where it should be right now. */
+  apply() {
+    if (!this.unlocked) return;
+    const M = CFG.audio.music;
+    const on = this.current();
+    for (const name of Object.keys(M.tracks)) {
+      if (name !== on && !this.els[name]) continue;
+      const el = this.track(name);
+      const vol = name === on ? M.tracks[name].volume * (this.ducked ? M.duck : 1) : 0;
+      this.fade(name, vol);
+      if (name === on) {
+        clearTimeout(el._stop);
+        if (el.paused) el.play().catch(() => { /* no gesture yet: the next tap retries */ });
+      } else if (!el.paused) {
+        clearTimeout(el._stop);
+        el._stop = setTimeout(() => { if (this.current() !== name) el.pause(); }, M.fade * 1000 + 100);
+      }
+    }
+  },
+
+  fade(name, vol) {
+    const g = this.gains[name], fade = CFG.audio.music.fade;
+    if (g) {
+      const t = Sfx.ctx.currentTime;
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(vol, t + fade);
+    } else {
+      this.els[name].volume = vol;
+    }
   },
 };
