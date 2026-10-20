@@ -19,9 +19,11 @@
     Music.setEnabled(game.save.music !== false);
     // Browsers hold all sound until the player touches something; the music
     // starts on that first touch, wherever it lands. (A touch only counts as
-    // a gesture once the finger lifts, hence touchend and pointerup.)
+    // a gesture once the finger lifts, hence touchend and pointerup.) The
+    // app's web view has no such rule, so there the menu music starts now.
     const unlock = () => Music.unlock();
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'keydown']) window.addEventListener(ev, unlock, true);
+    if (Native.app) unlock();
     game.start();
   }
 
