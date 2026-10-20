@@ -13,7 +13,7 @@ Phase 7 paperwork. ✅ = ready in the repo, ☐ = needs you or a running app.
 - ✅ `app-ads.txt`: already correct on wuxiascrub.github.io
 
 ## Your steps
-1. ☐ Choose a **support email** and replace `{{CONTACT_EMAIL}}` in both pages.
+1. ✅ Support email set in both pages (lonelyscrub8@gmail.com for now).
 2. ☐ Copy `site/forevermine/` into the wuxiascrub.github.io repo and check both URLs open.
 3. ☐ **App Store Connect:** create the app (name *Forever Mine: Gem Rush*,
    bundle ID `com.hdexpanse.forevermine`, SKU e.g. `forevermine`, primary

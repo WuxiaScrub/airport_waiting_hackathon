@@ -10,8 +10,8 @@ forevermine/privacy.html  →  wuxiascrub.github.io/forevermine/privacy.html
 forevermine/support.html  →  wuxiascrub.github.io/forevermine/support.html
 ```
 
-Before publishing, replace every `{{CONTACT_EMAIL}}` with the support address
-you want players to see. Both pages use it.
+The support address in both pages is lonelyscrub8@gmail.com for now. To change
+it, replace it in both pages and copy them over again.
 
 `app-ads.txt` needs **no change**. Forever Mine is in the same AdMob account
 (`pub-2298615637807323`), and that line is already there.
