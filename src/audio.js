@@ -18,7 +18,7 @@ const Sfx = {
 
   /** Must be called from a user gesture or mobile browsers keep us muted. */
   init() {
-    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    if (this.ctx) { this.wake(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) { this.enabled = false; return; }
     this.ctx = new AC();
@@ -34,6 +34,15 @@ const Sfx = {
     this.noiseBuf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
     const d = this.noiseBuf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  },
+
+  /**
+   * Restart a context the system stopped. Switching apps leaves it
+   * 'suspended', or on iOS 'interrupted', and nothing resumes it on return.
+   */
+  wake() {
+    const c = this.ctx;
+    if (c && c.state !== 'running' && c.state !== 'closed') c.resume().catch(() => { /* still interrupted: the next call retries */ });
   },
 
   /** Scale every sound except menu clicks — the title-screen demo plays quietly. */
@@ -76,7 +85,7 @@ const Sfx = {
 
   play(name, opt) {
     if (!this.enabled || !this.ctx || this.ctx.state === 'closed') return;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.wake();
     this._bus = opt && opt.ui ? this.master : this.world;
     const v = (opt && opt.v) || 1;
     switch (name) {
@@ -227,7 +236,7 @@ const Music = {
       return;
     }
     const on = this.current();
-    if (on && this.els[on] && this.els[on].paused) { Sfx.init(); this.apply(); }
+    if (on && this.els[on] && (this.els[on].paused || (Sfx.ctx && Sfx.ctx.state !== 'running'))) { Sfx.init(); this.apply(); }
   },
 
   track(name) {
@@ -254,6 +263,7 @@ const Music = {
     if (!this.unlocked) return;
     const M = CFG.audio.music;
     const on = this.current();
+    if (on) Sfx.wake();      // the tracks play through it: a stopped context is silence
     for (const name of Object.keys(M.tracks)) {
       if (name !== on && !this.els[name]) continue;
       const el = this.track(name);

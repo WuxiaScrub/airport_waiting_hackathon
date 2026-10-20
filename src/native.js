@@ -48,7 +48,8 @@ const Native = {
     app.addListener('backButton', () => this.onBack(game));
     // Backgrounded mid-mine (a call, the home button): pause, never lose time.
     app.addListener('pause', () => { if (game.state === 'play') game.togglePause(); });
-    app.addListener('resume', () => Online.flush());
+    // Back in the app: restart the music, whose audio the system stopped.
+    app.addListener('resume', () => { Online.flush(); Music.apply(); });
   },
 
   /**
