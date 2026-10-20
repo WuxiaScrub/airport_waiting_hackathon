@@ -342,6 +342,7 @@ class Bat extends Enemy {
   }
 
   steal(game) {
+    if (this.dead || this.stolen) return;
     const gem = game.stealGem();
     if (!gem) return;
     this.stolen = gem;
@@ -369,7 +370,9 @@ class Bat extends Enemy {
     // Killed in the act: the loot drops back into the mine.
     if (this.stolen) {
       game.dropStolenGem(this.x, this.y, this.stolen);
-      game.fx.text(this.x, this.y - 0.5, loc('fx.recovered'), '#7ef0d0', { size: 11, life: 1.1 });
+      // Sits above the "-value" the theft just floated, so a bat killed in the
+      // act reads as both: stolen, then won back.
+      game.fx.text(this.x, this.y - 1.3, loc('fx.recovered') + ' +' + fmt(this.stolen.value), '#7ef0d0', { size: 12, life: 1.4 });
       this.stolen = null;
     }
     super.die(game, cause);
@@ -475,7 +478,8 @@ class Tunneler {
     const t = w.get(x, y);
     if (t === T.DIRT || t === T.GEM || t === T.GAS) w.destroy(x, y);
     // Loosen the roof: a collapse comes down behind it.
-    if (w.get(x, y - 1) === T.DIRT && Math.random() < CFG.worm.loosen) {
+    const roof = w.get(x, y - 1);
+    if ((roof === T.DIRT || roof === T.GAS) && Math.random() < CFG.worm.loosen) {
       w.hp[w.idx(x, y - 1)] = Math.min(w.hp[w.idx(x, y - 1)], CFG.mining.dirtHits - 1);
       w.queueFall(x, y - 1);
     }

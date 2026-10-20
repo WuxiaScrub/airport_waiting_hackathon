@@ -163,7 +163,7 @@ class Game {
    * (gas from `CFG.gas.fromMine`, the worm from `CFG.worm.fromMine`). The
    * daily rolls for each from its seed, so a given day has them for everyone
    * or for no one; it then gets the gentlest level of each.
-   * Returns { gas: pockets per 100 rows, worm: passes }.
+   * Returns { gas: pockets per 100 rows, worm: seconds between passes (0 = none) }.
    */
   hazards(seed) {
     const c = this.campaign;
@@ -172,12 +172,12 @@ class Game {
       const r = new RNG(seed ^ 0x2c1b3c6d);
       return {
         gas: r.chance(CFG.gas.dailyChance) ? CFG.gas.pockets[0] : 0,
-        worm: r.chance(CFG.worm.dailyChance) ? CFG.worm.passes[0] : 0,
+        worm: r.chance(CFG.worm.dailyChance) ? CFG.worm.every[0] : 0,
       };
     }
     return {
       gas: c.mine >= CFG.gas.fromMine ? level(CFG.gas.pockets, CFG.gas.fromMine) : 0,
-      worm: c.mine >= CFG.worm.fromMine ? level(CFG.worm.passes, CFG.worm.fromMine) : 0,
+      worm: c.mine >= CFG.worm.fromMine ? Math.max(CFG.worm.minEvery, level(CFG.worm.every, CFG.worm.fromMine)) : 0,
     };
   }
 
@@ -210,8 +210,8 @@ class Game {
     this.worms.length = 0;
     this.carry.length = 0;
     this.fx.clear();
-    this.wormLeft = hz.worm;
-    this.wormTimer = randRange(CFG.worm.firstDelay);
+    this.wormEvery = hz.worm;
+    this.wormTimer = hz.worm * randRange(CFG.worm.firstDelay);
     this._hissAt = -1; this._whooshAt = -1;
     this.tempLights.length = 0;
 
@@ -414,6 +414,7 @@ class Game {
     this.campaign.revived = true;
     p.dead = false;
     p.health = p.maxHealth;
+    p.breath = CFG.gas.breath;
     p.invuln = R.invuln;
     p.vx = 0; p.vy = 0;
     this.deathAnim = 0;
@@ -433,6 +434,8 @@ class Game {
     }
     // A worm still going through is sent back into the rock.
     this.worms.length = 0;
+    // ...and the firedamp round the miner thins out, so they can breathe.
+    this.world.clearGas(p.x, p.y, R.clearRadius);
 
     this.closePanel();
     this.ui.syncHealth(p);
@@ -589,7 +592,13 @@ class Game {
     setTimeout(() => { if (this.state === 'play') this.endRun('cashout'); }, 1400);
   }
 
-  upgradeCost(u, level) { return Math.round(u.base * Math.pow(u.step, level)); }
+  upgradeCost(u, level) {
+    return Math.round(u.base * Math.pow(u.step, level) * (level > 0 ? CFG.upgradeMarkup : 1));
+  }
+
+  /** A full reload or a full heal, priced by what it actually restores. */
+  dynamiteCost(p) { return Math.max(0, p.dynMax - p.dynamite) * CFG.supplies.dynamiteCost; }
+  healCost(p) { return Math.max(0, p.maxHealth - p.health) * CFG.supplies.healCost; }
 
   /**
    * Placeholders for an upgrade's shop description. Most upgrades hand out a
@@ -656,7 +665,7 @@ class Game {
 
   /**
    * Sticks are bought, never handed out, and only by the satchel-full. One
-   * price for a full reload keeps the decision at the lantern a single one —
+   * press for a full reload keeps the decision at the lantern a single one —
    * which matters now that a lantern in the mine is good for one visit.
    */
   buyDynamite() {
@@ -665,7 +674,7 @@ class Game {
     const missing = p.dynMax - p.dynamite;
     if (missing <= 0) { this.ui.toast(loc('toast.satchelFull')); return; }
 
-    if (!this.pay(CFG.supplies.dynamiteCost)) { this.ui.toast(loc('toast.notEnoughGems')); return; }
+    if (!this.pay(this.dynamiteCost(p))) { this.ui.toast(loc('toast.notEnoughGems')); return; }
 
     p.dynamite = p.dynMax;
     Sfx.play('buy');
@@ -679,7 +688,7 @@ class Game {
     const p = this.player;
     if (!p || p.dead || p.health >= p.maxHealth) { this.ui.toast(loc('toast.alreadyFull')); return; }
 
-    if (!this.pay(CFG.supplies.healCost)) { this.ui.toast(loc('toast.notEnoughGems')); return; }
+    if (!this.pay(this.healCost(p))) { this.ui.toast(loc('toast.notEnoughGems')); return; }
 
     Sfx.play('buy');
     p.heal(p.maxHealth, this);
@@ -736,7 +745,7 @@ class Game {
     this.gems.push(new GemPickup(x, y, gem.type, { speed: 3.2, value: gem.value, recovered: true }));
   }
   spawnHeartstone(x, y) { this.gems.push(new GemPickup(x, y, 0, { heart: true, speed: 1.2 })); }
-  spawnFallingBlock(x, y) { this.blocks.push(new FallingBlock(x, y)); }
+  spawnFallingBlock(x, y, gas) { this.blocks.push(new FallingBlock(x, y, gas)); }
 
   shake(amount) {
     if (this.save.shake === false) return;
@@ -834,13 +843,13 @@ class Game {
     }
   }
 
-  /** The worm comes a set number of times a mine, never while the volcano is awake. */
+  /** The worm comes round on the mine's interval, never while the volcano is awake. */
   updateWorms(dt) {
     for (let i = this.worms.length - 1; i >= 0; i--) {
       this.worms[i].update(dt, this);
       if (this.worms[i].dead) this.worms.splice(i, 1);
     }
-    if (this.demo || this.wormLeft <= 0 || this.volcano || this.player.dead || this.worms.length) return;
+    if (this.demo || !this.wormEvery || this.volcano || this.player.dead || this.worms.length) return;
     this.wormTimer -= dt;
     if (this.wormTimer > 0 || this.depth() < CFG.worm.minDepth) return;
 
@@ -851,8 +860,8 @@ class Game {
     const dir = Math.random() < 0.75 ? far : -far;
     const first = this.firstSight('worm');
     this.worms.push(new Tunneler(this.world, row, dir, first ? CFG.worm.firstWarn : CFG.worm.warn));
-    this.wormLeft--;
-    this.wormTimer = randRange(CFG.worm.interval);
+    const j = CFG.worm.jitter;
+    this.wormTimer = Math.max(CFG.worm.minEvery, this.wormEvery * randRange([1 - j, 1 + j]));
   }
 
   /** A row near the player that keeps the worm clear of stations and the Heartstone chamber. */
@@ -974,7 +983,10 @@ class Game {
 
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e = this.enemies[i];
-      e.update(dt, this);
+      // Something earlier this step (a swing, a blast, fire, the worm) may
+      // already have killed it. A dead bat must not get one last steal in —
+      // that gem would vanish with it.
+      if (!e.dead) e.update(dt, this);
       // Cull anything that wandered far off-screen; keeps the sim cheap.
       if (e.dead || dist(e.x, e.y, this.player.x, this.player.y) > 34) {
         this.enemies[i] = this.enemies[this.enemies.length - 1];

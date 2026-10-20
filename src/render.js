@@ -265,6 +265,7 @@ class Renderer {
     /* ---- always-visible overlays ---- */
     this.drawLavaGlow(ctx, game, oy, ppt, cw, ch);
     this.drawWormWarnings(ctx, game, ox, oy, ppt, cw, ch);
+    this.drawBreath(ctx, game, ox, oy, ppt);
     this.drawFloatingText(ctx, game, ox, oy, ppt);
     this.drawFlights(ctx, game);
     this.drawVignette(ctx, game, cw, ch);
@@ -499,6 +500,7 @@ class Renderer {
       c.save();
       c.globalAlpha = 0.95;
       c.drawImage(this.atlas.dirtCracked[0], px, py, ppt, ppt);
+      if (b.gas) this.drawGasSeep(c, px, py, ppt, game.time, true);
       c.restore();
     }
     for (const g of game.gems) this.drawGemPickup(c, g, ox, oy, ppt, game.time);
@@ -960,6 +962,26 @@ class Renderer {
     ctx.fillStyle = g;
     ctx.fillRect(0, Math.max(0, ly - ppt * 7), cw, Math.min(ch, ppt * 7));
     if (ly < ch) { ctx.fillStyle = 'rgba(255,120,40,.35)'; ctx.fillRect(0, ly, cw, ch - ly); }
+  }
+
+  /**
+   * The held-breath meter: a small bar over the miner's head, shown only while
+   * it is less than full. It drains green to red in a gas cloud and pulses
+   * once it is empty and the gas is doing damage.
+   */
+  drawBreath(ctx, game, ox, oy, ppt) {
+    const p = game.player;
+    if (!p || p.dead || game.demo) return;
+    const k = clamp(p.breath / CFG.gas.breath, 0, 1);
+    if (k >= 1) return;
+    const bw = ppt * 0.9, bh = Math.max(3, ppt * 0.12);
+    const x = ox + p.x * ppt - bw / 2, y = oy + (p.y - 0.85) * ppt - bh / 2;
+    ctx.globalAlpha = k > 0 ? 0.95 : 0.6 + 0.4 * Math.sin(game.time * 14);
+    ctx.fillStyle = 'rgba(0,0,0,.7)';
+    ctx.fillRect(x - 1.5, y - 1.5, bw + 3, bh + 3);
+    ctx.fillStyle = k > 0.5 ? '#b9d36a' : k > 0.2 ? '#ffc95e' : '#ff5d5d';
+    ctx.fillRect(x, y, bw * (k > 0 ? k : 1), bh);
+    ctx.globalAlpha = 1;
   }
 
   drawFloatingText(ctx, game, ox, oy, ppt) {

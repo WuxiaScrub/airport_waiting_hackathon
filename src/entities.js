@@ -122,12 +122,14 @@ class Dynamite {
 }
 
 class FallingBlock {
-  constructor(x, y) {
+  /** `gas` marks a loosened gas seam: it falls like dirt, then lets its pocket out. */
+  constructor(x, y, gas) {
     this.x = x + 0.5;
     this.y = y + 0.5;
     this.vy = 0;
     this.dead = false;
     this.hitPlayer = false;
+    this.gas = !!gas;
   }
 
   update(dt, game) {
@@ -168,12 +170,19 @@ class FallingBlock {
     const onPlayer = !p.dead &&
       Math.abs(p.x - (tx + 0.5)) < 0.5 + p.r && Math.abs(p.y - (ty + 0.5)) < 0.5 + p.r;
 
-    if (!onPlayer && w.get(tx, ty) === T.EMPTY) {
+    const lands = !onPlayer && w.get(tx, ty) === T.EMPTY;
+    if (lands) {
       // Lands weakened, so a stack of settled dirt stays collapsible.
       w.set(tx, ty, T.DIRT, CFG.mining.dirtHits - 1);
       w.checkNeighbours(tx, ty);
     }
-    game.fx.burst(tx + 0.5, ty + 0.5, 8, ['#8a6440', '#6f4f31', '#a97c4f'], { speed: 3.4, life: 0.4, size: 0.14 });
+    // A gas seam splits open on impact: the dirt stays, the pocket gets out
+    // into the air it fell through.
+    if (this.gas) {
+      const gy = lands ? ty - 1 : ty;
+      if (w.inBounds(tx, gy) && w.isOpen(w.idx(tx, gy))) w.releaseGas(tx, gy, CFG.gas.release);
+    }
+    game.fx.burst(tx + 0.5, ty + 0.5, 8, this.gas ? ['#8a6440', '#6f4f31', '#c8d870'] : ['#8a6440', '#6f4f31', '#a97c4f'], { speed: 3.4, life: 0.4, size: 0.14 });
     game.shake(3.2);
     Sfx.play('break', { v: 0.5 });
   }

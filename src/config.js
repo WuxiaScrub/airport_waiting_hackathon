@@ -194,7 +194,7 @@ const CFG = {
     fromMine: 2,
     // Pockets per 100 rows of mine, by mine counted from `fromMine` (the last
     // entry repeats). A daily mine with gas uses the first entry.
-    pockets: [5, 7, 9, 11],
+    pockets: [5, 9, 14, 20, 26],
     dailyChance: 0.5,    // chance a given day's daily mine has gas
     pocketSize: [3, 6],  // tiles in one pocket
     topClear: 12,        // rows under the surface kept free of pockets
@@ -210,21 +210,32 @@ const CFG = {
     burn: 0.4,           // seconds a cell burns
     damage: 1,
     enemyDamage: 3,
+    // Firedamp chokes as well as burns. Standing in a cloud thick enough to
+    // light drains the miner's held breath (the bar over their head); once it
+    // is gone they take `chokeDamage` every `chokeEvery` seconds until they
+    // get clear. Out of the gas, breath comes back `recover` times as fast.
+    choke: 0.06,         // gas in the miner's cell that counts as "in the cloud"
+    breath: 5,           // seconds the miner can hold their breath
+    recover: 2,
+    chokeEvery: 1.5,
+    chokeDamage: 1,
   },
 
-  // The Tunneler. From `fromMine` on, a great worm crosses the mine a few
-  // times, side to side, boring a tunnel through soft dirt (rock it slides
+  // The Tunneler. From `fromMine` on, a great worm crosses the mine again and
+  // again, side to side, boring a tunnel through soft dirt (rock it slides
   // past). It doesn't hunt and can't be killed — it is a terrain event. It
   // rumbles a warning first, hurts whatever it touches, and leaves loosened
   // dirt over its tunnel, so a collapse follows it.
   worm: {
     fromMine: 3,
-    // Passes per mine counted from `fromMine` (last entry repeats). A daily
-    // mine with the worm uses the first entry.
-    passes: [1, 2, 3],
+    // Seconds between passes, by mine counted from `fromMine` (last entry
+    // repeats). A daily mine with the worm uses the first entry. The clock
+    // only runs while the miner is deep enough and no worm is passing.
+    every: [120, 95, 75, 60, 48, 38, 30],
+    minEvery: 30,        // never more often than this, however deep the campaign
+    jitter: 0.15,        // each wait is the mine's interval, plus or minus this share
+    firstDelay: [0.6, 1],// the first wait, as a share of the mine's interval
     dailyChance: 0.4,    // chance a given day's daily mine has the worm
-    firstDelay: [45, 90],// seconds into a mine before the first pass may come
-    interval: [60, 110], // seconds between passes
     minDepth: 15,        // rows under the surface the player must be
     offset: 5,           // its row is within this many of the player's
     warn: 2.2,           // seconds of rumble before it breaks through
@@ -233,7 +244,7 @@ const CFG = {
     length: 7,           // body segments
     wave: 1.3,           // tiles its path undulates up and down
     loosen: 0.5,         // chance each dirt tile over the tunnel is loosened
-    damage: 1,
+    damage: 3,
   },
 
   spawn: {
@@ -254,7 +265,7 @@ const CFG = {
   // one starts from mine 1 with base stats. Nothing carries between campaigns.
   campaign: {
     heartstoneStep: 30,  // rows deeper the Heartstone sits in each later mine
-    fusePerMine: 90,     // extra seconds on the eruption clock per later mine
+    fusePerMine: 30,     // extra seconds on the eruption clock per later mine
     // Enemy pressure by mine (last entry repeats). Scales both how often
     // things spawn and how many may be alive at once. Mine 1 is played on base
     // stats with nothing banked, so it is deliberately gentle.
@@ -271,14 +282,13 @@ const CFG = {
     reopenDist: 3,       // ...and tiles the player must step away from it first
   },
 
-  // Consumables a lantern sells. Both are all-or-nothing and deliberately
-  // expensive: a cave lantern is single use, so this is one decision rather
-  // than a tap-fest, and the price has to compete with going deeper. They come
-  // straight out of the carried gems — i.e. out of the score — so a miner can
-  // only afford one on a rich haul, and never often.
+  // Consumables a lantern sells. Both are all-or-nothing — one press fills
+  // the bar or the satchel — but priced by how much they restore, so a big
+  // satchel or a long health bar costs what it is worth. They come straight
+  // out of the carried gems — i.e. out of the score.
   supplies: {
-    healCost: 900,       // restore to full health
-    dynamiteCost: 850,   // refill the satchel to capacity
+    healCost: 500,       // per heart restored (heals to full)
+    dynamiteCost: 300,   // per stick restored (refills to capacity)
   },
 
   lava: {
@@ -300,8 +310,11 @@ const CFG = {
   // Names and descriptions live in i18n.js under `up.<id>.name` / `.desc`.
   // `max` is how many times an upgrade can be bought; where a stat also has a
   // ceiling (hearts, dynamite) the two are tuned to meet exactly.
+  // A level costs base * step^level, and every level after the first is
+  // marked up by `upgradeMarkup` on top.
+  upgradeMarkup: 1.5,
   upgrades: [
-    { id: 'health',   max: 7, base: 70,  step: 1.85 },  // 3 + 7 = 10 hearts
+    { id: 'health',   max: 7, base: 150, step: 2.00 },  // 3 + 7 = 10 hearts
     { id: 'speed',    max: 5, base: 60,  step: 1.80 },
     { id: 'jump',     max: 4, base: 65,  step: 1.85 },
     { id: 'light',    max: 5, base: 80,  step: 1.75 },
