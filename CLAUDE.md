@@ -213,15 +213,20 @@ one-off "new danger" card the first time a player meets it on a device.
 
 * Gas pockets (from mine 2, more each mine) — seams of soft dirt hiding
   firedamp, told apart only by faint bubbles in the headlight. The first swing
-  hisses; breaking one releases a cloud that drifts up the tunnels. Harmless
-  until a dynamite blast or the lava lights it: the flame races through the
+  hisses; breaking one releases a cloud that drifts up the tunnels. A cracked
+  seam is loose dirt like any other: unsupported, it falls and lets its gas
+  out where it lands. Standing in the cloud drains a held-breath bar over the
+  miner's head; once it is empty the gas costs hearts until they get clear.
+  A dynamite blast or the lava lights it: the flame races through the
   cloud, bursts any pocket it touches, hurts the player and kills enemies.
   Gas is terrain, so it is part of seeded generation.
-* The Tunneler (from mine 3: 1 pass, then 2, then 3) — a great worm that
-  crosses the mine side to side near the player's row, never during the
-  eruption. It rumbles and shows a red band on its row before breaking in,
+* The Tunneler (from mine 3) — a great worm that crosses the mine side to
+  side near the player's row, never during the eruption. It comes round on a
+  clock: every 2 minutes in mine 3, more often each mine after, never more
+  often than every 30 seconds. It rumbles and shows a red band on its row before breaking in,
   bores through soft dirt (rock it slides past), hurts what it touches, and
   loosens the dirt over its tunnel so a collapse follows. It cannot be killed.
+  A hit from it costs 3 hearts.
 
 Do not add more enemy types until the core game is polished.
 

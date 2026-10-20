@@ -328,8 +328,8 @@ class World {
     // Compare before subtracting: hp is unsigned, so overshooting would wrap.
     if (this.hp[i] <= amount) { this.destroy(x, y); return 'broke'; }
     this.hp[i] -= amount;
-    if (type === T.GAS) { this.leakGas(x, y); return 'hiss'; }
     this.queueFall(x, y);
+    if (type === T.GAS) { this.leakGas(x, y); return 'hiss'; }
     return 'hit';
   }
 
@@ -371,11 +371,14 @@ class World {
         this.queueFall(x + dx, y + dy);
   }
 
+  /** Can this tile come down? Soft dirt, gas seams included. */
+  isLoose(t) { return t === T.DIRT || t === T.GAS; }
+
   /** Only *weakened* dirt falls; intact dirt is structural. */
   queueFall(x, y) {
     if (!this.inBounds(x, y)) return;
     const i = this.idx(x, y);
-    if (this.t[i] !== T.DIRT || this.hp[i] >= CFG.mining.dirtHits) return;
+    if (!this.isLoose(this.t[i]) || this.hp[i] >= CFG.mining.dirtHits) return;
     if (this.isSolid(x, y + 1)) { this.pendingFalls.delete(i); return; }
     if (!this.pendingFalls.has(i)) this.pendingFalls.set(i, CFG.mining.fallDelay);
   }
@@ -388,17 +391,19 @@ class World {
     for (const [i, t] of this.pendingFalls) {
       const nt = t - dt;
       const x = i % this.w, y = (i / this.w) | 0;
-      if (this.t[i] !== T.DIRT || this.isSolid(x, y + 1)) { drop.push(i); continue; }
+      if (!this.isLoose(this.t[i]) || this.isSolid(x, y + 1)) { drop.push(i); continue; }
       if (nt <= 0) { drop.push(i); this.releaseBlock(x, y); }
       else this.pendingFalls.set(i, nt);
     }
     for (const i of drop) this.pendingFalls.delete(i);
   }
 
+  /** A falling gas seam carries its pocket down and lets it out where it lands. */
   releaseBlock(x, y) {
     const i = this.idx(x, y);
+    const gas = this.t[i] === T.GAS;
     this.t[i] = T.EMPTY; this.hp[i] = 0;
-    this.game.spawnFallingBlock(x, y);
+    this.game.spawnFallingBlock(x, y, gas);
     this.checkNeighbours(x, y);
   }
 
@@ -425,6 +430,21 @@ class World {
     this.gasLive = true;
     const g = this.game;
     if (g && g.onGasReleased) g.onGasReleased(x + 0.5, y + 0.5, amount);
+  }
+
+  /** Thin out the loose gas within `r` tiles of a point (the revive). */
+  clearGas(px, py, r) {
+    if (!this.gasLive) return;
+    const x0 = Math.max(0, Math.floor(px - r)), x1 = Math.min(this.w - 1, Math.floor(px + r));
+    const y0 = Math.max(0, Math.floor(py - r)), y1 = Math.min(this.h - 1, Math.floor(py + r));
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) this.gas[this.idx(x, y)] = 0;
+  }
+
+  /** Loose gas in the cell under a world position. */
+  gasAt(px, py) {
+    const x = Math.floor(px), y = Math.floor(py);
+    return this.inBounds(x, y) ? this.gas[this.idx(x, y)] : 0;
   }
 
   /** The tell: a cracked pocket hisses a little gas into the open air nearby. */

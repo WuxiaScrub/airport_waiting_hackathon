@@ -897,12 +897,12 @@ class UI {
     const supplies = !inRun ? '' : [
       row('supplyDynamite', `<div class="nm">${loc('supply.dynamite.name')}</div>`,
         loc('supply.dynamite.desc', { cur: p.dynamite, max: p.dynMax }), '',
-        buy('data-dyn="1"', S.dynamiteCost,
-          p.dynamite >= p.dynMax ? 'full' : cash < S.dynamiteCost ? 'poor' : '')),
+        buy('data-dyn="1"', game.dynamiteCost(p),
+          p.dynamite >= p.dynMax ? 'full' : cash < game.dynamiteCost(p) ? 'poor' : '')),
       row('supplyHeal', `<div class="nm">${loc('supply.heal.name')}</div>`,
         loc('supply.heal.desc', { cur: p.health, max: p.maxHealth }), '',
-        buy('data-heal="1"', S.healCost,
-          p.health >= p.maxHealth ? 'full' : cash < S.healCost ? 'poor' : '')),
+        buy('data-heal="1"', game.healCost(p),
+          p.health >= p.maxHealth ? 'full' : cash < game.healCost(p) ? 'poor' : '')),
     ].join('');
 
     const items = CFG.upgrades.map(u => {

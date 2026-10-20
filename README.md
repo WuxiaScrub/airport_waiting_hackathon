@@ -92,7 +92,8 @@ Descend → mine → collect → risk going deeper → checkpoint (shop) → rep
   surface camp, and dying loses all of it.
 - **Checkpoint lanterns** span the full width of the mine every ~34 m, so any
   descent will run into one. They are **shops, not banks**: upgrades plus two
-  consumables (a full heal and a full satchel of dynamite), all paid for out of
+  consumables (a full heal and a full satchel of dynamite, priced per heart and
+  per stick restored), all paid for out of
   the gems you carry — so every purchase comes straight off your score. A
   lantern down in the mine **lights once**: it burns out as you leave, so what
   you buy there is a single decision, not a refill station. Walking back into
@@ -138,7 +139,7 @@ exchange for the biggest payout in the game.
 ### Campaigns
 
 Carry the Heartstone out and the **next mine** opens: the Heartstone sits 30 m
-deeper, the eruption clock gets 90 s longer, and more cave bugs and bats come for
+deeper, the eruption clock gets 30 s longer, and more cave bugs and bats come for
 you (the first mine is deliberately gentle). Your **upgrades come with you**;
 your gems do not — what you carried out is score, and you start the next mine
 with empty pockets.

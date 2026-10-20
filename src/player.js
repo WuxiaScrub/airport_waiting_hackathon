@@ -79,6 +79,9 @@ class Player {
     this.gripDir = 0;            // -1 / +1 — which side the hook bit into
     this.gripTile = null;        // {x, y} of the tile being held, for drawing
     this.gripAnim = 0;           // 0..1, hook-fires flourish
+
+    this.breath = CFG.gas.breath; // seconds of held breath left in a gas cloud
+    this.chokeTimer = 0;
   }
 
   get tile() { return { x: Math.floor(this.x), y: Math.floor(this.y) }; }
@@ -164,6 +167,28 @@ class Player {
 
     if (w.get(Math.floor(this.x), Math.floor(this.y)) === T.LAVA) {
       this.hurt(CFG.lava.damage, game, 0, -1, true);
+    }
+    if (!game.demo) this.breathe(dt, game);
+  }
+
+  /**
+   * Firedamp chokes. In a cloud the miner holds their breath; once it runs out
+   * the gas starts costing hearts until they get clear. Fresh air refills it.
+   */
+  breathe(dt, game) {
+    const G = CFG.gas;
+    if (this.dead) return;
+    if (game.world.gasAt(this.x, this.y) >= G.choke) {
+      this.breath = Math.max(0, this.breath - dt);
+      if (this.breath > 0) return;
+      this.chokeTimer -= dt;
+      if (this.chokeTimer <= 0) {
+        this.chokeTimer = G.chokeEvery;
+        this.hurt(G.chokeDamage, game, 0, 0);
+      }
+    } else {
+      this.breath = Math.min(G.breath, this.breath + dt * G.recover);
+      this.chokeTimer = 0;
     }
   }
 
