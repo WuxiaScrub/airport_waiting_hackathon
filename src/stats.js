@@ -25,6 +25,7 @@ const Stats = {
       runs: 0,                   // campaigns + daily attempts finished
       deaths: 0,
       fastest: 0,                // seconds, quickest Heartstone escape from any mine
+      biggestLoss: 0,            // most carried loot (Heartstone included) lost in one death or quit
     };
   },
 
@@ -40,7 +41,7 @@ const Stats = {
     for (const who of ['caveBug', 'bat']) {
       for (const c of KILL_CAUSES) s.kills[who][c] = n(from[who] && from[who][c]);
     }
-    for (const k of ['hearts', 'recovered', 'stolen', 'dynamite', 'runs', 'deaths', 'fastest']) s[k] = n(raw[k]);
+    for (const k of ['hearts', 'recovered', 'stolen', 'dynamite', 'runs', 'deaths', 'fastest', 'biggestLoss']) s[k] = n(raw[k]);
     return s;
   },
 

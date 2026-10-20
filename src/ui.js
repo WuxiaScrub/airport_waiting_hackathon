@@ -461,7 +461,8 @@ class UI {
         ${line('stats.stolen', fmt(s.stolen))}
         ${line('stats.dynamite', fmt(s.dynamite))}
         ${line('stats.runs', fmt(s.runs))}
-        ${line('stats.deaths', fmt(s.deaths))}`);
+        ${line('stats.deaths', fmt(s.deaths))}
+        ${line('stats.biggestLoss', fmt(s.biggestLoss))}`);
 
     this._repaint = () => this.achievements();
     this.show(`

@@ -389,6 +389,7 @@ const CFG = {
     { id: 'dirt',     stat: 'dirtKills',     levels: [1, 15, 60] },
     { id: 'thief',    stat: 'recovered',     levels: [1, 10, 50] },
     { id: 'speed',    stat: 'fastest',       levels: [480, 360, 270], lower: true },
+    { id: 'loss',     stat: 'biggestLoss',   levels: [5000, 10000, 20000] },
   ],
 
   // The optional online layer (Supabase). Both values are public by design —

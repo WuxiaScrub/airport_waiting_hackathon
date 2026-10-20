@@ -290,6 +290,8 @@ class Game {
     if (kind === 'death') this.track(s => { s.deaths++; });
     if (kind === 'death' || kind === 'abandon') {
       this.runStats.lost = this.carryValue();
+      const lost = this.runStats.lost;
+      this.track(s => { s.biggestLoss = Math.max(s.biggestLoss, lost); });
       this.carry.length = 0;
       this.player.hasHeartstone = false;
     }
