@@ -163,21 +163,25 @@ class Game {
    * (gas from `CFG.gas.fromMine`, the worm from `CFG.worm.fromMine`). The
    * daily rolls for each from its seed, so a given day has them for everyone
    * or for no one; it then gets the gentlest level of each.
-   * Returns { gas: pockets per 100 rows, worm: passes }.
+   * Both keep growing with every later mine, up to a cap.
+   * Returns { gas: pockets per 100 rows, worm: passes, wormPace: how many
+   * times quicker the worm's waits are }.
    */
   hazards(seed) {
-    const c = this.campaign;
-    const level = (list, from) => list[Math.min(c.mine - from, list.length - 1)];
+    const c = this.campaign, G = CFG.gas, W = CFG.worm;
     if (c.daily) {
       const r = new RNG(seed ^ 0x2c1b3c6d);
       return {
-        gas: r.chance(CFG.gas.dailyChance) ? CFG.gas.pockets[0] : 0,
-        worm: r.chance(CFG.worm.dailyChance) ? CFG.worm.passes[0] : 0,
+        gas: r.chance(G.dailyChance) ? G.pockets : 0,
+        worm: r.chance(W.dailyChance) ? W.passes : 0,
+        wormPace: 1,
       };
     }
+    const g = c.mine - G.fromMine, w = c.mine - W.fromMine;
     return {
-      gas: c.mine >= CFG.gas.fromMine ? level(CFG.gas.pockets, CFG.gas.fromMine) : 0,
-      worm: c.mine >= CFG.worm.fromMine ? level(CFG.worm.passes, CFG.worm.fromMine) : 0,
+      gas: g < 0 ? 0 : Math.min(G.pocketsMax, G.pockets + g * G.pocketsPerMine),
+      worm: w < 0 ? 0 : Math.min(W.passesMax, W.passes + w * W.passesPerMine),
+      wormPace: w < 0 ? 1 : 1 + Math.min(W.hasteMax, w * W.haste),
     };
   }
 
@@ -211,7 +215,8 @@ class Game {
     this.carry.length = 0;
     this.fx.clear();
     this.wormLeft = hz.worm;
-    this.wormTimer = randRange(CFG.worm.firstDelay);
+    this.wormPace = hz.wormPace;
+    this.wormTimer = randRange(CFG.worm.firstDelay) / this.wormPace;
     this._hissAt = -1; this._whooshAt = -1;
     this.tempLights.length = 0;
 
@@ -850,7 +855,7 @@ class Game {
     const first = this.firstSight('worm');
     this.worms.push(new Tunneler(this.world, row, dir, first ? CFG.worm.firstWarn : CFG.worm.warn));
     this.wormLeft--;
-    this.wormTimer = randRange(CFG.worm.interval);
+    this.wormTimer = randRange(CFG.worm.interval) / this.wormPace;
   }
 
   /** A row near the player that keeps the worm clear of stations and the Heartstone chamber. */

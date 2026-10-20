@@ -192,9 +192,13 @@ const CFG = {
   // every cell of the cloud and bursts any pocket it touches.
   gas: {
     fromMine: 2,
-    // Pockets per 100 rows of mine, by mine counted from `fromMine` (the last
-    // entry repeats). A daily mine with gas uses the first entry.
-    pockets: [5, 7, 9, 11],
+    // Pockets per 100 rows of mine: `pockets` in the first mine that has gas,
+    // `pocketsPerMine` more in each mine after it, never past `pocketsMax`
+    // (mine 2: 5, mine 3: 7, mine 4: 9 ... mine 9 on: 20). A daily mine with
+    // gas gets the first mine's amount.
+    pockets: 5,
+    pocketsPerMine: 2,
+    pocketsMax: 20,
     dailyChance: 0.5,    // chance a given day's daily mine has gas
     pocketSize: [3, 6],  // tiles in one pocket
     topClear: 12,        // rows under the surface kept free of pockets
@@ -219,9 +223,17 @@ const CFG = {
   // dirt over its tunnel, so a collapse follows it.
   worm: {
     fromMine: 3,
-    // Passes per mine counted from `fromMine` (last entry repeats). A daily
-    // mine with the worm uses the first entry.
-    passes: [1, 2, 3],
+    // Passes in the first mine that has the worm, `passesPerMine` more in
+    // each mine after it, never past `passesMax` (mine 3: 1, mine 4: 2 ...
+    // mine 8 on: 6). Each later mine also shortens the waits below by
+    // `haste` (15% quicker per mine, at most `hasteMax` = 75% quicker), so
+    // the extra passes fit in the mine. A daily mine with the worm gets the
+    // first mine's settings.
+    passes: 1,
+    passesPerMine: 1,
+    passesMax: 6,
+    haste: 0.15,
+    hasteMax: 0.75,
     dailyChance: 0.4,    // chance a given day's daily mine has the worm
     firstDelay: [45, 90],// seconds into a mine before the first pass may come
     interval: [60, 110], // seconds between passes

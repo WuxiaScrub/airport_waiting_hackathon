@@ -211,13 +211,14 @@ Later-Mine Hazards
 Two hazards join the campaign gradually; mine 1 has neither. Each shows a
 one-off "new danger" card the first time a player meets it on a device.
 
-* Gas pockets (from mine 2, more each mine) — seams of soft dirt hiding
+* Gas pockets (from mine 2, more in every later mine up to a cap) — seams of soft dirt hiding
   firedamp, told apart only by faint bubbles in the headlight. The first swing
   hisses; breaking one releases a cloud that drifts up the tunnels. Harmless
   until a dynamite blast or the lava lights it: the flame races through the
   cloud, bursts any pocket it touches, hurts the player and kills enemies.
   Gas is terrain, so it is part of seeded generation.
-* The Tunneler (from mine 3: 1 pass, then 2, then 3) — a great worm that
+* The Tunneler (from mine 3: 1 pass, one more each mine up to 6, with the
+  waits between passes shrinking too) — a great worm that
   crosses the mine side to side near the player's row, never during the
   eruption. It rumbles and shows a red band on its row before breaking in,
   bores through soft dirt (rock it slides past), hurts what it touches, and
