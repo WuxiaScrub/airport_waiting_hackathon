@@ -69,6 +69,22 @@ it means you can't update the app.
    anyway.
 3. Enrol in **Play App Signing** when you create the app in the Play Console.
 
+## Version numbers
+
+Both stores refuse an upload whose build number they have already seen. Before
+each upload, run one of these, then `npm run sync` and commit the change:
+
+| Command | Version | Build number |
+|---|---|---|
+| `npm run bump` | unchanged | +1 (another build of the same release) |
+| `npm run bump patch` | 1.0.0 → 1.0.1 | +1 |
+| `npm run bump minor` | 1.0.0 → 1.1.0 | +1 |
+| `npm run bump major` | 1.0.0 → 2.0.0 | +1 |
+
+It updates `package.json`, `CFG.online.gameVersion`, Android's
+`versionCode` / `versionName` and Xcode's build / version together, so iOS and
+Android always share one build number.
+
 ## What the app does differently from the web build
 
 | | Web preview | App |

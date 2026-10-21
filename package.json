@@ -5,6 +5,7 @@
   "description": "Forever Mine: Gem Rush — native iOS / Android shell (Capacitor) around the plain-JS game.",
   "scripts": {
     "build": "node scripts/build-web.mjs",
+    "bump": "node scripts/bump-version.mjs",
     "sync": "npm run build && npx cap sync",
     "ios": "npm run sync && npx cap open ios",
     "android": "npm run sync && npx cap open android"
