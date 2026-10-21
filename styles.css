@@ -27,6 +27,7 @@
   /* Meaning. Gold is score already secured; teal is gems still at risk. */
   --gold:       #ffc95e;
   --carry:      #7ef0d0;
+  --earned:     #74e06a;   /* an achievement level already won */
   --danger:     #ff5d5d;
   --danger-soft:#ff8f7d;
   --ember:      #f0a53c;
@@ -250,7 +251,7 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .achieve.show { animation: achieveIn 2.6s ease forwards; }
 .achieve .lv-badge { align-self: center; flex-shrink: 0; }
 .achieve-txt { display: flex; flex-direction: column; line-height: 1.25; }
-.achieve-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: var(--gold); }
+.achieve-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: var(--earned); }
 .achieve-v { font-size: var(--fs-md); font-weight: 800; color: var(--ink); }
 @keyframes achieveIn {
   0%   { opacity: 0; transform: translate(-50%, 8px) scale(.92); }
@@ -835,7 +836,7 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
 .ach-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
 .ach-nm { font-size: var(--fs-md); font-weight: 800; }
 .ach-lv { flex-shrink: 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .06em; color: var(--dim); }
-.ach.done .ach-lv { color: var(--gold); }
+.ach.done .ach-lv { color: var(--earned); }
 
 /* One achievement's levels, side by side. Cards are narrower than the row so
    the next one always peeks in: the row reads as something to swipe. */
@@ -855,13 +856,13 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
   padding: 10px 11px; border-radius: 12px;
   background: var(--surface-2); border: 1px solid var(--edge-soft);
 }
-.lv-card.done { border-color: rgba(255, 201, 94, .38); background: rgba(255, 201, 94, .06); }
+.lv-card.done { border-color: rgba(116, 224, 106, .38); background: rgba(116, 224, 106, .06); }
 .lv-card.now { border-color: var(--edge-strong); }
 .lv-card.locked { opacity: .5; }
 .lv-ds { font-size: var(--fs-sm); font-weight: 700; line-height: 1.35; color: var(--ink); }
 .lv-card.locked .lv-ds { color: var(--dim); }
 .lv-pg { font-size: var(--fs-xs); font-weight: 800; color: var(--dim); font-variant-numeric: tabular-nums; }
-.lv-card.done .lv-pg { color: var(--gold); }
+.lv-card.done .lv-pg { color: var(--earned); }
 .ach-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
 .ach-bar span { display: block; height: 100%; border-radius: 3px; background: var(--gold); }
 
@@ -875,13 +876,13 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
   font-family: Georgia, "Times New Roman", "Songti SC", serif;
   font-size: 13px; font-weight: 700; letter-spacing: .06em; line-height: 1;
 }
-.lv-badge.done { background: linear-gradient(180deg, #ffe08a, #e0a63a); color: #3a2506; box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
+.lv-badge.done { background: linear-gradient(180deg, #a8f29a, #4fb845); color: #0f2a0b; box-shadow: inset 0 -2px 0 rgba(0,0,0,.2); }
 .lv-badge.now { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
 .lv-badge.locked { color: var(--dim); box-shadow: inset 0 0 0 1px var(--edge-strong); }
 
 /* Profile: the way into achievements, and the save's two red buttons. */
 .btn.ach-btn { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 16px; }
-.ach-count { font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 800; color: var(--gold); font-variant-numeric: tabular-nums; }
+.ach-count { font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 800; color: var(--earned); font-variant-numeric: tabular-nums; }
 .danger-zone { margin-top: 4px; }
 
 .stats-h { margin-bottom: 10px; }
