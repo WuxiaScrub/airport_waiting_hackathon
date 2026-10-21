@@ -132,7 +132,7 @@ capability.
 2. **Providers → Apple**: Enable. **Client IDs:** `com.hdexpanse.forevermine`.
    Leave the secret-key fields empty; they're only for web sign-in. Save.
 3. **Providers → Google**: Enable. Paste the **Web** client ID and client
-   secret from step 3 below. Save.
+   secret from step 3.4 below. Save.
 
 ### 2. iOS: Xcode (~1 min)
 1. In Xcode, select the **App** target → **Signing & Capabilities** →
@@ -143,22 +143,36 @@ Nothing else is needed for iOS. Automatic signing turns the capability on for
 the App ID in your developer account.
 
 ### 3. Android: Google Cloud (~10 min)
+Use a project of its own rather than one shared with other games: the
+branding below is what the Google sign-in sheet shows, and publishing status
+and test users are per project.
+
 1. At https://console.cloud.google.com, create a project, e.g. "Forever Mine".
 2. **Google Auth Platform → Branding:** app name *Forever Mine: Gem Rush*, your
-   support email, and the privacy policy URL. **Audience:** External. While it
-   is in *Testing*, add your own Google account under **Test users**.
+   support email, and the privacy policy URL. **Audience:** External.
    **Data access:** the default `openid`, `email` and `profile` are enough.
-3. **Clients → Create client → Web application**, named e.g. "Supabase".
+3. **Audience:** while the project is in *Testing*, only Google accounts
+   listed under **Test users** can sign in. That list is separate from the
+   Play Console testers, so either add every closed tester there too, or
+   press **Publish app**. These basic scopes need no verification review.
+4. **Clients → Create client → Web application**, named e.g. "Supabase".
    No redirect URIs are needed. Copy the **client ID** and **secret** into
    Supabase (step 1.3). **Send me the client ID** (it's public; it goes into
    `CFG.signin.googleWebClientId`).
-4. **Clients → Create client → Android:** package `com.hdexpanse.forevermine`.
-   For the **SHA-1**, after one debug build from Android Studio run:
-   `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
-   and copy the `SHA1:` line. Before release, add two more Android clients
-   with the same package: one with your **upload key** SHA-1, and one with
-   the **Play App Signing** SHA-1 (Play Console → *Test and release → App
-   integrity*).
+5. **Clients → Create client → Android:** package `com.hdexpanse.forevermine`
+   and the **Play App Signing** SHA-1. Play re-signs every build it delivers
+   (closed testing included) with Google's own key, so that is the
+   certificate Google checks. Get it after the first upload to Play Console:
+   *Test and release → App integrity → App signing →* **App signing key
+   certificate** (not the upload key certificate).
+
+Each Android client holds one SHA-1, and sign-in only works for builds signed
+with a key that has a client. The one above covers every install from Play.
+Add another Android client (same package) only for a build installed some
+other way: the **upload key** SHA-1 for a release build you sideload, or the
+debug keystore SHA-1 for runs from Android Studio
+(`keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`).
+None of the Android clients has a secret or goes into Supabase or the code.
 
 If Google sign-in fails on Android, filter Logcat for `GoogleProvider`. The
 plugin prints the package and SHA-1 it actually used, to compare with Google

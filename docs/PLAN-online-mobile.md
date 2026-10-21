@@ -270,7 +270,7 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 | Phase 1 | Turn on Anonymous sign-ins and pg_cron in Supabase; run the migration SQL files. |
 | Phase 4 | Install Xcode and Android Studio. Apple Developer account and Google Play Console account. Register App ID `com.hdexpanse.forevermine` and reserve the name in App Store Connect. |
 | Phase 5 | In AdMob: set up the GDPR consent message and the ATT explainer (Privacy & messaging); link the app store listings once they exist. |
-| Phase 6 | **Apple**: create a Services ID and a Sign in with Apple key, then enter Team ID, Key ID and the key in Supabase → Auth → Apple. **Google**: in Google Cloud, create OAuth client IDs (Web, iOS, Android; the Android one needs the signing certificate SHA-1), then enter the Web client ID and secret in Supabase → Auth → Google. I'll write step-by-step instructions when we get there. |
+| Phase 6 | **Apple**: create a Services ID and a Sign in with Apple key, then enter Team ID, Key ID and the key in Supabase → Auth → Apple. **Google**: in Google Cloud, create a Web OAuth client and an Android one (with the Play App Signing SHA-1), then enter the Web client ID and secret in Supabase → Auth → Google. Steps: `docs/BUILD-mobile.md` → *Save your progress*. |
 | Phase 7 | Create the `wuxiascrub.github.io` repo (I fill it: privacy policy, `app-ads.txt`, company page) and enable Pages on it. Fill in the store forms. |
 
 ## Settled questions
