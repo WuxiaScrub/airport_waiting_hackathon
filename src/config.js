@@ -215,9 +215,9 @@ const CFG = {
     // is gone they take `chokeDamage` every `chokeEvery` seconds until they
     // get clear. Out of the gas, breath comes back `recover` times as fast.
     choke: 0.06,         // gas in the miner's cell that counts as "in the cloud"
-    breath: 5,           // seconds the miner can hold their breath
+    breath: 2.5,         // seconds the miner can hold their breath
     recover: 2,
-    chokeEvery: 1.5,
+    chokeEvery: 0.75,
     chokeDamage: 1,
   },
 

@@ -737,8 +737,10 @@ class Renderer {
   }
 
   /**
-   * The hook holding the miner off a wall tile: a taut line from the hand to
-   * the tile face, a bitten-in claw, and a flash on the frame it catches.
+   * The hook holding the miner off a wall tile: a red-and-white rope from the
+   * hand to the tile face, a brass three-pronged hook bitten into it, and a
+   * flash on the frame it catches. Rope colour and brass are deliberately
+   * nothing like the grey pickaxe head, so the two never read as one tool.
    */
   drawGrapple(c, p, cx, cy, r, ox, oy, ppt) {
     const t = p.gripTile;
@@ -747,32 +749,49 @@ class Renderer {
     const ay = oy + (t.y + 0.42) * ppt;
     const hx = cx + dir * r * 0.42, hy = cy - r * 0.3;
     const sway = Math.sin(p.gripAnim * 8) * r * 0.12;
+    const mx = (hx + ax) / 2, my = (hy + ay) / 2 + sway;
 
     c.save();
     c.lineCap = 'round';
-    c.strokeStyle = '#d8c39a';
-    c.lineWidth = Math.max(1.4, ppt * 0.055);
-    c.beginPath();
-    c.moveTo(hx, hy);
-    c.quadraticCurveTo((hx + ax) / 2, (hy + ay) / 2 + sway, ax, ay);
-    c.stroke();
+    // Rope: a red core with a white dashed twist over it.
+    c.lineWidth = Math.max(1.8, ppt * 0.07);
+    c.strokeStyle = '#c8402e';
+    c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(mx, my, ax, ay); c.stroke();
+    c.lineWidth = Math.max(1, ppt * 0.035);
+    c.strokeStyle = '#f4ead6';
+    c.setLineDash([ppt * 0.08, ppt * 0.08]);
+    c.beginPath(); c.moveTo(hx, hy); c.quadraticCurveTo(mx, my, ax, ay); c.stroke();
+    c.setLineDash([]);
 
-    // Claw.
-    c.strokeStyle = '#cfd6df';
-    c.lineWidth = Math.max(1.4, ppt * 0.07);
-    c.beginPath();
-    c.arc(ax, ay, r * 0.34, dir > 0 ? -1.3 : Math.PI + 1.3, dir > 0 ? 1.3 : Math.PI - 1.3, dir < 0);
-    c.stroke();
+    // Hook: a ring where the rope ties on, a shank into the wall, and three
+    // curled brass prongs splayed against the face.
+    const s = r * 0.42;
+    c.translate(ax, ay);
+    c.scale(dir, 1);
+    c.strokeStyle = '#e0a83a';
+    c.lineWidth = Math.max(1.4, ppt * 0.06);
+    c.beginPath(); c.arc(-s * 0.55, 0, s * 0.22, 0, TAU); c.stroke();
+    c.beginPath(); c.moveTo(-s * 0.33, 0); c.lineTo(s * 0.35, 0); c.stroke();
+    for (const a of [-1, 0, 1]) {
+      c.beginPath();
+      c.moveTo(s * 0.35, 0);
+      c.quadraticCurveTo(s * 0.75, a * s * 0.9, s * 0.2, a * s * 0.95);
+      c.stroke();
+    }
+    c.fillStyle = '#ffd77a';
+    c.beginPath(); c.arc(s * 0.35, 0, s * 0.14, 0, TAU); c.fill();
+    c.restore();
 
     if (p.gripAnim > 0) {
+      c.save();
       c.globalAlpha = p.gripAnim * 0.8;
       c.strokeStyle = '#ffe6a8';
       c.lineWidth = Math.max(1, ppt * 0.05);
       c.beginPath();
       c.arc(ax, ay, r * (0.5 + (1 - p.gripAnim) * 1.1), 0, TAU);
       c.stroke();
+      c.restore();
     }
-    c.restore();
   }
 
   drawPlayer(c, game, ox, oy, ppt) {
@@ -795,6 +814,13 @@ class Renderer {
     const step = (p.moving && !air) ? Math.sin(p.walk) : 0;
     const bob = (p.moving && !air) ? Math.abs(Math.sin(p.walk)) * ppt * 0.045 : 0;
     c.translate(0, -bob);
+    // Idle: a light breath, rising and settling from the feet up.
+    if (!p.moving && !air && !p.dead && !p.gripping) {
+      const breath = Math.sin(game.time * 2.4) * 0.025;
+      c.translate(0, r * 0.92);
+      c.scale(1 - breath * 0.4, 1 + breath);
+      c.translate(0, -r * 0.92);
+    }
     // Stretch on the way up, squash on the way down: the whole read of "I am
     // airborne" in one transform.
     if (air) {
@@ -848,17 +874,21 @@ class Renderer {
     // arcs through the swing.
     const sw = p.swingAnim;
     const aim = Math.atan2(p.facing.y, p.facing.x);
-    c.save();
-    c.rotate(aim - 0.9 + sw * 1.9);
-    c.strokeStyle = '#c8a06a';
-    c.lineWidth = Math.max(1.6, ppt * 0.075);
-    c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
-    c.strokeStyle = '#cfd6df';
-    c.lineWidth = Math.max(1.6, ppt * 0.085);
-    c.beginPath();
-    c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
-    c.stroke();
-    c.restore();
+    // While hooked onto a wall the hand holds the rope, so the pickaxe is
+    // stowed unless it is mid-swing — the grapple is the only tool on show.
+    if (!p.gripping || sw > 0) {
+      c.save();
+      c.rotate(aim - 0.9 + sw * 1.9);
+      c.strokeStyle = '#c8a06a';
+      c.lineWidth = Math.max(1.6, ppt * 0.075);
+      c.beginPath(); c.moveTo(0, 0); c.lineTo(r * 1.15, 0); c.stroke();
+      c.strokeStyle = '#cfd6df';
+      c.lineWidth = Math.max(1.6, ppt * 0.085);
+      c.beginPath();
+      c.arc(r * 1.15, 0, r * 0.42, -1.25, 1.25);
+      c.stroke();
+      c.restore();
+    }
 
     // Off-hand lob when a stick was just placed — the only tell that the
     // dynamite button did anything at the miner's end.
