@@ -737,6 +737,52 @@ class Renderer {
   }
 
   /**
+   * A How-to-Play illustration, drawn with the same code as the game so the
+   * pictures can never drift from what the player meets. Each kind has a size
+   * in tiles; the caller sizes the canvas from it and redraws every frame.
+   */
+  drawHelpPic(c, kind, ppt, time) {
+    const S = Math.ceil(ppt) + 1;
+    // Mine floor in a pool of headlight, so dark creatures still read.
+    const W = c.canvas.width, H = c.canvas.height;
+    const lamp = c.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.6);
+    lamp.addColorStop(0, '#5a4a52');
+    lamp.addColorStop(1, '#241c30');
+    c.fillStyle = lamp;
+    c.fillRect(0, 0, W, H);
+    switch (kind) {
+      case 'dirt': c.drawImage(this.atlas.dirt[0], 0, 0, S, S); break;
+      case 'cracked': c.drawImage(this.atlas.dirtCracked[1], 0, 0, S, S); break;
+      case 'rock': c.drawImage(this.atlas.rock[0], 0, 0, S, S); break;
+      case 'gas':
+        c.drawImage(this.atlas.dirt[2], 0, 0, S, S);
+        this.drawGasSeep(c, 0, 0, ppt, time, false);
+        break;
+      case 'lantern': this.drawCheckpoint(c, ppt * 0.2, ppt * 0.25, ppt, time, false); break;
+      case 'heart': this.drawHeartstone(c, ppt * 0.8, ppt * 0.8, ppt * 1.1, time); break;
+      case 'bug':
+        this.drawCaveBug(c, { x: 0.8, y: 0.75, state: 'idle', vx: 0, vy: 0, anim: time, face: 1, hurtFlash: 0 },
+          0, 0, ppt, time);
+        break;
+      case 'bat':
+        this.drawBat(c, { x: 0.8, y: 0.55 + Math.sin(time * 2.2) * 0.05, anim: time, face: 1, hurtFlash: 0, stolen: { type: 2 } },
+          0, 0, ppt, time);
+        break;
+      case 'worm': {
+        // A body arcing in from the left, head breaking out on the right. It
+        // hides segments left of x = 1 (still in the wall), so draw one tile over.
+        const segs = [];
+        for (let k = 0; k < CFG.worm.length; k++) {
+          const x = 3.75 - k * 0.45;
+          segs.push({ x, y: 0.8 + Math.sin(time * 2.5 + x * 1.3) * 0.12 });
+        }
+        this.drawWorm(c, { warn: 0, dir: 1, segments: () => segs }, { w: 1e9 }, -ppt, 0, ppt, time);
+        break;
+      }
+    }
+  }
+
+  /**
    * The hook holding the miner off a wall tile: a red-and-white rope from the
    * hand to the tile face, a brass three-pronged hook bitten into it, and a
    * flash on the frame it catches. Rope colour and brass are deliberately

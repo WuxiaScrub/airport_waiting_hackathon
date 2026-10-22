@@ -746,6 +746,11 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
 .help b { color: var(--ink); font-weight: 800; }
 .help .row { display: flex; gap: 10px; margin-bottom: 6px; }
 .help .row span:first-child { flex-shrink: 0; min-width: 84px; color: var(--gold); font-weight: 800; font-size: var(--fs-xs); letter-spacing: .06em; padding-top: 1px; }
+/* Sprite pictures above a rule's text, each in a little window of mine floor. */
+.help-pics { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 4px; }
+.help-pics figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.help-pics canvas { display: block; border-radius: 6px; outline: 1px solid rgba(255,255,255,.08); }
+.help-pics figcaption { font-size: var(--fs-xs); font-weight: 700; color: var(--mute); }
 
 /* ------------------------------------------------- online panels */
 .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }

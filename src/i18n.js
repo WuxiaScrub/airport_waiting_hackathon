@@ -86,6 +86,13 @@ const STRINGS = {
     'help.dark.k': 'THE DARK',
     'help.dark.v': 'Your lamp is all the light there is. <b>Cave bugs</b> dig after you and pounce — watch for the wind-up. <b>Bats</b> cannot dig, but they steal your best gem: kill one before it gets away to take it back.',
     'help.deep.k': 'DEEPER',
+    'help.pic.dirt': 'Dirt',
+    'help.pic.cracked': 'Cracked',
+    'help.pic.rock': 'Rock',
+    'help.pic.bug': 'Cave bug',
+    'help.pic.bat': 'Bat',
+    'help.pic.gas': 'Gas pocket',
+    'help.pic.worm': 'The Tunneler',
     'help.deep.v': 'From mine 2, <b>bubbling dirt</b> hides gas that drifts up your tunnels — it chokes you if you linger, and dynamite or lava sets it alight. From mine 3, a <b>great worm</b> bores across the mine: get out of the red band when the ground rumbles.',
 
     /* Shop */
@@ -440,6 +447,13 @@ const STRINGS = {
     'help.dark.k': '黑暗',
     'help.dark.v': '头灯是你唯一的光。<b>洞穴虫</b>会挖洞追你、扑上来咬 —— 看到它蓄力就快躲。<b>蝙蝠</b>不会挖洞，但会叼走你最值钱的宝石：趁它没飞远打下来，就能抢回来。',
     'help.deep.k': '更深处',
+    'help.pic.dirt': '泥土',
+    'help.pic.cracked': '松土',
+    'help.pic.rock': '岩石',
+    'help.pic.bug': '洞穴虫',
+    'help.pic.bat': '蝙蝠',
+    'help.pic.gas': '瓦斯层',
+    'help.pic.worm': '钻地巨虫',
     'help.deep.v': '从第 2 关起，<b>冒泡的泥土</b>里藏着瓦斯，会顺着坑道往上飘 —— 待久了会呛伤你，炸药和岩浆一碰就着。从第 3 关起，会有<b>钻地巨虫</b>横穿矿井：地面一震动，就赶紧离开红色区域。',
 
     /* Shop */
