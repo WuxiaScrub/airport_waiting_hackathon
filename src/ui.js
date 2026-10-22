@@ -359,8 +359,21 @@ class UI {
 
   /** How to play: one row per rule. Only opens from the title's button. */
   help() {
+    // Pictures for the rows that name a thing to look out for: [kind, tiles
+    // wide, tiles high, captioned]. A lone picture needs no caption.
+    const PICS = {
+      dirt: [['dirt', 1, 1, 1], ['cracked', 1, 1, 1], ['rock', 1, 1, 1]],
+      shop: [['lantern', 1.4, 1.4]],
+      heart: [['heart', 1.6, 1.6]],
+      dark: [['bug', 1.6, 1.5, 1], ['bat', 1.6, 1.6, 1]],
+      deep: [['gas', 1, 1, 1], ['worm', 3.4, 1.6, 1]],
+    };
+    const PPT = 34;   // CSS pixels per tile in the pictures
+    const pics = (k) => PICS[k] ? `<div class="help-pics">${PICS[k].map(([kind, w, h, cap]) =>
+      `<figure><canvas data-pic="${kind}" style="width:${w * PPT}px;height:${h * PPT}px"></canvas>${
+        cap ? `<figcaption>${loc('help.pic.' + kind)}</figcaption>` : ''}</figure>`).join('')}</div>` : '';
     const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark', 'deep'].map(k =>
-      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
+      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${pics(k)}${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
 
     this._repaint = () => this.help();
     this.show(`
@@ -372,6 +385,25 @@ class UI {
     `);
     this.on('#helpDone', () => this.title());
     this.wireLang();
+    this.animateHelpPics(PPT);
+  }
+
+  /** Keeps the How-to-Play pictures moving until the panel replaces them. */
+  animateHelpPics(ppt) {
+    const r = this.game.renderer;
+    const dpr = Math.min(window.devicePixelRatio || 1, CFG.render.maxDpr);
+    const pics = [...this.el.panelInner.querySelectorAll('canvas[data-pic]')].map(cv => {
+      cv.width = Math.round(parseFloat(cv.style.width) * dpr);
+      cv.height = Math.round(parseFloat(cv.style.height) * dpr);
+      return { kind: cv.dataset.pic, ctx: cv.getContext('2d') };
+    });
+    if (!pics.length) return;
+    const frame = (ms) => {
+      if (!pics[0].ctx.canvas.isConnected) return;
+      for (const p of pics) r.drawHelpPic(p.ctx, p.kind, ppt * dpr, ms / 1000);
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
   }
 
   /** "Exterminator II" — an achievement's name at a level (none at 0). */
