@@ -41,6 +41,7 @@ class UI {
       pauseBtn: document.getElementById('pauseBtn'),
       achieve: document.getElementById('achieve'),
       hint: document.getElementById('hint'),
+      coach: document.getElementById('coach'),
     };
     this._achQueue = [];       // achievement pop-ups waiting their turn
     this._back = [];           // panels to return to, innermost last — see open()
@@ -118,6 +119,7 @@ class UI {
     let label = depth <= 0 ? loc('hud.surfaceCamp') : loc('hud.deep', { d: depth });
     const mine = this.game.campaign.mine;
     if (this.game.campaign.daily) label = loc('hud.daily') + '  ·  ' + label;
+    else if (this.game.tutorial) label = loc('hud.tutorial') + '  ·  ' + label;
     else if (mine > 1) label = loc('hud.mineN', { n: mine }) + '  ·  ' + label;
     if (this.game.volcano) {
       const gap = Math.max(0, Math.round(world.lavaRow - player.y));
@@ -133,7 +135,7 @@ class UI {
    */
   syncTimer(game) {
     const el = this.el.timer;
-    const live = (game.state === 'play' || game.state === 'paused') && !game.volcano;
+    const live = (game.state === 'play' || game.state === 'paused') && !game.volcano && !game.tutorial;
     el.classList.toggle('hidden', !live);
     if (!live) return;
 
@@ -178,6 +180,7 @@ class UI {
   onLanguageChange() {
     const g = this.game;
     if (g.player && g.world) this.syncDepth(g.depth(), g.world, g.player);
+    if (g.tutorial && g.state !== 'over') g.tutorial.show(g);
     this.repaint();
   }
 
@@ -238,6 +241,26 @@ class UI {
     void el.offsetWidth;
     el.classList.add('show');
     Sfx.play('alert', { v: 0.6 });
+  }
+
+  /**
+   * The tutorial's coach card: the one thing to do next, and how far along
+   * the lessons are. Unlike a hint it stays up until the step is done.
+   */
+  coach(text, n, total) {
+    const el = this.el.coach;
+    el.innerHTML = `<span class="coach-k">${loc('tut.progress', { n, total })}</span>
+      <span class="coach-b">${text}</span>`;
+    el.classList.remove('done');
+    el.classList.add('show');
+  }
+
+  /** Tick the current step off; the next prompt replaces it shortly. */
+  coachDone() { this.el.coach.classList.add('done'); }
+
+  /** The card is only up while the practice mine is being played. */
+  syncCoach(game) {
+    if (!game.tutorial || game.state === 'over') this.el.coach.classList.remove('show', 'done');
   }
 
   flashHurt() {
@@ -333,17 +356,58 @@ class UI {
         ${Online.enabled ? `<button class="btn ghost" id="boardsBtn">${loc('title.boards')}</button>` : ''}
         <button class="btn ghost" id="profileBtn">${loc('title.profile')}</button>
       </div>
+      <button class="btn ghost" id="tutBtn">${loc('title.tutorial')}</button>
       <div class="title-links">
         <button class="link-btn" id="helpBtn">${loc('help.title')}</button>
         ${this.privacyLink()}
       </div>
     `, 'title');
-    this.on('#startBtn', () => this.game.newCampaign());
-    this.on('#dailyBtn', () => this.game.newCampaign(false, 'daily'));
+    this.on('#startBtn', () => this.offerTutorial(() => this.game.newCampaign()));
+    this.on('#dailyBtn', () => this.offerTutorial(() => this.game.newCampaign(false, 'daily')));
+    this.on('#tutBtn', () => this.game.startTutorial());
     this.on('#helpBtn', () => this.help());
     this.on('#musicBtn', () => { this.game.toggleMusic(); this.title(); });
     this.wirePrivacy();
     this.wireOnlineButtons();
+    this.wireLang();
+  }
+
+  /**
+   * The first time a player heads into a real mine on this device, offer the
+   * practice mine first. Asked once: either answer marks it offered.
+   */
+  offerTutorial(go) {
+    const save = this.game.save;
+    if (save.tutorial) { go(); return; }
+    const answer = (fn) => () => { save.tutorial = 'offered'; this.game.persist(); fn(); };
+    this._repaint = () => this.offerTutorial(go);
+    this.show(`
+      ${this.langButton()}
+      <h2>${loc('tut.offer.title')}</h2>
+      <div class="sub">${loc('tut.offer.body')}</div>
+      <button class="btn" id="tutYes">${loc('tut.offer.yes')}</button>
+      <button class="btn ghost" id="tutNo">${loc('tut.offer.no')}</button>
+    `);
+    this.on('#tutYes', answer(() => this.game.startTutorial()));
+    this.on('#tutNo', answer(go));
+    this.wireLang();
+  }
+
+  /** Out of the practice mine: what it taught, and the way into a real one. */
+  tutorialDone() {
+    const rows = ['carry', 'camp', 'clock'].map(k =>
+      `<li>${loc('tut.done.' + k, { m: Math.round(CFG.lava.fuse / 60) })}</li>`).join('');
+    this._repaint = () => this.tutorialDone();
+    this.show(`
+      ${this.langButton()}
+      <h2>${loc('tut.done.title')}</h2>
+      <div class="sub">${loc('tut.done.sub')}</div>
+      <ul class="tut-recap">${rows}</ul>
+      <button class="btn" id="tutPlay">${loc('tut.done.play')}</button>
+      <button class="btn ghost" id="tutTitle">${loc('tut.done.title2')}</button>
+    `);
+    this.on('#tutPlay', () => this.game.newCampaign());
+    this.on('#tutTitle', () => this.game.toTitle());
     this.wireLang();
   }
 
@@ -1166,13 +1230,14 @@ class UI {
         <button class="btn ghost" id="musicBtn">${loc('pause.music', { s: onOff(Music.enabled) })}</button>
       </div>
       <button class="btn ghost" id="shakeBtn">${loc('pause.shake', { s: onOff(game.save.shake !== false) })}</button>
-      <button class="btn ghost quit" id="quitBtn">${loc('pause.quit')}</button>
+      <button class="btn ghost quit" id="quitBtn">${loc(game.tutorial ? 'pause.leaveTut' : 'pause.quit')}</button>
     `);
     this.on('#resumeBtn', () => game.closePanel());
     this.on('#audioBtn', () => { game.toggleAudio(); this.pause(game); });
     this.on('#musicBtn', () => { game.toggleMusic(); this.pause(game); });
     this.on('#shakeBtn', () => { game.toggleShake(); this.pause(game); });
-    this.on('#quitBtn', () => this.confirmQuit(game));
+    // Leaving the practice mine loses nothing, so it needs no second tap.
+    this.on('#quitBtn', () => game.tutorial ? game.toTitle() : this.confirmQuit(game));
     this.wireLang();
   }
 

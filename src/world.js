@@ -10,14 +10,15 @@ class World {
    * `heartRow` is where this mine's Heartstone sits — deeper in later mines.
    * `gasPockets` is how many gas pockets per 100 rows it hides (0 = none).
    */
-  constructor(seed, game, heartRow, gasPockets) {
+  constructor(seed, game, heartRow, gasPockets, layout) {
     this.game = game;
     this.seed = seed >>> 0;
     this.rng = new RNG(seed);
     this.heartRow = heartRow || CFG.world.heartstoneRow;
     this.gasPockets = gasPockets || 0;
-    this.w = CFG.world.width;
-    this.h = this.heartRow + CFG.world.bottomPad;
+    // `layout` is a fixed map (the tutorial's): its size replaces the generated one.
+    this.w = layout ? layout[0].length : CFG.world.width;
+    this.h = layout ? layout.length : this.heartRow + CFG.world.bottomPad;
     this.surface = CFG.world.surfaceRow;
 
     const n = this.w * this.h;
@@ -39,8 +40,9 @@ class World {
     this.heartstone = { x: 0, y: 0 };
     this.spawnPoint = { x: 0, y: 0 };
     this.lavaRow = this.h + 4;           // above this row is safe; starts off-map
+    this.markers = {};                   // named spots a fixed map marks: { B: {x, y}, ... }
 
-    this.generate();
+    if (layout) this.buildFromMap(layout); else this.generate();
   }
 
   idx(x, y) { return y * this.w + x; }
@@ -130,6 +132,31 @@ class World {
     this.carveHeartstoneChamber();
     this.ensureRowsPassable();
     if (this.gasPockets > 0) this.placeGasPockets();
+  }
+
+  /**
+   * A hand-drawn mine, one string per row — the legend is beside
+   * `CFG.tutorial.map`. Nothing here is random, so it plays the same every time.
+   */
+  buildFromMap(rows) {
+    const TILE = { '#': T.BEDROCK, 'r': T.ROCK, '.': T.DIRT };
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        const ch = rows[y][x];
+        this.variant[this.idx(x, y)] = (hash2(x, y, 0x1234) * 4) | 0;
+        if (TILE[ch] !== undefined) this.set(x, y, TILE[ch], ch === '.' ? CFG.mining.dirtHits : 0);
+        else if (ch >= '1' && ch <= '4') this.set(x, y, T.GEM, CFG.mining.gemHits, +ch);
+        else if (ch === 'Z') { this.set(x, y, T.HEART, 3); this.heartstone = { x, y }; this.heartRow = y; }
+        else if (ch === 'H' || ch === 'L') {
+          this.set(x, y, T.CHECKPOINT);
+          this.checkpoints.push({ x, y, home: ch === 'H', spent: false });
+        } else {
+          this.set(x, y, T.EMPTY);
+          if (ch === 'P') this.spawnPoint = { x: x + 0.5, y: y + 0.5 };
+          else if (ch !== ' ') this.markers[ch] = { x: x + 0.5, y: y + 0.5 };
+        }
+      }
+    }
   }
 
   /**

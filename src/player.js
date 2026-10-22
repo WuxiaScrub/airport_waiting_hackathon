@@ -389,6 +389,7 @@ class Player {
     }
 
     if (!didSomething) Sfx.play('mine', { v: 0.4 });
+    if (game.tutorial) game.tutorial.notify('swing', { hit: !!res && res !== 'hard', dx: this.facing.x, dy: this.facing.y });
   }
 
   /**

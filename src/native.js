@@ -69,6 +69,8 @@ const Native = {
     const back = btn('#backBtn');                 // leaderboards / profile
     if (back) { back.click(); return; }
 
+    // The practice mine has nothing to lose: back simply leaves it.
+    if (game.tutorial && game.state !== 'over') { game.toTitle(); return; }
     if (game.runAtRisk()) {
       ui.confirmLeave({
         bodyKey: 'confirm.leaveBodyApp',

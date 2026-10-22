@@ -384,6 +384,53 @@ const CFG = {
     camLift: 0.23,       // the miner sits this fraction of the screen above centre, clear of the menu
   },
 
+  // The practice mine (src/tutorial.js). A fixed map instead of a generated
+  // one, read top to bottom: the surface (P spawn, H camp), then one room per
+  // lesson, then the Heartstone at the bottom and a sheer shaft (the column
+  // at x 20) back up to the camp.
+  //   #  bedrock     r  rock        .  dirt        (space) open
+  //   1-4 sapphire / emerald / ruby / diamond     Z  Heartstone
+  //   H  camp lantern     L  supply lantern     P  spawn
+  //   B / V  where the scripted cave bug / bat appear (open air)
+  // The surface must sit on `world.surfaceRow`, as in a generated mine.
+  tutorial: {
+    map: [
+      '#                      #',
+      '#                      #',
+      '#                      #',
+      '#              r       #',
+      '#              r       #',
+      '#  P           r  H    #',
+      '#rrrrrr..rrrrrrrrrrr rr#',
+      '#          .       r rr#',
+      '#          .       r rr#',
+      '#          .  rrr  r rr#',
+      '#          .  rrr  r rr#',
+      '#rrrrrrrrrrrrrrrr..r rr#',
+      '#.......r  V ...   r rr#',
+      '#.......r    ...   r rr#',
+      '#.1.234.r    ...   r rr#',
+      '#       r          r rr#',
+      '####..#############r rr#',
+      '#                  r rr#',
+      '#               B  r rr#',
+      '#                  r rr#',
+      '#       L          r rr#',
+      '###############..##r rr#',
+      '#                  r rr#',
+      '#                  r rr#',
+      '#                  r rr#',
+      '#                    rr#',
+      '#                    rr#',
+      '#        Z           rr#',
+      '########################',
+      '########################',
+    ],
+    lavaSpeed: 0.3,      // rows/sec, and no acceleration: the climb is the lesson
+    reviveDelay: 1.2,    // seconds of death animation before the free get-up
+    stepPause: 0.9,      // seconds the tick shows before the next prompt
+  },
+
   // Lifetime achievements. Each reads one counter from the save (see
   // Stats.value in src/stats.js) and one bar per level, I, II, III… in order.
   // Add a bar to the end of a list to give that achievement another level.
