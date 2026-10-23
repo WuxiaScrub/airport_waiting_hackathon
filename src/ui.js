@@ -577,7 +577,7 @@ class UI {
       <h2 class="stats-h">${loc('stats.title')}</h2>
       ${stats}
       ${this.backButton()}
-    `);
+    `, 'achievements');
     // Open each strip on the level being worked on; the finished ones are a
     // swipe back to the left.
     this.el.panelInner.querySelectorAll('.lv-strip').forEach(strip => {

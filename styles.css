@@ -991,6 +991,11 @@ body.lang-cjk .panel .logo-sub { letter-spacing: .3em; }
   .btn.ghost:hover:not(:disabled), .lang-chip:hover, .tab:hover { color: var(--ink); border-color: var(--edge-strong); }
   .buy:hover:not(:disabled) { background: #3a2e5a; }
   .pause-btn:hover { background: rgba(111,87,184,.4); }
+  /* A mouse can't swipe the level strips: widen the panel so every level
+     card sits side by side instead. */
+  .panel-inner.achievements { max-width: min(860px, 100%); }
+  .achievements .lv-strip { overflow-x: visible; scroll-snap-type: none; }
+  .achievements .lv-card { flex: 1 1 0; min-width: 0; }
 }
 
 /* Reduced motion: keep every message, drop the zoom, bounce and pulse. */
