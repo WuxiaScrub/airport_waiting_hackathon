@@ -482,7 +482,7 @@ const CFG = {
   // Google button only appears once the Web OAuth client ID is filled in.
   // Public value — see docs/BUILD-mobile.md for where it comes from.
   signin: {
-    googleWebClientId: '',
+    googleWebClientId: '790205537977-h5mpfjqbkupdap85brtn5hta42qq82b8.apps.googleusercontent.com',
   },
 
   // Pages the game links to. Hosted on the developer's GitHub user site.
