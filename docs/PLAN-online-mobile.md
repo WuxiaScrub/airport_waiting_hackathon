@@ -14,8 +14,9 @@ fully playable offline at every step.
 | Topic | Decision |
 |---|---|
 | Name | **Forever Mine: Gem Rush** (store title). Chinese title **矿世奇财：宝石狂潮**. Bundle / package ID `com.hdexpanse.forevermine` on both platforms. |
-| Modes | **Endless** (today's campaign: Heartstone opens the next mine) and **Daily Mine**. |
+| Modes | **Endless** (today's campaign: Heartstone opens the next mine), **Hardcore** (an endless campaign on harder terms, see below) and **Daily Mine**. |
 | Endless board | Global, ranked by campaign score; shows mines escaped. The prestige board. |
+| Hardcore | Endless only. Half the supply lanterns (every other station, the first kept), health and dynamite not refilled between mines, the revive gets you up on 3 hearts. Every haul through the camp scores +50% (`CFG.hardcore`). Stored as `mode = 'hardcore'` on its own board (`hardcore_top`), never mixed with the endless one. Migration `006_hardcore.sql`. |
 | Daily mine | One single mine per UTC day. Same terrain seed for everyone; enemies stay random per attempt. Unlimited attempts; a player's **best** score of the day counts. Escaping with the Heartstone ends the daily (no next mine). |
 | Daily medals | Gold / silver / bronze for daily top 3. Shown on the profile and next to names on every board. |
 | Rollover | 00:00 UTC. Medals are awarded after a 1-hour grace window so offline runs can sync. |
@@ -292,3 +293,11 @@ Enable `pg_cron`. Every day at 01:05 UTC, run
 7. Phase 7 → TestFlight and Play internal testing.
 
 Each phase lands as its own PR.
+
+## Added after the phases
+
+- **Hardcore mode** (`supabase/migrations/006_hardcore.sql`). The owner
+  applies 006 before the build that offers hardcore ships: until then the
+  server refuses `mode = 'hardcore'` and the game drops those runs. The bonus
+  lives in two places that must agree: `CFG.hardcore.scoreBonus` (0.5) and
+  `app_config.hardcore_score_pct` (150), which only raises the score ceiling.

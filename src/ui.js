@@ -121,6 +121,7 @@ class UI {
     if (this.game.campaign.daily) label = loc('hud.daily') + '  ·  ' + label;
     else if (this.game.tutorial) label = loc('hud.tutorial') + '  ·  ' + label;
     else if (mine > 1) label = loc('hud.mineN', { n: mine }) + '  ·  ' + label;
+    if (this.game.campaign.hardcore) label = loc('hud.hardcore') + '  ·  ' + label;
     if (this.game.volcano) {
       const gap = Math.max(0, Math.round(world.lavaRow - player.y));
       label += '  ·  ' + loc('hud.lavaBelow', { d: gap });
@@ -320,8 +321,8 @@ class UI {
    * The personal haul board. `highlightId` marks the row a run just set. The
    * global boards have their own panel — see leaderboards() below.
    */
-  scoreBoard(highlightId) {
-    const list = Highscore.list();
+  scoreBoard(highlightId, mode) {
+    const list = Highscore.list(mode);
     const body = list.length
       ? list.map((e, i) => `
           <div class="score-row${e.id && e.id === highlightId ? ' you' : ''}">
@@ -331,7 +332,7 @@ class UI {
           </div>`).join('')
       : `<div class="score-empty">${loc('score.empty')}</div>`;
     return `<div class="scores">
-      <div class="score-head">${loc('score.title')}</div>${body}
+      <div class="score-head">${loc(mode === 'hardcore' ? 'score.titleHardcore' : 'score.title')}</div>${body}
     </div>`;
   }
 
@@ -352,6 +353,10 @@ class UI {
       ${Online.enabled && Online.updateRequired ? `<div class="note">${loc('online.update')}</div>` : ''}
       ${this.dailyCard(save)}
       <button class="btn" id="startBtn">${loc('title.endless')}</button>
+      <button class="btn hardcore" id="hardBtn">
+        <span class="daily-k">${loc('title.hardcore')}</span>
+        <span class="daily-v">${loc('title.hardcoreInfo', { p: Math.round(CFG.hardcore.scoreBonus * 100) })}</span>
+      </button>
       <div class="btn-row${Online.enabled ? '' : ' one'}">
         ${Online.enabled ? `<button class="btn ghost" id="boardsBtn">${loc('title.boards')}</button>` : ''}
         <button class="btn ghost" id="profileBtn">${loc('title.profile')}</button>
@@ -363,6 +368,7 @@ class UI {
       </div>
     `, 'title');
     this.on('#startBtn', () => this.offerTutorial(() => this.game.newCampaign()));
+    this.on('#hardBtn', () => this.offerTutorial(() => this.game.newCampaign(false, 'hardcore')));
     this.on('#dailyBtn', () => this.offerTutorial(() => this.game.newCampaign(false, 'daily')));
     this.on('#tutBtn', () => this.game.startTutorial());
     this.on('#helpBtn', () => this.help());
@@ -436,8 +442,9 @@ class UI {
     const pics = (k) => PICS[k] ? `<div class="help-pics">${PICS[k].map(([kind, w, h, cap]) =>
       `<figure><canvas data-pic="${kind}" style="width:${w * PPT}px;height:${h * PPT}px"></canvas>${
         cap ? `<figcaption>${loc('help.pic.' + kind)}</figcaption>` : ''}</figure>`).join('')}</div>` : '';
-    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark', 'deep'].map(k =>
-      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${pics(k)}${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue) })}</span></div>`).join('');
+    const rows = ['move', 'mine', 'dirt', 'jump', 'grip', 'boom', 'bank', 'shop', 'heart', 'clock', 'dark', 'deep', 'hard'].map(k =>
+      `<div class="row"><span>${loc('help.' + k + '.k')}</span><span>${pics(k)}${loc('help.' + k + '.v', { m: Math.round(CFG.lava.fuse / 60), h: fmt(CFG.gems.heartstoneValue),
+        p: Math.round(CFG.hardcore.scoreBonus * 100), r: CFG.hardcore.reviveHealth })}</span></div>`).join('');
 
     this._repaint = () => this.help();
     this.show(`
@@ -551,6 +558,7 @@ class UI {
       section('stats.other', undefined, `
         ${line('stats.fastest', time(s.fastest))}
         ${line('stats.bestHaul', fmt(Highscore.best()))}
+        ${Highscore.best('hardcore') ? line('stats.bestHardcore', fmt(Highscore.best('hardcore'))) : ''}
         ${line('stats.bestMine', fmt(save.bestMine || 0))}
         ${line('stats.deepest', loc('common.metres', { n: save.best || 0 }))}
         ${line('stats.recovered', fmt(s.recovered))}
@@ -607,8 +615,9 @@ class UI {
   }
 
   wireOnlineButtons() {
-    // From a daily's summary, open on today's board; everywhere else, endless.
-    const tab = this.game.state === 'over' && this.game.campaign.daily ? 'today' : 'endless';
+    // From a summary, open on the board that run went to; everywhere else, endless.
+    const c = this.game.campaign, over = this.game.state === 'over';
+    const tab = over && c.daily ? 'today' : over && c.hardcore ? 'hardcore' : 'endless';
     this.on('#boardsBtn', () => this.open(() => this.leaderboards(tab)));
     this.on('#profileBtn', () => this.open(() => this.profile()));
   }
@@ -651,8 +660,8 @@ class UI {
   }
 
   /**
-   * The global boards: Endless (all time), Today's daily, Yesterday's daily
-   * with its podium. Draws at once with a loading line, then again when the
+   * The global boards: Endless and Hardcore (all time), Today's daily,
+   * Yesterday's daily with its podium. Draws at once with a loading line, then again when the
    * data lands — but only if the player is still looking at this panel.
    */
   leaderboards(tab) {
@@ -660,7 +669,7 @@ class UI {
     const draw = () => {
       this._repaint = draw;
       const rows = st.res && st.res.ok && Array.isArray(st.res.data) ? st.res.data : [];
-      const daily = tab !== 'endless';
+      const daily = tab === 'today' || tab === 'yesterday';
       const list = rows.map(r => `
         <div class="score-row board-row${r.me ? ' you' : ''}">
           <span class="rk">${r.medal ? `<span class="medal ${r.medal}"></span>` : r.rank}</span>
@@ -673,8 +682,9 @@ class UI {
 
       // Your own standing when you are off the bottom of the list.
       const rk = st.ranks && st.ranks.ok && Array.isArray(st.ranks.data) ? st.ranks.data[0] : null;
-      const myRank = rk && (tab === 'endless' ? rk.endless_rank : tab === 'today' ? rk.daily_rank : null);
-      const myBest = rk && (tab === 'endless' ? rk.endless_best : rk.daily_best);
+      const myRank = rk && (tab === 'endless' ? rk.endless_rank : tab === 'hardcore' ? rk.hardcore_rank
+        : tab === 'today' ? rk.daily_rank : null);
+      const myBest = rk && (tab === 'endless' ? rk.endless_best : tab === 'hardcore' ? rk.hardcore_best : rk.daily_best);
       const pinned = myRank && !rows.some(r => r.me) ? `
         <div class="score-row board-row you pinned">
           <span class="rk">${myRank}</span><span class="nm">${loc('board.you')}</span>
@@ -684,8 +694,9 @@ class UI {
       const tabBtn = (k) => `<button class="tab${k === tab ? ' on' : ''}" data-tab="${k}">${loc('board.' + k)}</button>`;
       this.show(`
         <h2>${loc('board.title')}</h2>
-        <div class="sub">${loc(daily ? 'board.dailySub' : 'board.endlessSub', { d: tab === 'today' ? utcDate(0) : utcDate(-1) })}</div>
-        <div class="tabs">${tabBtn('endless')}${tabBtn('today')}${tabBtn('yesterday')}</div>
+        <div class="sub">${loc(daily ? 'board.dailySub' : tab === 'hardcore' ? 'board.hardcoreSub' : 'board.endlessSub',
+          { d: tab === 'today' ? utcDate(0) : utcDate(-1), p: Math.round(CFG.hardcore.scoreBonus * 100) })}</div>
+        <div class="tabs">${tabBtn('endless')}${tabBtn('hardcore')}${tabBtn('today')}${tabBtn('yesterday')}</div>
         <div class="scores board">
           ${this.onlineStatus(st.res, daily ? 'board.emptyDaily' : 'board.empty', !rows.length)}
           ${list}${pinned}
@@ -699,7 +710,8 @@ class UI {
     };
     draw();
 
-    const req = tab === 'endless' ? Online.endlessTop(50) : Online.dailyTop(utcDate(tab === 'today' ? 0 : -1), 50);
+    const req = tab === 'endless' ? Online.endlessTop(50) : tab === 'hardcore' ? Online.hardcoreTop(50)
+      : Online.dailyTop(utcDate(tab === 'today' ? 0 : -1), 50);
     Promise.all([req, Online.myRanks()]).then(([res, ranks]) => {
       st.res = res; st.ranks = ranks;
       if (this._repaint === draw && this.isOpen) draw();
@@ -809,7 +821,7 @@ class UI {
 
         const recent = (d.recent || []).slice(0, 10).map(r => `
           <div class="score-row">
-            <span class="dd wide">${loc(r.mode === 'daily' ? 'run.daily' : 'run.endless')} · ${this.shortDate(r.created_at)}</span>
+            <span class="dd wide">${loc('run.' + (r.mode === 'daily' || r.mode === 'hardcore' ? r.mode : 'endless'))} · ${this.shortDate(r.created_at)}</span>
             <span class="vv">${fmt(r.score)}</span>
             <span class="dd">${loc('run.res.' + r.result)}</span>
           </div>`).join('');
@@ -828,6 +840,8 @@ class UI {
             ${stat('prof.mostMines', d.most_mines || 0, 'carry')}
             ${stat('prof.deepest', loc('common.metres', { n: d.deepest || 0 }))}
             ${stat('prof.runs', loc('prof.runsValue', { n: d.runs, d: d.dailies }))}
+            ${d.best_hardcore ? stat('prof.bestHardcore', fmt(d.best_hardcore), 'gold') : ''}
+            ${d.best_hardcore ? stat('prof.mostMinesHardcore', d.most_mines_hardcore || 0, 'carry') : ''}
           </div>
           ${this.accountBlock(st.acct)}
           <div class="scores">
@@ -860,6 +874,7 @@ class UI {
           <span>${loc('prof.achievements')}</span><span class="ach-count">${ach.n} / ${ach.max}</span>
         </button>
         ${this.scoreBoard()}
+        ${Highscore.list('hardcore').length ? this.scoreBoard(0, 'hardcore') : ''}
         <div class="danger-zone">${danger}</div>
         ${this.backButton()}
         ${this.langButton()}
@@ -946,7 +961,8 @@ class UI {
   onlineLine(game) {
     const o = game.campaign.online;
     if (!o) return '';
-    const key = o.state === 'sent' ? (o.rank ? (game.campaign.daily ? 'sum.dailyRank' : 'sum.globalRank') : 'sum.uploaded')
+    const c = game.campaign;
+    const key = o.state === 'sent' ? (o.rank ? (c.daily ? 'sum.dailyRank' : c.hardcore ? 'sum.hardcoreRank' : 'sum.globalRank') : 'sum.uploaded')
       : o.state === 'queued' ? 'sum.uploadLater'
       : o.state === 'refused' ? (Online.updateRequired ? 'online.update' : 'sum.uploadRefused')
       : 'sum.uploading';
@@ -1075,12 +1091,13 @@ class UI {
       : '';
 
     const heartsValue = c.hearts * CFG.gems.heartstoneValue;
-    const lost = Math.max(0, c.found + heartsValue - c.spent - c.score);
+    const lost = Math.max(0, c.found + heartsValue + c.bonus - c.spent - c.score);
     const line = (k, v, cls) => `<div class="row"><span>${loc(k)}</span><span class="${cls || ''}">${v}</span></div>`;
     const ledger = `
       <div class="help ledger">
         ${line('sum.found', '+' + fmt(c.found))}
         ${c.hearts ? line('sum.heartstones', '+' + fmt(heartsValue)) : ''}
+        ${c.bonus ? line('sum.hardcoreBonus', '+' + fmt(c.bonus)) : ''}
         ${line('sum.spent', '−' + fmt(c.spent))}
         ${lost ? line('sum.lost', '−' + fmt(lost)) : ''}
         ${line(nextMine ? 'sum.scoreSoFar' : 'sum.finalScore', fmt(c.score), 'total')}
@@ -1101,12 +1118,14 @@ class UI {
       </div>
       ${ledger}
       ${Online.enabled ? `<div class="online-line" id="onlineLine">${this.onlineLine(game)}</div>` : ''}
-      ${isWin || daily ? '' : this.scoreBoard(r ? r.id : 0)}
+      ${isWin || daily ? '' : this.scoreBoard(r ? r.id : 0, c.hardcore ? 'hardcore' : 'endless')}
       ${daily
         ? `<button class="btn" id="dailyAgainBtn">${loc('sum.dailyAgain')}</button>
            <button class="btn ghost" id="menuBtn">${loc('sum.menu')}</button>`
         : isWin
-        ? `<div class="note">${loc('sum.gearCarries')}</div>
+        ? `<div class="note">${c.hardcore
+             ? loc('sum.gearCarriesHard', { h: game.player.health, max: game.player.maxHealth, d: game.player.dynamite })
+             : loc('sum.gearCarries')}</div>
            <button class="btn" id="nextBtn">${loc('sum.descend', { n: c.mine + 1 })}</button>
            <button class="btn ghost" id="retireBtn">${loc('sum.retire')}</button>`
         : `<button class="btn" id="againBtn">${loc('sum.newCampaign')}</button>
@@ -1116,7 +1135,7 @@ class UI {
     `);
     this.on('#nextBtn', () => game.nextMine());
     this.on('#retireBtn', () => this.summary(game, 'cashout'));
-    this.on('#againBtn', () => game.newCampaign());
+    this.on('#againBtn', () => game.newCampaign(false, c.hardcore ? 'hardcore' : undefined));
     this.on('#dailyAgainBtn', () => game.newCampaign(false, 'daily'));
     this.on('#menuBtn', () => game.toTitle());
     this.wireOnlineButtons();
@@ -1195,6 +1214,8 @@ class UI {
       this.show(`
         <h2>${loc('revive.title')}</h2>
         <div class="sub">${carry > 0 ? loc('revive.subCarry', { v: fmt(carry) }) : loc('revive.sub')}</div>
+        ${game.campaign.hardcore ? `<div class="note">${loc('revive.hardcore',
+          { n: Math.min(game.player.maxHealth, CFG.hardcore.reviveHealth) })}</div>` : ''}
         ${state === 'ad'
           ? `<div class="note">${loc('revive.loading')}</div>`
           : `<div class="revive-count" id="reviveCount">${Math.max(0, left)}</div>

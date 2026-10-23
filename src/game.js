@@ -137,16 +137,22 @@ class Game {
    * built from today's UTC date, so every player digs the same one. It is
    * still mine 1 on base stats; escaping it ends the attempt. `daily` holds
    * the date it started on — a run that crosses midnight counts for that day.
+   *
+   * `mode` 'hardcore' is an endless campaign on CFG.hardcore's terms: half the
+   * lanterns, no refill between mines, a weaker revive, a bigger haul and a
+   * board of its own. `bonus` is what that extra share has added to `score`;
+   * `kit` is the health and dynamite carried from one mine into the next.
    */
   newCampaign(quiet, mode) {
     const daily = mode === 'daily' ? utcDate(0) : null;
     if (!quiet) this.track(s => { s.runs++; });
     this.campaign = {
       mine: 1, upgrades: {}, score: 0,
-      found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
+      found: 0, spent: 0, hearts: 0, depth: 0, gems: 0, bonus: 0,
       scoreId: 0, result: null,
       runId: newRunId(), playMs: 0, online: null,
       daily, dailyRecord: false,
+      hardcore: mode === 'hardcore', kit: null,
       revived: false,          // the one ad revive this run gets
     };
     this.startMine(quiet);
@@ -223,8 +229,17 @@ class Game {
 
     const seed = this.campaign.daily ? dailySeed(this.campaign.daily) : (Math.random() * 0xffffffff) >>> 0;
     const hz = tut ? { gas: 0, worm: 0 } : this.hazards(seed);
-    this.world = new World(seed, this, heartRow, hz.gas, tut ? CFG.tutorial.map : null);
+    const hard = this.campaign.hardcore;
+    this.world = new World(seed, this, heartRow, hz.gas, tut ? CFG.tutorial.map : null,
+      hard ? CFG.hardcore.lanternSpacing : 1);
     this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.campaign.upgrades);
+    // Hardcore: the wounds and the empty satchel come down with you.
+    const kit = this.campaign.kit;
+    if (kit) {
+      this.player.health = clamp(kit.health, 1, this.player.maxHealth);
+      this.player.dynamite = clamp(kit.dynamite, 0, this.player.dynMax);
+      this.campaign.kit = null;
+    }
     this.enemies.length = 0;
     this.gems.length = 0;
     this.dynamites.length = 0;
@@ -272,7 +287,8 @@ class Game {
       this.save.bestMine = Math.max(this.save.bestMine || 0, mine);
       this.persist();
       this.ui.toast(this.campaign.daily ? loc('toast.daily', { d: this.campaign.daily })
-        : mine > 1 ? loc('toast.mineN', { n: mine }) : loc('toast.digDown'), 1800);
+        : mine > 1 ? loc('toast.mineN', { n: mine })
+        : hard ? loc('toast.hardcore') : loc('toast.digDown'), 1800);
     }
   }
 
@@ -286,7 +302,9 @@ class Game {
 
   /** Straight into the next mine: same gear, empty pockets. */
   nextMine() {
-    this.campaign.mine++;
+    const c = this.campaign, p = this.player;
+    if (c.hardcore) c.kit = { health: p.health, dynamite: p.dynamite };
+    c.mine++;
     this.startMine();
   }
 
@@ -338,7 +356,7 @@ class Game {
         gems: c.gems,
         mine: c.mine,
         kind,
-      }, c.scoreId);
+      }, c.scoreId, c.hardcore ? 'hardcore' : 'endless');
       if (c.result) c.scoreId = c.result.id;
     }
 
@@ -367,7 +385,7 @@ class Game {
     c.online = { state: 'sending' };
     Online.submitRun({
       client_run_id: c.runId,
-      mode: c.daily ? 'daily' : 'endless',
+      mode: c.daily ? 'daily' : c.hardcore ? 'hardcore' : 'endless',
       daily_date: c.daily,
       score: c.score,
       mines_escaped: c.hearts,
@@ -387,7 +405,8 @@ class Game {
         if (this.campaign !== c) return;
         const row = r.ok && Array.isArray(r.data) ? r.data[0] : null;
         // The daily rank only means something while it is still that day.
-        const rank = !row || r.cached ? null : c.daily ? (c.daily === utcDate(0) ? row.daily_rank : null) : row.endless_rank;
+        const rank = !row || r.cached ? null : c.daily ? (c.daily === utcDate(0) ? row.daily_rank : null)
+          : c.hardcore ? row.hardcore_rank : row.endless_rank;
         c.online = { state: 'sent', rank };
         this.ui.syncOnline(this);
       });
@@ -435,12 +454,15 @@ class Game {
     }));
   }
 
-  /** Back on your feet, right here — with a real chance to get away. */
+  /**
+   * Back on your feet, right here — with a real chance to get away. Hardcore
+   * gets you up on a few hearts rather than a full bar.
+   */
   revivePlayer() {
     const p = this.player, R = CFG.revive;
     this.campaign.revived = true;
     p.dead = false;
-    p.health = p.maxHealth;
+    p.health = this.campaign.hardcore ? Math.min(p.maxHealth, CFG.hardcore.reviveHealth) : p.maxHealth;
     p.breath = CFG.gas.breath;
     p.invuln = R.invuln;
     p.vx = 0; p.vy = 0;
@@ -466,7 +488,7 @@ class Game {
 
     this.closePanel();
     this.ui.syncHealth(p);
-    this.ui.toast(loc('revive.done'), 1800);
+    this.ui.toast(this.campaign.hardcore ? loc('revive.doneHard', { n: p.health }) : loc('revive.done'), 1800);
     this.shake(8);
     this.fx.burst(p.x, p.y, 28, ['#ffc95e', '#fff0c0', '#7ef0d0'], { speed: 7, life: 0.9, size: 0.18, glow: true });
     Sfx.play('bank');
@@ -589,15 +611,22 @@ class Game {
     }
   }
 
-  /** Walked back into the camp: the haul becomes score and this mine is over. */
+  /**
+   * Walked back into the camp: the haul becomes score and this mine is over.
+   * Hardcore's bonus is paid here, on what made it out, so it never makes a
+   * lantern any cheaper on the way.
+   */
   reachCamp() {
     const c = this.campaign;
     const p = this.player;
     const hauled = this.purse();
     const winning = p.hasHeartstone;
-    const total = hauled + (winning ? CFG.gems.heartstoneValue : 0);
+    const base = hauled + (winning ? CFG.gems.heartstoneValue : 0);
+    const bonus = c.hardcore ? Math.round(base * CFG.hardcore.scoreBonus) : 0;
+    const total = base + bonus;
 
     c.score += total;
+    c.bonus += bonus;
     this.runStats.hauled = total;
     this.carry.length = 0;
     this.volcano = false;
@@ -920,13 +949,13 @@ class Game {
 
   /** A row near the player that keeps the worm clear of stations and the Heartstone chamber. */
   wormRow() {
-    const W = CFG.worm, w = this.world, every = CFG.world.checkpointEvery;
+    const W = CFG.worm, w = this.world;
     const py = Math.floor(this.player.y);
     for (let i = 0; i < 20; i++) {
       const row = py + Math.round((Math.random() * 2 - 1) * W.offset);
       if (row < w.surface + 6 || row > w.heartRow - 12) continue;
-      const rel = (row - w.surface) % every;
-      if (rel <= 4 || rel >= every - 2) continue;
+      const rel = w.stationRel(row);
+      if (rel <= 4 || rel >= w.stationEvery - 2) continue;
       return row;
     }
     return null;

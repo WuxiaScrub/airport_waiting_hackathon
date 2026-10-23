@@ -198,8 +198,10 @@ const CFG = {
     dailyChance: 0.5,    // chance a given day's daily mine has gas
     pocketSize: [3, 6],  // tiles in one pocket
     topClear: 12,        // rows under the surface kept free of pockets
-    release: 1.0,        // gas let out by breaking one pocket tile
-    leak: 0.3,           // ...of which this much escapes on the first (cracking) hit
+    // Twice the old 1.0 / 0.3: a broken pocket's cloud now covers about twice
+    // the ground it did, so lingering in it is a real danger.
+    release: 2.0,        // gas let out by breaking one pocket tile
+    leak: 0.6,           // ...and let out on the first (cracking) hit
     tick: 0.1,           // seconds per diffusion step
     rise: 0.42,          // share of a cell's gas that moves up each step
     spread: 0.12,        // share that moves to each open side each step
@@ -270,6 +272,18 @@ const CFG = {
     // things spawn and how many may be alive at once. Mine 1 is played on base
     // stats with nothing banked, so it is deliberately gentle.
     threat: [0.5, 0.8, 1.0, 1.2, 1.4],
+  },
+
+  // HARDCORE: an endless campaign for players the normal one no longer
+  // stretches. Every other supply lantern is left out (the first one stays),
+  // health and dynamite are NOT refilled between mines, and the revive only
+  // gets you up on a few hearts. In return everything carried out through the
+  // camp — Heartstone included — scores `scoreBonus` more. It has its own
+  // board, so the bonus never has to be balanced against the normal one.
+  hardcore: {
+    lanternSpacing: 2,   // station spacing, in normal station gaps
+    scoreBonus: 0.5,     // +50% on every haul (keep supabase app_config in step)
+    reviveHealth: 3,     // hearts a revive gets you up on (capped at max health)
   },
 
   checkpoint: {

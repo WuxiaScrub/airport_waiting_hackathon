@@ -9,13 +9,17 @@ class World {
   /**
    * `heartRow` is where this mine's Heartstone sits — deeper in later mines.
    * `gasPockets` is how many gas pockets per 100 rows it hides (0 = none).
+   * `spacing` stretches the gap between stations (hardcore: 2 = every other
+   * one left out). The first station stays where it always is.
    */
-  constructor(seed, game, heartRow, gasPockets, layout) {
+  constructor(seed, game, heartRow, gasPockets, layout, spacing) {
     this.game = game;
     this.seed = seed >>> 0;
     this.rng = new RNG(seed);
     this.heartRow = heartRow || CFG.world.heartstoneRow;
     this.gasPockets = gasPockets || 0;
+    this.stationFirst = CFG.world.checkpointEvery;
+    this.stationEvery = CFG.world.checkpointEvery * (spacing || 1);
     // `layout` is a fixed map (the tutorial's): its size replaces the generated one.
     this.w = layout ? layout[0].length : CFG.world.width;
     this.h = layout ? layout.length : this.heartRow + CFG.world.bottomPad;
@@ -57,6 +61,15 @@ class World {
     if (!this.inBounds(x, y)) return;
     const i = y * this.w + x;
     this.t[i] = type; this.hp[i] = hp; this.gem[i] = gem;
+  }
+
+  /**
+   * Where row `y` sits relative to the station above it: 0 is a station's
+   * top row, its rock floor is 2, and the next station is `stationEvery` on.
+   */
+  stationRel(y) {
+    const e = this.stationEvery;
+    return (((y - this.surface - this.stationFirst) % e) + e) % e;
   }
 
   isSolid(x, y) { return SOLID[this.get(x, y)] === 1; }
@@ -173,8 +186,8 @@ class World {
     const n = Math.round((bottom - top) / 100 * this.gasPockets);
     for (let k = 0; k < n; k++) {
       let x = rng.int(2, this.w - 3), y = rng.int(top, bottom);
-      const rel = (y - this.surface) % CFG.world.checkpointEvery;
-      if (rel <= 4 || rel >= CFG.world.checkpointEvery - 2) continue;
+      const rel = this.stationRel(y);
+      if (rel <= 4 || rel >= this.stationEvery - 2) continue;
       const size = rng.int(G.pocketSize[0], G.pocketSize[1]);
       for (let j = 0, guard = 0; j < size && guard < size * 4; guard++) {
         if (this.get(x, y) === T.DIRT) { this.set(x, y, T.GAS, CFG.mining.dirtHits); j++; }
@@ -223,10 +236,10 @@ class World {
     const cfg = CFG.world;
     if (y <= this.surface + cfg.startDepth + 1) return false;
 
-    // Station floors sit at rows surface + n*checkpointEvery .. +2.
-    const rel = (y - this.surface) % cfg.checkpointEvery;
+    // Station floors sit two rows under each station's top row.
+    const rel = this.stationRel(y);
     if (rel <= 2 + cfg.scatterRockClear) return false;
-    if (rel >= cfg.checkpointEvery - cfg.scatterRockClear) return false;
+    if (rel >= this.stationEvery - cfg.scatterRockClear) return false;
 
     const p = Math.min(cfg.scatterRockMax,
       cfg.scatterRock + Math.max(0, depth) * cfg.scatterRockDepth);
@@ -286,8 +299,7 @@ class World {
    */
   carveCheckpoints() {
     const cfg = CFG.world;
-    const every = cfg.checkpointEvery;
-    for (let r = this.surface + every; r < this.heartRow - 12; r += every) {
+    for (let r = this.surface + this.stationFirst; r < this.heartRow - 12; r += this.stationEvery) {
       for (let x = 1; x < this.w - 1; x++) {
         this.set(x, r, T.EMPTY);
         this.set(x, r + 1, T.EMPTY);
