@@ -54,7 +54,7 @@ const STRINGS = {
     'title.dailyInfo': '{d} · new mine in {h}h {m}m',
     'title.dailyBest': 'Your best today: {v}',
     'title.hardcore': 'HARDCORE',
-    'title.hardcoreInfo': 'Half the lanterns · new mines start without free health or dynamite · +{p}% score',
+    'title.hardcoreInfo': 'Half the lanterns · no refills · +{p}% score',
     'help.title': 'HOW TO PLAY',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
@@ -99,7 +99,7 @@ const STRINGS = {
     'help.pic.worm': 'The Tunneler',
     'help.deep.v': 'From mine 2, <b>bubbling dirt</b> hides gas that drifts up your tunnels — it chokes you if you linger, and dynamite or lava sets it alight. From mine 3, a <b>great worm</b> bores across the mine: get out of the red band when the ground rumbles.',
     'help.hard.k': 'HARDCORE',
-    'help.hard.v': 'An endless campaign for experts: <b>half the lanterns</b>, a new mine does <b>not</b> top up your health or dynamite (you start it with whatever you escaped with), and a revive that gets you up on <b>{r} hearts</b>. Everything you carry out scores <b>+{p}%</b>, on a leaderboard of its own.',
+    'help.hard.v': 'An endless campaign for experts: <b>half the lanterns</b>, health and dynamite <b>not refilled</b> between mines, and a revive that gets you up on <b>{r} hearts</b>. Everything you carry out scores <b>+{p}%</b>, on a leaderboard of its own.',
 
     /* Shop */
     'shop.supplyLantern': 'SUPPLY LANTERN',
