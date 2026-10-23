@@ -9,31 +9,36 @@
  * This is the PERSONAL board, kept on the device. The global boards live on
  * the server (see src/online.js) and are fed separately by Game.submitOnline,
  * so a board that is down can never touch this one.
+ *
+ * Hardcore campaigns keep a board of their own: their hauls carry a bonus, so
+ * mixing them in would bury every normal run.
  * ========================================================================== */
 
 const Highscore = {
-  key: 'forevermine.scores.v1',
-  legacyKey: 'deepcut.scores.v1',   // the game's working title
-  keep: 5,                 // rows the personal board holds
-  entries: null,           // lazily loaded
+  keys: { endless: 'forevermine.scores.v1', hardcore: 'forevermine.scores.hardcore.v1' },
+  legacyKey: 'deepcut.scores.v1',   // the game's working title (endless only)
+  keep: 5,                 // rows each personal board holds
+  entries: {},             // by mode, lazily loaded
 
   /* ------------------------------------------------------------- personal */
 
-  load() {
-    if (this.entries) return this.entries;
-    this.entries = [];
+  /** `mode` is 'endless' (the default) or 'hardcore'. */
+  load(mode) {
+    const m = mode === 'hardcore' ? 'hardcore' : 'endless';
+    if (this.entries[m]) return this.entries[m];
+    this.entries[m] = [];
     try {
-      const raw = localStorage.getItem(this.key) || localStorage.getItem(this.legacyKey);
+      const raw = localStorage.getItem(this.keys[m]) || (m === 'endless' ? localStorage.getItem(this.legacyKey) : null);
       const arr = raw ? JSON.parse(raw) : [];
       if (Array.isArray(arr)) {
-        this.entries = arr
+        this.entries[m] = arr
           .filter(e => e && isFinite(e.value) && e.value > 0)
           .map(e => this.clean(e))
           .sort(this.byValue)
           .slice(0, this.keep);
       }
-    } catch (e) { this.entries = []; }   // corrupt or private mode — start fresh
-    return this.entries;
+    } catch (e) { this.entries[m] = []; }   // corrupt or private mode — start fresh
+    return this.entries[m];
   },
 
   /** Never trust what came out of storage; a hand-edited row must not crash UI. */
@@ -52,26 +57,29 @@ const Highscore = {
 
   byValue(a, b) { return b.value - a.value || b.at - a.at; },
 
-  persist() {
-    try { localStorage.setItem(this.key, JSON.stringify(this.entries)); } catch (e) { /* private mode */ }
+  persist(mode) {
+    const m = mode === 'hardcore' ? 'hardcore' : 'endless';
+    try { localStorage.setItem(this.keys[m], JSON.stringify(this.load(m))); } catch (e) { /* private mode */ }
   },
 
-  list() { return this.load(); },
-  best() { const l = this.load(); return l.length ? l[0].value : 0; },
+  list(mode) { return this.load(mode); },
+  best(mode) { const l = this.load(mode); return l.length ? l[0].value : 0; },
 
   /**
    * Record a result. `run` is { value, depth, gems, mine, kind }. `replaceId`
    * is a row this campaign wrote earlier, which the new one supersedes.
+   * `mode` picks the board: 'endless' (the default) or 'hardcore'.
    * Returns { id, rank, record } when the haul made the board, or null when it
    * did not — an empty-handed run is not a score and never clutters the list.
    */
-  submit(run, replaceId) {
+  submit(run, replaceId, mode) {
     const value = Math.max(0, Math.round(run.value || 0));
     if (value <= 0) return null;
 
-    let list = this.load();
+    const m = mode === 'hardcore' ? 'hardcore' : 'endless';
+    let list = this.load(m);
     if (replaceId) {
-      list = this.entries = list.filter(e => e.id !== replaceId);
+      list = this.entries[m] = list.filter(e => e.id !== replaceId);
     }
     const prevBest = list.length ? list[0].value : 0;
     const entry = this.clean({
@@ -84,10 +92,12 @@ const Highscore = {
     list.sort(this.byValue);
     const rank = list.indexOf(entry) + 1;
     if (list.length > this.keep) list.length = this.keep;
-    this.persist();
+    this.persist(m);
 
     return { id: entry.id, rank: rank <= this.keep ? rank : 0, record: value > prevBest };
   },
 
-  reset() { this.entries = []; this.persist(); },
+  reset() {
+    for (const m of Object.keys(this.keys)) { this.entries[m] = []; this.persist(m); }
+  },
 };

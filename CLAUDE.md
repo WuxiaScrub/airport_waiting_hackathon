@@ -54,6 +54,14 @@ Game Modes
   and/or the Tunneler (gentlest level of each), so a day has them for everyone
   or no one; the worm's timing and path stay random per attempt. Unlimited attempts; a player's best score of the day
   counts. Escaping with the Heartstone ends the daily — there is no next mine.
+* Hardcore — an Endless campaign for players the normal one no longer
+  stretches (`CFG.hardcore`). Half the supply lanterns (every other station;
+  the first is kept, mine 1 included), health and dynamite are NOT refilled
+  between mines, and the revive gets the miner up on 3 hearts, not a full bar.
+  In return everything carried out through the camp, Heartstone included,
+  scores +50% (paid at the camp, so lanterns are no cheaper). It has its own
+  global board (`mode = 'hardcore'`) and its own personal board. Endless only,
+  never the daily.
 * The daily rolls over at 00:00 UTC. Gold, silver and bronze go to the day's
   top three once a short grace window has passed (so offline runs can sync).
   Medal counts show on the profile and beside names on every board.
@@ -62,7 +70,7 @@ Tutorial
 
 A practice mine that teaches the controls and rules, one prompt at a time.
 
-* Offered once, the first time a player presses Endless or Daily on a device
+* Offered once, the first time a player presses Endless, Hardcore or Daily on a device
   (play it or skip it); always available from the TUTORIAL button on the title.
 * A fixed, hand-drawn map (`CFG.tutorial.map`), not generated, so it never
   touches `genVersion`. The lessons, in map order, live in `src/tutorial.js`:
@@ -102,8 +110,9 @@ Revive Ads
 * One revive per run: once per campaign in Endless, once per daily attempt.
 * The revive is granted only on the ad's reward callback, with the game paused
   and the eruption clock frozen while the ad plays.
-* A revive must be survivable: full health, brief invulnerability, lava pushed
-  back, nearby cave bugs knocked away. The pockets are kept.
+* A revive must be survivable: full health (3 hearts in Hardcore), brief
+  invulnerability, lava pushed back, nearby cave bugs knocked away. The
+  pockets are kept.
 
 Localization
 

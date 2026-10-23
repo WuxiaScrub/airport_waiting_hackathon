@@ -741,6 +741,16 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
   font-size: var(--fs-sm); font-weight: 700; letter-spacing: .02em; color: rgba(255,255,255,.88);
 }
 .btn.daily .daily-v.best { color: #fff3c4; }
+/* Hardcore: the endless button's darker twin, two lines like the daily's. */
+.btn.hardcore {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 11px 15px;
+  background: linear-gradient(180deg, var(--quit), var(--quit-deep)); box-shadow: 0 5px 0 var(--quit-edge);
+}
+.btn.hardcore:active { box-shadow: 0 2px 0 var(--quit-edge); }
+.btn.hardcore .daily-v {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs); font-weight: 700; letter-spacing: .02em; color: rgba(255,255,255,.85);
+}
 .revive-count {
   font-family: var(--font-display);
   text-align: center; font-size: 48px; font-weight: 700; color: var(--gold);
@@ -788,11 +798,11 @@ body.attract #toast, body.attract #banner, body.attract #hint { display: none; }
 .btn.small { width: auto; display: inline-block; margin: 0; padding: 7px 12px; font-size: var(--fs-sm); }
 .btn:disabled { opacity: .5; cursor: default; }
 
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 10px; }
 .tab {
   padding: 9px 4px; border-radius: 10px;
   border: 1px solid var(--edge); background: transparent;
-  color: var(--dim); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .08em;
+  color: var(--dim); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .04em;
   cursor: pointer;
 }
 .tab:active { background: var(--surface-3); }
