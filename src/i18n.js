@@ -54,7 +54,7 @@ const STRINGS = {
     'title.dailyInfo': '{d} · new mine in {h}h {m}m',
     'title.dailyBest': 'Your best today: {v}',
     'title.hardcore': 'HARDCORE',
-    'title.hardcoreInfo': 'Half the lanterns · no refills · +{p}% score',
+    'title.hardcoreInfo': 'Half the lanterns · new mines start without free health or dynamite · +{p}% score',
     'help.title': 'HOW TO PLAY',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
@@ -99,7 +99,7 @@ const STRINGS = {
     'help.pic.worm': 'The Tunneler',
     'help.deep.v': 'From mine 2, <b>bubbling dirt</b> hides gas that drifts up your tunnels — it chokes you if you linger, and dynamite or lava sets it alight. From mine 3, a <b>great worm</b> bores across the mine: get out of the red band when the ground rumbles.',
     'help.hard.k': 'HARDCORE',
-    'help.hard.v': 'An endless campaign for experts: <b>half the lanterns</b>, health and dynamite <b>not refilled</b> between mines, and a revive that gets you up on <b>{r} hearts</b>. Everything you carry out scores <b>+{p}%</b>, on a leaderboard of its own.',
+    'help.hard.v': 'An endless campaign for experts: <b>half the lanterns</b>, a new mine does <b>not</b> top up your health or dynamite (you start it with whatever you escaped with), and a revive that gets you up on <b>{r} hearts</b>. Everything you carry out scores <b>+{p}%</b>, on a leaderboard of its own.',
 
     /* Shop */
     'shop.supplyLantern': 'SUPPLY LANTERN',
@@ -466,7 +466,7 @@ const STRINGS = {
     'title.dailyInfo': '{d} · {h} 小时 {m} 分后换新矿',
     'title.dailyBest': '今日最佳：{v}',
     'title.hardcore': '硬核模式',
-    'title.hardcoreInfo': '补给站减半 · 关卡之间不回血、不补炸药 · 得分 +{p}%',
+    'title.hardcoreInfo': '补给站减半 · 新关卡不自动回血补炸药 · 得分 +{p}%',
     'help.title': '玩法说明',
 
     /* Highscores — a score is what a campaign carried out, less what it spent */
@@ -511,7 +511,7 @@ const STRINGS = {
     'help.pic.worm': '钻地巨虫',
     'help.deep.v': '从第 2 关起，<b>冒泡的泥土</b>里藏着瓦斯，会顺着坑道往上飘——待久了会呛伤你，炸药和岩浆一碰就着。从第 3 关起，会有<b>钻地巨虫</b>横穿矿井：地面一震动，就赶紧离开红色区域。',
     'help.hard.k': '硬核模式',
-    'help.hard.v': '专为高手准备的无尽模式：<b>补给站减半</b>，关卡之间<b>不回血、不补炸药</b>，复活后只有 <b>{r} 颗心</b>。凡是带出矿井的东西，得分一律 <b>+{p}%</b>，并有独立排行榜。',
+    'help.hard.v': '专为高手准备的无尽模式：<b>补给站减半</b>，进入新关卡时<b>不会自动回满生命、补满炸药</b>（上一关剩多少就带多少），复活后只有 <b>{r} 颗心</b>。凡是带出矿井的东西，得分一律 <b>+{p}%</b>，并有独立排行榜。',
 
     /* Shop */
     'shop.supplyLantern': '补给站',
