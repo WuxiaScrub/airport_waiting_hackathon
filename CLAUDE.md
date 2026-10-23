@@ -58,6 +58,22 @@ Game Modes
   top three once a short grace window has passed (so offline runs can sync).
   Medal counts show on the profile and beside names on every board.
 
+Tutorial
+
+A practice mine that teaches the controls and rules, one prompt at a time.
+
+* Offered once, the first time a player presses Endless or Daily on a device
+  (play it or skip it); always available from the TUTORIAL button on the title.
+* A fixed, hand-drawn map (`CFG.tutorial.map`), not generated, so it never
+  touches `genVersion`. The lessons, in map order, live in `src/tutorial.js`:
+  each step's prompt is `tut.<id>` in i18n and advances when the player has
+  done the thing (or is already past it, so nobody gets stuck on one).
+* Safe: no eruption clock, no random spawns (one scripted bat and one cave
+  bug), slow lava after the Heartstone, and a free get-up in place on death.
+* It counts for nothing: no score, stats, achievements, boards, history or
+  upload. The save only keeps whether it was offered or finished.
+* When a mechanic changes, keep the map and its prompt in step with it.
+
 Online Layer (Supabase)
 
 * The schema lives in `supabase/migrations/`, one numbered SQL file per change,

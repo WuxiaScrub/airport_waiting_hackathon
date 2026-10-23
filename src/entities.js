@@ -96,6 +96,7 @@ class Dynamite {
     this.dead = true;
     const { x, y } = this;
     game.world.explode(this.tx, this.ty, CFG.dynamite.radius + this.extra);
+    if (game.tutorial) game.tutorial.notify('blast');
     // Any gas the blast reaches — loose, or let out of a pocket it just broke — goes up.
     game.world.igniteArea(this.tx, this.ty, CFG.dynamite.radius + this.extra + 1);
 
@@ -185,5 +186,6 @@ class FallingBlock {
     game.fx.burst(tx + 0.5, ty + 0.5, 8, this.gas ? ['#8a6440', '#6f4f31', '#c8d870'] : ['#8a6440', '#6f4f31', '#a97c4f'], { speed: 3.4, life: 0.4, size: 0.14 });
     game.shake(3.2);
     Sfx.play('break', { v: 0.5 });
+    if (game.tutorial) game.tutorial.notify('fall');
   }
 }

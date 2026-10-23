@@ -55,6 +55,10 @@ which way you are aiming. The vertical axis **aims** rather than moves — gravi
 owns up and down — so push down to dig the floor out from under yourself and up
 to chew at the ceiling.
 
+New players are offered a **tutorial** the first time they head into a mine:
+a short, hand-built practice mine that walks through each control and rule in
+turn. It is always on the title screen afterwards, and nothing in it is scored.
+
 ## The loop
 
 Descend → mine → collect → risk going deeper → checkpoint (shop) → repeat → carry it out.
@@ -193,6 +197,7 @@ src/enemies.js      Cave Bug, Bat
 src/player.js       gravity, jumping, mining, tools, damage, hard hat
 src/input.js        floating joystick, buttons, keyboard
 src/demo.js         the autopilot miner playing behind the title screen
+src/tutorial.js     the practice mine's lessons (its map is CFG.tutorial.map)
 src/render.js       procedural sprite atlas + the two-layer lighting composite
 src/ui.js           HUD syncing and modal panels
 src/game.js         state machine, run lifecycle, spawning, economy

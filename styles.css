@@ -281,6 +281,35 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .hint-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: #ff8a6a; }
 .hint-t { font-size: var(--fs-md); font-weight: 800; color: var(--ink); }
 .hint-b { font-size: var(--fs-sm); font-weight: 600; color: #d8cfe8; line-height: 1.35; }
+/* The tutorial's coach card: where the hint sits, but it stays up. */
+.coach {
+  position: absolute;
+  top: calc(var(--safe-t) + 88px); left: 50%;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  width: min(88vw, 360px);
+  padding: 9px 16px 10px;
+  background: rgba(12,9,20,.9);
+  border: 1px solid rgba(255, 201, 94, .55);
+  border-radius: 14px;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity .25s ease, transform .25s ease, border-color .2s ease;
+  pointer-events: none;
+  z-index: 21;
+}
+.coach.show { opacity: 1; transform: translate(-50%, 0); }
+.coach.done { border-color: #7ef0d0; }
+.coach-k { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; color: #ffc95e; }
+.coach.done .coach-k { color: #7ef0d0; }
+.coach.done .coach-k::before { content: '✓ '; }
+.coach-b { font-size: var(--fs-sm); font-weight: 600; color: #e6ddf4; line-height: 1.4; }
+.coach-b b { color: var(--ink); }
+/* The tutorial's closing panel: the three rules a real mine adds. */
+.tut-recap { list-style: none; margin: 12px 0 4px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tut-recap li { position: relative; padding-left: 22px; font-size: var(--fs-sm); line-height: 1.4; color: #d8cfe8; text-align: left; }
+.tut-recap li::before { content: '✓'; position: absolute; left: 2px; color: #7ef0d0; font-weight: 800; }
+.tut-recap b { color: var(--ink); }
 @keyframes hintIn {
   0%   { opacity: 0; transform: translate(-50%, 8px) scale(.94); }
   6%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
@@ -905,6 +934,7 @@ body.lang-cjk .score-head,
 body.lang-cjk .wallet .lbl,
 body.lang-cjk .toast,
 body.lang-cjk .hint-k,
+body.lang-cjk .coach-k,
 body.lang-cjk .banner p,
 body.lang-cjk .panel h2,
 body.lang-cjk .panel .tagline,

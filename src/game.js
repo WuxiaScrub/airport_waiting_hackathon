@@ -29,6 +29,7 @@ class Game {
     this.carry = [];
     this.checkpointLock = null;
     this.demo = null;              // the autopilot playing behind the title (src/demo.js)
+    this.tutorial = null;          // the practice mine's script (src/tutorial.js)
 
     this.save = this.load();
     // A live mine sits behind the title panel instead of a black rectangle,
@@ -55,7 +56,7 @@ class Game {
   load() {
     // Screen shake starts off for players whose device asks for less motion.
     const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, daily: null, stats: Stats.blank(), seen: {} };
+    const blank = { best: 0, bestMine: 0, audio: true, music: true, shake: !calm, daily: null, stats: Stats.blank(), seen: {}, tutorial: null };
     try {
       // An older save still knows the player's deepest dive and sound setting;
       // any gold and upgrades belong to an old economy and are dropped.
@@ -75,6 +76,8 @@ class Game {
         stats: Stats.from(s.stats),
         // Hazards the player has already been warned about: { gas, worm }.
         seen: s.seen && typeof s.seen === 'object' ? { gas: !!s.seen.gas, worm: !!s.seen.worm } : {},
+        // Has the tutorial been offered ('offered') or played through ('done')?
+        tutorial: s.tutorial === 'offered' || s.tutorial === 'done' ? s.tutorial : null,
       };
     } catch (e) { return blank; }
   }
@@ -85,7 +88,7 @@ class Game {
 
   /** Records go; settings stay. The caller decides which panel to show next. */
   wipeSave() {
-    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, daily: null, stats: Stats.blank(), seen: {} };
+    this.save = { best: 0, bestMine: 0, audio: Sfx.enabled, music: Music.enabled, shake: this.save.shake, daily: null, stats: Stats.blank(), seen: {}, tutorial: this.save.tutorial };
     this.persist();
     Highscore.reset();
   }
@@ -96,7 +99,7 @@ class Game {
    * save, which every mine's end makes anyway.
    */
   track(change) {
-    if (this.demo) return;         // the title-screen miner's work is not the player's
+    if (this.demo || this.tutorial) return;   // the title-screen miner's and the practice mine's work don't count
     const s = this.save.stats;
     const before = Stats.levels(s);
     change(s);
@@ -149,6 +152,22 @@ class Game {
     this.startMine(quiet);
   }
 
+  /**
+   * The practice mine: a fixed map, base stats, no clock, no random enemies,
+   * nothing scored, saved or uploaded. See src/tutorial.js.
+   */
+  startTutorial() {
+    this.campaign = {
+      mine: 1, upgrades: {}, score: 0,
+      found: 0, spent: 0, hearts: 0, depth: 0, gems: 0,
+      scoreId: 0, result: null,
+      runId: null, playMs: 0, online: null,
+      daily: null, dailyRecord: false,
+      revived: false, tutorial: true,
+    };
+    this.startMine();
+  }
+
   /** Per-mine numbers. `lost` is what was still being carried at the end. */
   resetRunStats() { this.runStats = { depth: 0, lost: 0, hauled: 0 }; }
 
@@ -197,11 +216,14 @@ class Game {
 
     const mine = this.campaign.mine;
     const heartRow = CFG.world.heartstoneRow + (mine - 1) * CFG.campaign.heartstoneStep;
-    this.fuse = CFG.lava.fuse + (mine - 1) * CFG.campaign.fusePerMine;
+    const tut = !!this.campaign.tutorial;
+    this.tutorial = tut ? new Tutorial() : null;
+    // The practice mine has no eruption clock: the Heartstone is the only thing that wakes it.
+    this.fuse = tut ? Infinity : CFG.lava.fuse + (mine - 1) * CFG.campaign.fusePerMine;
 
     const seed = this.campaign.daily ? dailySeed(this.campaign.daily) : (Math.random() * 0xffffffff) >>> 0;
-    const hz = this.hazards(seed);
-    this.world = new World(seed, this, heartRow, hz.gas);
+    const hz = tut ? { gas: 0, worm: 0 } : this.hazards(seed);
+    this.world = new World(seed, this, heartRow, hz.gas, tut ? CFG.tutorial.map : null);
     this.player = new Player(this.world.spawnPoint.x, this.world.spawnPoint.y, this.campaign.upgrades);
     this.enemies.length = 0;
     this.gems.length = 0;
@@ -227,7 +249,7 @@ class Game {
     this.mineTime = 0;
     this.nextWarn = 0;
     this.resetRunStats();
-    if (!this.campaign.revived) Ads.preload();
+    if (!this.campaign.revived && !tut) Ads.preload();
 
     // Standing on the home lantern at spawn shouldn't instantly open the shop.
     this.lockCheckpoint(Math.floor(this.player.x), Math.floor(this.player.y));
@@ -245,7 +267,8 @@ class Game {
     this.state = quiet ? 'title' : 'play';
     // From here on a reload or a Back press would cost the player a run.
     ExitGuard.sync();
-    if (!quiet) {
+    this.ui.syncCoach(this);
+    if (!quiet && !tut) {
       this.save.bestMine = Math.max(this.save.bestMine || 0, mine);
       this.persist();
       this.ui.toast(this.campaign.daily ? loc('toast.daily', { d: this.campaign.daily })
@@ -275,6 +298,7 @@ class Game {
    */
   runAtRisk() {
     if (this.state !== 'play' && this.state !== 'paused') return false;
+    if (this.tutorial) return false;   // the practice mine has nothing to lose
     return !!this.player && !this.player.dead;
   }
 
@@ -286,6 +310,7 @@ class Game {
    */
   endRun(kind) {
     if (this.state === 'over') return;
+    if (this.tutorial) { this.toTitle(); return; }   // nothing of the practice mine is ever recorded
     const c = this.campaign;
     if (kind === 'death') this.track(s => { s.deaths++; });
     if (kind === 'death' || kind === 'abandon') {
@@ -376,6 +401,8 @@ class Game {
     Sfx.play('death');
     this.shake(18);
     this.fx.burst(this.player.x, this.player.y, 26, ['#ff5d5d', '#ffd08a', '#3d6fb4'], { speed: 8, life: 0.9, size: 0.2 });
+    // Dying in the practice mine costs nothing: Tutorial.update gets the miner back up.
+    if (this.tutorial) { this.ui.banner(loc('sum.died'), ''); return; }
     // One ad revive per run, and only if an ad is actually on hand: the
     // offer must never be a button that leads nowhere.
     const c = this.campaign;
@@ -491,6 +518,7 @@ class Game {
     g.dead = true;
     const scr = this.worldToScreen(g.x, g.y);
 
+    if (this.tutorial) this.tutorial.notify(g.heart ? 'heart' : 'gem');
     if (g.heart) {
       this.player.hasHeartstone = true;
       this.fx.flyToHud(scr.x, scr.y, '#ff7a3c', CFG.gems.heartstoneValue);
@@ -525,7 +553,13 @@ class Game {
    * the next mine.
    */
   visitLantern(cp) {
-    if (cp.home) { this.reachCamp(); return; }
+    if (cp.home) {
+      // In the practice mine the camp only ends it once the lessons are done.
+      if (this.tutorial && !this.tutorial.onLastStep) { this.ui.toast(loc('tut.campEarly'), 2600); return; }
+      this.reachCamp();
+      return;
+    }
+    if (this.tutorial) this.tutorial.notify('shop');
 
     // Dynamite is NOT topped up here — it is stock the lantern sells. The hard
     // hat still re-forms for free; it does that on a timer out in the mine anyway.
@@ -575,7 +609,7 @@ class Game {
       this.fx.burst(p.x, p.y, 16, ['#ffc95e', '#fff0c0'], { speed: 5, life: 0.8, size: 0.15, glow: true, grav: -2 });
     }
 
-    if (winning) {
+    if (winning && !this.tutorial) {
       p.hasHeartstone = false;
       c.hearts++;
       const secs = Math.round(this.mineTime);
@@ -587,9 +621,28 @@ class Game {
       return;
     }
 
+    if (this.tutorial) {
+      this.ui.banner(loc('tut.doneBanner'), '');
+      setTimeout(() => { if (this.state === 'play') this.finishTutorial(); }, 2200);
+      return;
+    }
     this.ui.banner(loc('sum.complete'), loc('sum.hauledOut'));
     this.ui.syncWallet(this);
     setTimeout(() => { if (this.state === 'play') this.endRun('cashout'); }, 1400);
+  }
+
+  /** Out of the practice mine. Only the flag is saved: no score, stats or upload. */
+  finishTutorial() {
+    this.save.tutorial = 'done';
+    this.persist();
+    Sfx.stopRumble();
+    this.state = 'over';
+    Music.duck(false);
+    Music.play('menu');
+    this.input.reset();
+    this.ui.syncTimer(this);
+    this.ui.syncCoach(this);
+    this.ui.tutorialDone();
   }
 
   upgradeCost(u, level) {
@@ -756,6 +809,7 @@ class Game {
   addLight(x, y, r, life) { this.tempLights.push({ x, y, r, life, max: life }); }
 
   updateSpawns(dt) {
+    if (this.tutorial) return;     // the practice mine's two enemies are scripted
     const depth = this.depth();
     const D = this.demo ? CFG.demo : null;   // the title demo wants a busier mine
     if (depth < (D ? D.spawnDepth : 6)) return;
@@ -884,7 +938,7 @@ class Game {
   awakenVolcano(cause) {
     if (this.volcano) return;
     this.volcano = true;
-    this.lavaSpeed = CFG.lava.riseSpeed;
+    this.lavaSpeed = this.tutorial ? CFG.tutorial.lavaSpeed : CFG.lava.riseSpeed;
     this.world.lavaRow = Math.min(this.world.h, this.world.heartRow + CFG.lava.startOffset);
     Sfx.play('heart');
     setTimeout(() => Sfx.play('awaken'), 300);
@@ -907,7 +961,7 @@ class Game {
    * way down so the deadline is read, never sprung.
    */
   updateFuse(dt) {
-    if (this.volcano) return;
+    if (this.volcano || this.tutorial) return;
     this.runTime += dt;
 
     const warns = CFG.lava.warnAt;
@@ -926,7 +980,7 @@ class Game {
 
   updateLava(dt) {
     if (!this.volcano) return;
-    this.lavaSpeed += CFG.lava.accel * dt * 60 * dt;
+    if (!this.tutorial) this.lavaSpeed += CFG.lava.accel * dt * 60 * dt;
     // The lava floods the whole mine but stops at the surface shelf, so a
     // last-second sprint to the camp is always a legitimate win.
     const next = Math.max(this.world.surface, this.world.lavaRow - this.lavaSpeed * dt);
@@ -1010,6 +1064,7 @@ class Game {
     }
 
     this.fx.update(dt);
+    if (this.tutorial) this.tutorial.update(dt, this);
     if (!demo) {
       this.checkCheckpoint();
       const d = this.depth();
